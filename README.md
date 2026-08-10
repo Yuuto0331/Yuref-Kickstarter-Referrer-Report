@@ -43,9 +43,9 @@ Kickstarter 后台 **Referrers** 导出，列为：
 
 ## 🌐 在线使用（GitHub Pages）
 
-本仓库通过 GitHub Pages 托管，同事直接点下面链接即可使用，无需下载：
+本仓库通过 GitHub Pages 托管，同事直接点下面链接即可使用，无需下载（进入后会自动跳转到工具页面）：
 
-> https://yuuto0331.github.io/Yuref-Kickstarter-Referrer-Report/report_tool.html
+> **https://yuuto0331.github.io/Yuref-Kickstarter-Referrer-Report/**
 
 （若链接打不开，按下方「部署」自行开启；首次开启后约 1 分钟生效。）
 
