@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# 早期开发草稿（非工具本体）
+*.py
+outputs/
+
+# 本地工作区
+.workbuddy/
+
+# Python
+__pycache__/
+*.pyc

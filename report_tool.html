@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KS 渠道拆分工具</title><link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiMyNTYzZWIiLz48cGF0aCBkPSJNOSAyMSBMOSAxNSBNMTYgMjEgTDE2IDExIE0yMyAyMSBMMjMgMTciIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=">
+<style>
+:root{--bg:#f5f7fa;--panel:#fff;--ink:#1f2933;--muted:#6b7280;--line:#e5e7eb;--green:#1a7f37;--red:#c0392b;--blue:#2563eb;--shadow:0 1px 3px rgba(0,0,0,.08)}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 28px 60px}
+header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;font-size:13px}
+.panel{background:var(--panel);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin:18px 0;transition:box-shadow .15s}.panel:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.panel h2{margin:0 0 14px;font-size:16px}
+.drop{border:2px dashed #cbd5e1;border-radius:12px;padding:32px 28px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:#fafbfc}
+.drop.hover,.drop:hover{border-color:var(--blue);background:#eff6ff;color:var(--blue)}
+.drop b{color:var(--ink)}
+.params{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+.params label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
+.params input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+.btn{display:inline-block;margin-top:16px;padding:10px 18px;background:var(--blue);color:#fff;border:none;border-radius:9px;font-size:14px;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:not-allowed}.btn.ghost{background:#eef2f7;color:var(--ink);margin-left:8px}
+.btn.sm{padding:6px 12px;font-size:12px;margin-top:0}
+.module{background:var(--panel);border-radius:14px;padding:22px 26px;box-shadow:var(--shadow);margin:18px 0}
+.module h3{margin:0 0 4px;font-size:18px}.module .desc{color:var(--muted);font-size:13px;margin-bottom:16px}
+.chart-wrap{position:relative;margin:8px 0 18px}
+.chart-wrap svg rect:hover{opacity:.82;cursor:pointer}
+.chart-wrap svg rect{transition:opacity .12s}
+.rpt-toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin:0 0 16px;padding:12px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:10px}
+.rpt-dates{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.rpt-dates label,.rpt-right label.lbl{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.rpt-dates select,.rpt-right select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
+.rpt-right{display:flex;gap:10px;align-items:center}
+.cmp-controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}
+.cmp-controls label{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.cmp-controls select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
+@media(max-width:900px){.rpt-toolbar{flex-direction:column;align-items:stretch}.rpt-right{justify-content:space-between}}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left}
+th{background:#f8fafc;font-weight:600;color:var(--muted);font-size:12px;cursor:pointer;user-select:none}td.num{text-align:left;font-variant-numeric:tabular-nums}
+tr:nth-child(even) td{background:#fafbfc}
+tr.total td{font-weight:700;background:#f1f5f9}tr.cat td{font-weight:600;background:#f8fafc}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+.ref{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;color:#374151;padding-left:24px}
+.up{color:var(--green)}.down{color:var(--red)}
+.insight{border-radius:10px;padding:12px 16px;margin-bottom:10px;font-size:13px;line-height:1.6;border-left:4px solid}
+.insight.info{background:#eff6ff;border-color:var(--blue)}.insight.danger{background:#fef2f2;border-color:var(--red)}.insight.note{background:#f8fafc;border-color:var(--muted);color:#374151}
+.map-row{display:grid;grid-template-columns:1fr 200px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.map-row.warn{grid-template-columns:1fr 140px 88px}
+.map-row .map-act{justify-self:end;padding:5px 8px;font-size:12px;white-space:nowrap}
+.map-row.warn{background:#fffbeb}
+.map-row.saved{background:#eff6ff}
+.map-ref{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.map-row select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+.map-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+.map-tools input[type=text]{flex:1;min-width:160px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px}
+.map-tools .chk{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center;cursor:pointer}
+.map-tools .sm{padding:6px 12px;font-size:12px;margin:0}
+.map-section{border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden}
+.map-head{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f8fafc;cursor:pointer;user-select:none;font-size:14px;font-weight:600}
+.map-head:hover{background:#f1f5f9}
+.map-head .caret{transition:transform .15s;font-size:12px;color:var(--muted)}
+.map-section.collapsed .caret{transform:rotate(-90deg)}
+.map-head .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:400}
+.map-head .badge{font-size:11px;padding:1px 7px;border-radius:999px;background:#fde68a;color:#92400e;font-weight:600}
+.map-body{max-height:520px;overflow-y:auto}
+.map-section.collapsed .map-body{display:none}
+.map-section.warnsec .map-head{background:#fffbeb}
+.map-section.warnsec .map-head:hover{background:#fef3c7}
+note{color:var(--muted);font-size:12px}
+.hide{display:none}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:8px}
+.kpi{background:var(--panel);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);border-left:4px solid var(--line);transition:transform .1s,box-shadow .15s}
+.kpi:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.kpi.blue{border-left-color:var(--blue)}.kpi.green{border-left-color:var(--green)}.kpi.gray{border-left-color:#94a3b8}
+.kpi .label{font-size:13px;color:var(--muted);margin-bottom:6px}.kpi .val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .sub{font-size:12px;margin-top:6px;color:var(--muted)}
+@media(max-width:900px){.params{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.map-row{grid-template-columns:1fr 140px}.map-row.warn{grid-template-columns:1fr 110px 76px}}
+#chartTip{position:fixed;pointer-events:none;z-index:1000;background:rgba(15,23,42,.92);color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;line-height:1.5;box-shadow:0 6px 24px rgba(0,0,0,.2);opacity:0;transition:opacity .08s;max-width:260px;white-space:pre-line}
+#chartTip b{display:block;margin-bottom:3px;font-size:13px}
+</style></head>
+<body><div id="chartTip"></div><div class="wrap">
+<header><h1>Kickstarter 渠道拆分工具</h1><p>上传 referrers CSV → 自动按口径拆分 → 页面直接看结果。纯前端，数据不出本机。</p></header>
+
+<div class="panel" id="uploadPanel">
+  <h2>① 上传数据</h2>
+  <div class="drop" id="drop">把 Kickstarter <b>referrers CSV</b> 拖到这里，或 <b>点击选择文件</b><input type="file" id="file" accept=".csv" class="hide"></div>
+  <div style="margin:14px 0 6px;color:var(--muted);font-size:13px">若无法上传文件，可直接<b>粘贴 CSV 文本</b>：</div>
+  <textarea id="csvPaste" rows="5" placeholder="粘贴 KS referrers CSV 内容（含表头 Referrer,Date,Type,# of Pledges,%,Pledged）" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:Menlo,Consolas,monospace;font-size:12px;resize:vertical"></textarea>
+  <div>
+    <button class="btn" id="btnParse">生成报表</button>
+  </div>
+  <div style="margin-top:10px"><note>上传后会自动生成；粘贴文本后点击「生成报表」。分析日 / 对比日 / 项目名在报表上方工具栏选择；如需调整口径，见下方「分类口径调整」。</note></div>
+</div>
+
+<div class="panel hide" id="mapPanel">
+  <h2>② 分类口径调整（可选）</h2>
+  <div class="desc" style="color:var(--muted);font-size:13px">默认规则已自动归类，只需关注标 ⚠️ 的"待确认"项；其余按类别折叠，点标题展开。改完自动保存并刷新报表。</div>
+  <div class="map-tools">
+    <input type="text" id="mapSearch" placeholder="搜索 referrer…">
+    <label class="chk"><input type="checkbox" id="mapOnlyWarn"> 仅看待确认</label>
+    <button class="btn ghost sm" id="mapExpand">全部展开</button>
+    <button class="btn ghost sm" id="mapCollapse">全部折叠</button>
+  </div>
+  <div id="mapList"></div>
+  <div style="margin-top:14px">
+    <button class="btn ghost" id="btnClear">重置手动归类</button>
+  </div>
+  <div style="margin-top:8px"><note>💾 = 已记住的手动归类（存于本机浏览器，下次上传自动套用）；⚠️ = 未命中默认规则、建议手动指定。</note></div>
+</div>
+
+<div class="panel hide" id="reportPanel">
+  <div class="rpt-toolbar">
+    <div class="rpt-dates">
+      <label>分析日<select id="selD"></select></label>
+      <label>对比日<select id="selP"></select></label>
+    </div>
+    <div class="rpt-right">
+      <label class="lbl">项目<select id="selProj"></select></label>
+      <button class="btn ghost sm" id="btnDl">下载报表 HTML</button>
+    </div>
+  </div>
+  <div id="reportBody"></div>
+</div>
+</div>
+
+<script>
+// ==CORE_START==
+const CAT_ORDER = ['付费广告','KS 站内自然','独立站','Kickbooster','众筹 PR','非众筹 PR','KOL','社媒运营','EDM','其他'];
+const CAT_COLORS = {
+  '付费广告':'#4C72B0','KS 站内自然':'#55A868','独立站':'#C44E52','Kickbooster':'#8172B3',
+  '众筹 PR':'#CCB974','非众筹 PR':'#DD8452','KOL':'#8C564B','社媒运营':'#17BECF',
+  'EDM':'#E377C2','其他':'#7F7F7F'
+};
+const SOCIAL_SET = new Set(['Social-FB','Social-IG','Social-X','TVC','App-BPS','Group-New','X (formerly Twitter)','YouTube','YouTube Live']);
+const NONKICK_SET = new Set(['3DNatives_Article','3DP_Article','Makezine_Article','hackaday.com']);
+
+function parseCSV(text){
+  const lines = text.replace(/\r/g,'').split('\n').filter(l=>l.length);
+  // 轻量 CSV：支持双引号包裹
+  function splitLine(line){
+    const out=[]; let cur=''; let q=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){ if(q && line[i+1]==='"'){cur+='"';i++;} else q=!q; }
+      else if(c===',' && !q){ out.push(cur); cur=''; }
+      else cur+=c;
+    }
+    out.push(cur); return out;
+  }
+  const head = splitLine(lines[0]).map(h=>h.trim());
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const f = splitLine(lines[i]);
+    if(f.length<6) continue;
+    const o={}; head.forEach((h,j)=>o[h]=f[j]);
+    rows.push({
+      ref: (o['Referrer']||'').trim(),
+      date: (o['Date']||'').trim(),
+      typ: (o['Type']||'').trim(),
+      pl: parseInt(o['# of Pledges']||'0',10)||0,
+      am: parseFloat(o['Pledged']||'0')||0
+    });
+  }
+  return rows;
+}
+
+function hasExplicitRule(ref, typ){
+  if(ref.startsWith('Meta_ads')||ref.startsWith('Google_ads')) return true;
+  if(ref.startsWith('Prelaunch')||['Brand Banner','Store Banner','Navigator','Anouncement Bar'].includes(ref)||ref==='store.heygears.com') return true;
+  if(ref.endsWith('.kb')) return true;
+  if(ref.includes('Backer')||['Gadget_Trend','PR_GadgetTrend02'].includes(ref)) return true;
+  if(ref.startsWith('3DPI')||ref.startsWith('All3DP')||ref==='PR_MMF'||NONKICK_SET.has(ref)) return true;
+  if(ref.startsWith('KOL')) return true;
+  if(SOCIAL_SET.has(ref)) return true;
+  if(ref.startsWith('EDM')) return true;
+  if(typ==='Kickstarter') return true;
+  return false;
+}
+function defaultClassify(ref, typ){
+  if(ref.startsWith('Meta_ads')||ref.startsWith('Google_ads')) return '付费广告';
+  if(ref.startsWith('Prelaunch')||['Brand Banner','Store Banner','Navigator','Anouncement Bar'].includes(ref)||ref==='store.heygears.com') return '独立站';
+  if(ref.endsWith('.kb')) return 'Kickbooster';
+  if(ref.includes('Backer')||['Gadget_Trend','PR_GadgetTrend02'].includes(ref)) return '众筹 PR';
+  if(ref.startsWith('3DPI')||ref.startsWith('All3DP')||ref==='PR_MMF'||NONKICK_SET.has(ref)) return '非众筹 PR';
+  if(ref.startsWith('KOL')) return 'KOL';
+  if(SOCIAL_SET.has(ref)) return '社媒运营';
+  if(ref.startsWith('EDM')) return 'EDM';
+  if(typ==='Kickstarter') return 'KS 站内自然';
+  return '其他';
+}
+function addDays(dateStr, n){
+  const d=new Date(dateStr+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n);
+  return d.toISOString().slice(0,10);
+}
+function weekOf(dateStr, launchStr, fw){
+  const L=new Date(launchStr+'T00:00:00Z').getTime();
+  const t=new Date(dateStr+'T00:00:00Z').getTime();
+  const diff=Math.floor((t-L)/86400000);
+  if(diff<0) return 'W0';
+  if(diff < fw) return 'W1';
+  return 'W'+(Math.floor((diff-fw)/7)+2);
+}
+// 首发周：上线日所在周，到当周周日结束；W2 起按整周（周一-周日）。
+// 例：周二上线→首发周 6 天；周一上线→7 天；黑格 7/23(周四)→4 天(周四-周日)。
+function firstWeekDays(launchStr){
+  const dow=new Date(launchStr+'T00:00:00Z').getUTCDay(); // 0=周日..6=周六
+  return ((7-dow)%7)+1;
+}
+// 手动归类记忆：按项目名命名空间存 localStorage，跨上传/跨天/跨项目不互相污染
+const LS_LAST='ks_last_proj_v1';
+function lsKey(proj){ return 'ks_ref_overrides_v1_'+(proj||'default'); }
+function loadOverrides(proj){ try{ return JSON.parse(localStorage.getItem(lsKey(proj))||'null'); }catch(e){ return null; } }
+function saveOverrides(proj){ try{ localStorage.setItem(lsKey(proj), JSON.stringify(STATE.override)); }catch(e){} }
+// 原始 CSV 也按项目名存一份，刷新后自动恢复报表（仍仅存于本机浏览器）
+function lsDataKey(proj){ return 'ks_ref_data_v1_'+(proj||'default'); }
+function saveData(){ try{ if(STATE.rawCsv) localStorage.setItem(lsDataKey(STATE.proj), JSON.stringify({proj:STATE.proj, csv:STATE.rawCsv, D:STATE.D, P:STATE.P, launch:STATE.launch, firstWeek:STATE.firstWeek})); }catch(e){} }
+function loadSavedData(proj){ try{ return JSON.parse(localStorage.getItem(lsDataKey(proj))||'null'); }catch(e){ return null; } }
+function getProj(){ const v=(document.getElementById('selProj').value||'').trim(); return (v&&v!=='__new__')?v:(STATE.proj||'default'); }
+function fmt(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+
+function aggregate(rows, classifyFn){
+  const daily={}; const refDict={}; const dates=new Set();
+  for(const x of rows){
+    if(!x.date) continue;
+    dates.add(x.date);
+    const c=classifyFn(x.ref, x.typ);
+    if(!daily[x.date]) daily[x.date]={};
+    if(!daily[x.date][c]) daily[x.date][c]=[0,0];
+    daily[x.date][c][0]+=x.pl; daily[x.date][c][1]+=x.am;
+    if(!refDict[x.date]) refDict[x.date]={};
+    if(!refDict[x.date][c]) refDict[x.date][c]={};
+    if(!refDict[x.date][c][x.ref]) refDict[x.date][c][x.ref]=[0,0];
+    refDict[x.date][c][x.ref][0]+=x.pl; refDict[x.date][c][x.ref][1]+=x.am;
+  }
+  return {daily, refDict, dates:Array.from(dates).sort()};
+}
+// ==CORE_END==
+
+// ---------- 以下为界面/渲染逻辑（依赖 DOM） ----------
+let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpWeekA:null, cmpWeekB:null, cmpDays:null };
+
+function finalClassify(ref, typ){
+  if(STATE.override[ref]!==undefined) return STATE.override[ref];
+  return defaultClassify(ref, typ);
+}
+
+function renderMapping(){
+  const list=document.getElementById('mapList'); list.innerHTML='';
+  const refs=Array.from(new Set(STATE.rows.map(r=>r.ref)));
+  const q=document.getElementById('mapSearch').value.trim().toLowerCase();
+  const onlyWarn=document.getElementById('mapOnlyWarn').checked;
+  const info=refs.map(ref=>{
+    const typ=STATE.rows.find(r=>r.ref===ref).typ;
+    const def=defaultClassify(ref,typ);
+    const ov=STATE.override[ref]!==undefined?STATE.override[ref]:null;
+    const cat=ov!==null?ov:def;
+    const warn=ov===null && !hasExplicitRule(ref,typ);
+    return {ref,typ,def,cat,ov,warn};
+  }).filter(i=>(!q||i.ref.toLowerCase().includes(q)) && (!onlyWarn||i.warn))
+    .sort((a,b)=>a.ref<b.ref?-1:1);
+  const sec = (id,title,badge,items,opts={})=>{
+    if(opts.forceHide && items.length===0) return;
+    const collapsed = STATE.mapCollapsed[id]!==undefined ? STATE.mapCollapsed[id] : (opts.defaultCollapsed||false);
+    const sec2=document.createElement('div');
+    sec2.className='map-section'+(collapsed?' collapsed':'')+(opts.warn?' warnsec':'');
+    const cnt = items.length+(opts.cntNote?(' · '+opts.cntNote):'');
+    const headAct = opts.headAction ? `<button class="btn ghost sm head-act" data-action="${opts.headAction}">${opts.headActionLabel||'操作'}</button>` : '';
+    sec2.innerHTML=`<div class="map-head" data-sec="${id}"><span class="caret">▾</span>${title}${badge?` <span class="badge">${badge}</span>`:''}<div style="margin-left:auto;display:flex;gap:8px;align-items:center">${headAct}<span class="cnt">${cnt}</span></div></div><div class="map-body"></div>`;
+    const body=sec2.querySelector('.map-body');
+    for(const it of items){
+      const row=document.createElement('div');
+      row.className='map-row'+(it.warn?' warn':(it.ov!==null?' saved':''));
+      const sel='<select data-ref="'+escapeAttr(it.ref)+'">'+CAT_ORDER.map(c=>'<option value="'+c+'"'+(c===it.cat?' selected':'')+'>'+c+'</option>').join('')+'</select>';
+      const tag = it.ov!==null ? ' 💾' : (it.warn?' ⚠️':'');
+      const act = it.warn ? `<button class="btn ghost sm map-act" data-ref="${escapeAttr(it.ref)}" data-act="other">归其他</button>` : '';
+      row.innerHTML='<div class="map-ref" title="'+escapeAttr(it.ref)+'">'+escapeAttr(it.ref)+tag+'</div>'+sel+act;
+      body.appendChild(row);
+    }
+    body.querySelectorAll('select').forEach(s=>{
+      s.addEventListener('change', e=>{ STATE.override[e.target.dataset.ref]=e.target.value; saveOverrides(STATE.proj); applyAndRender(); });
+    });
+    body.querySelectorAll('.map-act').forEach(b=>{
+      b.addEventListener('click', e=>{
+        e.stopPropagation();
+        const ref=e.target.dataset.ref;
+        if(e.target.dataset.act==='other'){ STATE.override[ref]='其他'; saveOverrides(STATE.proj); applyAndRender(); }
+      });
+    });
+    if(opts.headAction){
+      const hb=sec2.querySelector('.head-act');
+      if(hb) hb.addEventListener('click', e=>{
+        e.stopPropagation();
+        if(opts.headAction==='allOther'){
+          items.forEach(it=>STATE.override[it.ref]='其他');
+          saveOverrides(STATE.proj); applyAndRender();
+        }
+      });
+    }
+    list.appendChild(sec2);
+  };
+  const warns=info.filter(i=>i.warn);
+  const byCat={}; CAT_ORDER.forEach(c=>byCat[c]=[]);
+  info.forEach(i=>{ if(!i.warn) byCat[i.cat].push(i); });
+  // 待确认（默认展开）
+  sec('__warn__','⚠️ 待确认（未命中默认规则）','',warns,{warn:true,forceHide:true,headAction:'allOther',headActionLabel:'全部归为其他'});
+  // 已分类：按类别分组（默认折叠）
+  for(const c of CAT_ORDER){ sec(c,c,'',byCat[c],{forceHide:true,defaultCollapsed:true}); }
+  if(warns.length===0 && info.length===0){ list.innerHTML='<div style="color:var(--muted);padding:14px 0">没有匹配的 referrer。</div>'; }
+}
+function escapeAttr(s){ return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+function niceMax(v){
+  if(!(v>0)) return 1;
+  const pow=Math.pow(10,Math.floor(Math.log10(v)));
+  const n=v/pow; let m;
+  if(n<=1)m=1; else if(n<=2)m=2; else if(n<=2.5)m=2.5; else if(n<=5)m=5; else m=10;
+  return m*pow;
+}
+function fmtTick(tv){ return tv>=1e6 ? '$'+(tv/1e6).toFixed(tv%1e6?1:0)+'M' : '$'+(tv/1000).toFixed(0)+'k'; }
+
+function svgStacked(weekly, labels){
+  const n=weekly.length; if(!n) return '<div class="insight note">暂无周数据。</div>';
+  const W=800,H=320,M={l:70,r:30,t:30,b:70}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
+  const weekTotals=weekly.map(w=>CAT_ORDER.reduce((s,c)=>s+(w[c]||0),0));
+  const yMax=niceMax(Math.max(1,...weekTotals)); const ticks=[]; for(let i=0;i<=4;i++) ticks.push(yMax*i/4);
+  const slot=cw/n, barW=Math.min(70, slot*0.6), centers=weekly.map((_,i)=>M.l+slot*(i+0.5));
+  let rects='';
+  for(let i=0;i<n;i++){
+    const cx=centers[i], x=cx-barW/2; let bottom=H-M.b;
+    for(const c of CAT_ORDER){
+      const v=weekly[i][c]||0; if(v<=0) continue;
+      const h=v/yMax*ch, y=bottom-h;
+      const pct=weekTotals[i]?((v/weekTotals[i])*100).toFixed(1):0;
+      const tip=`${c} · ${labels[i]}\n金额：${fmt(v)}\n占本周：${pct}%`;
+      rects+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${CAT_COLORS[c]}" stroke="#fff" stroke-width="1" data-tip="${escapeAttr(tip)}"><title>${escapeAttr(tip)}</title></rect>`;
+      bottom-=h;
+    }
+  }
+  let axis=`<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H-M.b}" stroke="#9ca3af"/><line x1="${M.l}" y1="${H-M.b}" x2="${W-M.r}" y2="${H-M.b}" stroke="#9ca3af"/>`;
+  let lab='';
+  for(const tv of ticks){ const y=H-M.b-tv/yMax*ch; axis+=`<line x1="${M.l-5}" y1="${y.toFixed(1)}" x2="${M.l}" y2="${y.toFixed(1)}" stroke="#9ca3af"/>`; lab+=`<text x="${M.l-10}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#6b7280">${fmtTick(tv)}</text>`; }
+  for(let i=0;i<n;i++){ const cx=centers[i]; lab+=`<text x="${cx}" y="${H-M.b+25}" text-anchor="middle" font-size="12" fill="#374151">${labels[i]}</text><text x="${cx}" y="${H-M.b+42}" text-anchor="middle" font-size="11" fill="#6b7280">${fmt(weekTotals[i])}</text>`; }
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet">${rects}${axis}${lab}</svg>`;
+}
+function svgGroup(cats, amtA, amtB, lblA, lblB){
+  const W=900,H=360,M={l:70,r:30,t:65,b:110}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
+  const yMax=niceMax(Math.max(1,...amtA,...amtB)); const ticks=[]; for(let i=0;i<=4;i++) ticks.push(yMax*i/4);
+  const n=cats.length, groupW=cw/n, barW=groupW/3;
+  let rects='',lab='';
+  for(let i=0;i<cats.length;i++){
+    const c=cats[i], xb=M.l+i*groupW+groupW/6;
+    const hA=amtA[i]/yMax*ch, hB=amtB[i]/yMax*ch;
+    const tA=`${c}\n${lblA}\n金额：${fmt(amtA[i])}`, tB=`${c}\n${lblB}\n金额：${fmt(amtB[i])}`;
+    rects+=`<rect x="${xb.toFixed(1)}" y="${(H-M.b-hA).toFixed(1)}" width="${barW.toFixed(1)}" height="${hA.toFixed(1)}" fill="#94a3b8" data-tip="${escapeAttr(tA)}"><title>${escapeAttr(tA)}</title></rect>`;
+    rects+=`<rect x="${(xb+barW).toFixed(1)}" y="${(H-M.b-hB).toFixed(1)}" width="${barW.toFixed(1)}" height="${hB.toFixed(1)}" fill="#2563eb" data-tip="${escapeAttr(tB)}"><title>${escapeAttr(tB)}</title></rect>`;
+    lab+=`<text x="${(xb+barW).toFixed(1)}" y="${H-M.b+18}" transform="rotate(45,${(xb+barW).toFixed(1)},${H-M.b+18})" text-anchor="start" font-size="11" fill="#374151">${c}</text>`;
+  }
+  let axis=`<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H-M.b}" stroke="#9ca3af"/><line x1="${M.l}" y1="${H-M.b}" x2="${W-M.r}" y2="${H-M.b}" stroke="#9ca3af"/>`;
+  for(const tv of ticks){ const y=H-M.b-tv/yMax*ch; axis+=`<line x1="${M.l-5}" y1="${y.toFixed(1)}" x2="${M.l}" y2="${y.toFixed(1)}" stroke="#9ca3af"/>`; lab+=`<text x="${M.l-10}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#6b7280">${fmtTick(tv)}</text>`; }
+  const legend=`<g transform="translate(20,14)"><rect x="0" y="0" width="12" height="12" fill="#94a3b8"/><text x="18" y="11" text-anchor="start" font-size="12" fill="#374151">${escapeAttr(lblA)}</text><rect x="0" y="20" width="12" height="12" fill="#2563eb"/><text x="18" y="31" text-anchor="start" font-size="12" fill="#374151">${escapeAttr(lblB)}</text></g>`;
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet">${legend}${rects}${axis}${lab}</svg>`;
+}
+
+function catTable(dict){
+  const totPl=Object.values(dict).reduce((s,v)=>s+v[0],0), totAm=Object.values(dict).reduce((s,v)=>s+v[1],0);
+  let h='';
+  for(const c of CAT_ORDER){ if(!dict[c]) continue; const [pl,am]=dict[c];
+    h+=`<tr><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${pl}</td><td class="num">${fmt(am)}</td><td class="num">${(pl/totPl*100).toFixed(1)}%</td><td class="num">${(am/totAm*100).toFixed(1)}%</td></tr>`;
+  }
+  h+=`<tr class="total"><td>合计</td><td class="num">${totPl}</td><td class="num">${fmt(totAm)}</td><td class="num">100%</td><td class="num">100%</td></tr>`;
+  return h;
+}
+function catTableCompact(dict){
+  const totAm=Object.values(dict).reduce((s,v)=>s+v,0);
+  const sorted=Object.keys(dict).sort((a,b)=>dict[b]-dict[a]); let h='';
+  for(const c of sorted){ const am=dict[c];
+    h+=`<tr><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(am)}</td><td class="num">${(am/totAm*100).toFixed(1)}%</td></tr>`;
+  }
+  h+=`<tr class="total"><td>合计</td><td class="num">${fmt(totAm)}</td><td class="num">100%</td></tr>`;
+  return h;
+}
+
+function renderReport(){
+  const {daily,refDict,dates}=STATE.agg;
+  const D=STATE.D, P=STATE.P, launch=STATE.launch;
+  const cur=daily[D]||{}, prev=daily[P]||{};
+  const curPl=Object.values(cur).reduce((s,v)=>s+v[0],0), curAm=Object.values(cur).reduce((s,v)=>s+v[1],0);
+  const prevPl=Object.values(prev).reduce((s,v)=>s+v[0],0), prevAm=Object.values(prev).reduce((s,v)=>s+v[1],0);
+  const campPl=dates.reduce((s,d)=>s+Object.values(daily[d]).reduce((a,v)=>a+v[0],0),0);
+  const campAm=dates.reduce((s,d)=>s+Object.values(daily[d]).reduce((a,v)=>a+v[1],0),0);
+
+  // 自然周（按上线日动态划分，支持任意周数）
+  const fw=STATE.firstWeek;
+  const weeks=Array.from(new Set(dates.map(d=>weekOf(d,launch,fw)))).sort((a,b)=>parseInt(a.slice(1),10)-parseInt(b.slice(1),10));
+  const weekly=weeks.map(w=>{ const o={}; for(const d of dates){ if(weekOf(d,launch,fw)===w){ for(const c of CAT_ORDER){ if(daily[d][c]){ o[c]=(o[c]||0)+daily[d][c][1]; } } } } return o; });
+  const weekLabels=weeks.map(w=>{ const wd=dates.filter(d=>weekOf(d,launch,fw)===w); return wd[0].slice(5)+'-'+wd[wd.length-1].slice(5); });
+
+  // 周环比（可手动选择基准周 / 对比周 / 等天数）
+  let cmpWeekHtml='';
+    const weekMeta=weeks.map(w=>{ const wd=dates.filter(d=>weekOf(d,launch,fw)===w).sort(); return {wk:w,dates:wd,len:wd.length,label:wd[0].slice(5).replace('-','/')+'~'+wd[wd.length-1].slice(5).replace('-','/')}; });
+  const curWk=weekOf(D,launch,fw), curIdx=weeks.indexOf(curWk);
+  if(weeks.length>=2 && curIdx>=1){
+    const defaultA=weeks[Math.max(0,curIdx-1)], defaultB=curWk;
+    if(!weeks.includes(STATE.cmpWeekA)) STATE.cmpWeekA=defaultA;
+    if(!weeks.includes(STATE.cmpWeekB)) STATE.cmpWeekB=defaultB;
+    if(STATE.cmpWeekA===STATE.cmpWeekB){ STATE.cmpWeekB=(weeks[weeks.indexOf(STATE.cmpWeekA)+1]||defaultB); }
+    const metaA=weekMeta.find(m=>m.wk===STATE.cmpWeekA), metaB=weekMeta.find(m=>m.wk===STATE.cmpWeekB);
+    const capDays=Math.min(metaA.len,metaB.len);
+    if(!STATE.cmpDays || STATE.cmpDays<1 || STATE.cmpDays>capDays) STATE.cmpDays=capDays;
+    const N=STATE.cmpDays;
+    const daysA=metaA.dates.slice(0,N), daysB=metaB.dates.slice(0,N);
+    const cmpWeek={}; CAT_ORDER.forEach(c=>{ cmpWeek[c]=[daysA.reduce((s,d)=>s+(daily[d][c]?daily[d][c][1]:0),0), daysB.reduce((s,d)=>s+(daily[d][c]?daily[d][c][1]:0),0)]; });
+    const amtA=CAT_ORDER.map(c=>cmpWeek[c][0]), amtB=CAT_ORDER.map(c=>cmpWeek[c][1]);
+    const tA=amtA.reduce((a,b)=>a+b,0), tB=amtB.reduce((a,b)=>a+b,0);
+    const lblA=`${STATE.cmpWeekA} 前${N}天（${daysA[0].slice(5).replace('-','/')}~${daysA[N-1].slice(5).replace('-','/')}）`, lblB=`${STATE.cmpWeekB} 前${N}天（${daysB[0].slice(5).replace('-','/')}~${daysB[N-1].slice(5).replace('-','/')}）`;
+    const wkOpts=(sel)=>weekMeta.map(m=>'<option value="'+m.wk+'"'+(m.wk===sel?' selected':'')+'>'+m.wk+'（'+m.label+'）</option>').join('');
+    const dayOpts=Array.from({length:capDays},(_,i)=>{const v=i+1;return '<option value="'+v+'"'+(v===N?' selected':'')+'>'+v+' 天</option>';}).join('');
+    const controls=`<div class="cmp-controls"><label>基准周<select id="cmpWeekA">${wkOpts(STATE.cmpWeekA)}</select></label><label>对比周<select id="cmpWeekB">${wkOpts(STATE.cmpWeekB)}</select></label><label>等天数<select id="cmpDays">${dayOpts}</select></label></div>`;
+    let cmpWeekRows='';
+    CAT_ORDER.slice().sort((a,b)=>Math.abs(cmpWeek[b][1]-cmpWeek[b][0])-Math.abs(cmpWeek[a][1]-cmpWeek[a][0])).forEach(c=>{
+      const [a2,a3]=cmpWeek[c], diff=a3-a2, pct=a2?diff/a2*100:0, pc=a2?(pct>=0?'+':'')+pct.toFixed(0)+'%':(a3?'新增':'—');
+      const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
+      cmpWeekRows+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
+    });
+    cmpWeekRows+=`<tr class="total"><td>合计</td><td class="num">${fmt(tA)}</td><td class="num">${fmt(tB)}</td><td class="num">${(tB-tA>0?'+':'')+fmt(tB-tA)}</td><td class="num">${tA?((tB-tA)/tA*100>=0?'+':'')+((tB-tA)/tA*100).toFixed(0)+'%':'—'}</td></tr>`;
+    cmpWeekHtml=`<h4 style="margin-top:28px">周环比对比（等天数对齐）</h4>
+    <div class="desc">${lblA} vs ${lblB}。用于观察"等天数对齐后，两个自然周的渠道变化"。</div>
+    ${controls}
+    <div class="chart-wrap">${svgGroup(CAT_ORDER, amtA, amtB, lblA, lblB)}</div>
+    <table><tr><th>渠道</th><th class="num">基准周</th><th class="num">对比周</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmpWeekRows}</table>`;
+  } else {
+    cmpWeekHtml=`<div class="insight note" style="margin-top:20px">众筹尚处于首发周（W1）或只有一周数据，暂无周环比可比；进入 W2 后自动出现周环比。</div>`;
+  }
+
+  // 滚动三日
+  const dRecent=[addDays(D,-2),addDays(D,-1),D], dPrior=[addDays(D,-5),addDays(D,-4),addDays(D,-3)];
+  const cmp3={}; CAT_ORDER.forEach(c=>{ cmp3[c]=[dPrior.reduce((s,d)=>s+(daily[d]? (daily[d][c]?daily[d][c][1]:0):0),0), dRecent.reduce((s,d)=>s+(daily[d]? (daily[d][c]?daily[d][c][1]:0):0),0)]; });
+  const order3=CAT_ORDER.slice().sort((a,b)=>cmp3[b][1]-cmp3[a][1]);
+  const amt3P=order3.map(c=>cmp3[c][0]), amt3R=order3.map(c=>cmp3[c][1]);
+  const t3p=amt3P.reduce((a,b)=>a+b,0), t3r=amt3R.reduce((a,b)=>a+b,0);
+  const recentLbl=`${dRecent[0].slice(5).replace('-','/')}-${dRecent[2].slice(5).replace('-','/')}`, priorLbl=`${dPrior[0].slice(5).replace('-','/')}-${dPrior[2].slice(5).replace('-','/')}`;
+  let cmp3Rows='';
+  order3.forEach(c=>{ const [a2,a3]=cmp3[c], diff=a3-a2, pct=a2?diff/a2*100:0, pc=a2?(pct>=0?'+':'')+pct.toFixed(0)+'%':(a3?'新增':'—');
+    const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
+    cmp3Rows+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
+  });
+  cmp3Rows+=`<tr class="total"><td>合计</td><td class="num">${fmt(t3p)}</td><td class="num">${fmt(t3r)}</td><td class="num">${(t3r-t3p>0?'+':'')+fmt(t3r-t3p)}</td><td class="num">${t3p?((t3r-t3p)/t3p*100>=0?'+':'')+((t3r-t3p)/t3p*100).toFixed(0)+'%':'—'}</td></tr>`;
+  const cmp3Html=`<h4 style="margin-top:28px">滚动三日对比（${priorLbl} vs ${recentLbl}）</h4>
+    <div class="desc">固定 3 天滑动窗口，观察短期渠道趋势变化。</div>
+    <div class="chart-wrap">${svgGroup(order3, amt3P, amt3R, '前三天（'+priorLbl+'）', '近三天（'+recentLbl+'）')}</div>
+    <table><tr><th>渠道</th><th class="num">前三天（${priorLbl}）</th><th class="num">近三天（${recentLbl}）</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmp3Rows}</table>`;
+  let wkBlocks='';
+  weeks.forEach((w,i)=>{ wkBlocks+=`<h4 style="margin:18px 0 8px;font-size:15px">第${w}周（${weekLabels[i]}）</h4><table><tr><th>渠道</th><th class="num">金额</th><th class="num">金额占比</th></tr>${catTableCompact(weekly[i])}</table>`; });
+
+  // 明细
+  let detail='';
+  for(const c of CAT_ORDER){ if(!refDict[D]||!refDict[D][c]) continue; const subs=refDict[D][c];
+    const sPl=Object.values(subs).reduce((s,v)=>s+v[0],0), sAm=Object.values(subs).reduce((s,v)=>s+v[1],0);
+    detail+=`<tr class="cat"><td colspan="3"><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c} · 小计 ${sPl} 单 / ${fmt(sAm)}</td></tr>`;
+    for(const r of Object.keys(subs).sort((a,b)=>subs[b][1]-subs[a][1])){ const [pl,am]=subs[r]; detail+=`<tr><td class="ref">${escapeAttr(r)}</td><td class="num">${pl}</td><td class="num">${fmt(am)}</td></tr>`; }
+  }
+  // 前一日对比
+  let cmpRows='';
+  for(const c of CAT_ORDER){ const [cpl,cam]=cur[c]||[0,0], [ppl,pam]=prev[c]||[0,0]; const diff=cam-pam;
+    const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
+    cmpRows+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${ppl}</td><td class="num">${cpl}</td><td class="num">${fmt(pam)}</td><td class="num">${fmt(cam)}</td><td class="num">${sign}${diff?fmt(diff):'$0'}</td></tr>`;
+  }
+  cmpRows+=`<tr class="total"><td>合计</td><td class="num">${prevPl}</td><td class="num">${curPl}</td><td class="num">${fmt(prevAm)}</td><td class="num">${fmt(curAm)}</td><td class="num">${(curAm-prevAm>0?'+':'')+fmt(curAm-prevAm)}</td></tr>`;
+
+  // 周环比表（已整合进 cmpWeekHtml / cmp3Html，见上方）
+
+  const Dlbl=D.slice(5), Plbl=P.slice(5);
+  const html=`
+  <div class="kpis">
+    <div class="kpi blue"><div class="label">${Dlbl} 当日单量</div><div class="val">${curPl}</div><div class="sub">较 ${Plbl}：${curPl-prevPl>=0?'+':''}${curPl-prevPl} 单</div></div>
+    <div class="kpi blue"><div class="label">${Dlbl} 当日金额</div><div class="val">${fmt(curAm)}</div><div class="sub">较 ${Plbl}：${curAm-prevAm>=0?'+':''}${fmt(curAm-prevAm)}</div></div>
+    <div class="kpi gray"><div class="label">全期累计（${dates[0].slice(5)}-${Dlbl}）</div><div class="val">${fmt(campAm)}</div><div class="sub">${campPl} 单</div></div>
+    <div class="kpi green"><div class="label">自然周覆盖</div><div class="val">${weeks.length} 周</div><div class="sub">${weekLabels.join(' · ')}</div></div>
+  </div>
+  <div class="module"><h3>${Dlbl} 渠道汇总</h3><div class="desc">各渠道单量与金额分布。</div>
+    <table><tr><th>渠道</th><th class="num">单量</th><th class="num">金额</th><th class="num">单量占比</th><th class="num">金额占比</th></tr>${catTable(cur)}</table></div>
+  <div class="module"><h3>${Dlbl} 渠道明细</h3><div class="desc">每个大类下的具体 referrer 来源与出单明细。</div>
+    <table><tr><th>Referrer</th><th class="num">单量</th><th class="num">金额</th></tr>${detail}</table></div>
+  <div class="module"><h3>前一日对比（${Plbl} → ${Dlbl}）</h3><div class="desc">各渠道两天金额变化，上涨绿、下滑红。</div>
+    <table><tr><th>渠道</th><th class="num">${Plbl} 单量</th><th class="num">${Dlbl} 单量</th><th class="num">${Plbl} 金额</th><th class="num">${Dlbl} 金额</th><th class="num">金额变化</th></tr>${cmpRows}</table></div>
+  <div class="module"><h3>自然周汇总</h3><div class="desc">众筹期内各自然周渠道出单金额（按上线日 ${launch} 划分）。堆叠柱展示每周渠道构成；下方含周环比与滚动三日对比。</div>
+    <div class="chart-wrap">${svgStacked(weekly, weekLabels)}</div>${wkBlocks}
+    ${cmpWeekHtml}
+    ${cmp3Html}
+  </div>`;
+  document.getElementById('reportBody').innerHTML=html;
+  STATE.html=html;
+  makeSortable(document.getElementById('reportBody'));
+}
+
+// 表格列排序（点击表头；有 .cat 分组的明细表仅在每个分组内排序）
+function parseCellVal(s){
+  const raw=s.trim();
+  const n=parseFloat(raw.replace(/[$,%]/g,'').replace(/,/g,''));
+  if(Number.isFinite(n)) return {type:'num', val:n, raw};
+  return {type:'str', val:raw, raw};
+}
+function sortTable(table, col){
+  const header=table.rows[0]; if(!header) return;
+  const th=header.cells[col]; if(!th) return;
+  const dir=th.dataset.sortDir==='asc'?'desc':'asc';
+  for(const h of header.cells){ h.dataset.sortDir=''; h.innerHTML=h.innerHTML.replace(/ [▲▼]$/,''); }
+  th.dataset.sortDir=dir; th.innerHTML+=' '+(dir==='asc'?'▲':'▼');
+  const totalRow=Array.from(table.rows).find(r=>r.classList.contains('total'))||null;
+  const catBlocks=[]; let current=null, plain=[];
+  for(let i=1;i<table.rows.length;i++){
+    const r=table.rows[i];
+    if(r===totalRow) continue;
+    if(r.classList.contains('cat')){ current={cat:r, rows:[]}; catBlocks.push(current); }
+    else if(current) current.rows.push(r);
+    else plain.push(r);
+  }
+  const cmp=(a,b)=>{
+    const ca=parseCellVal(a.cells[col]?a.cells[col].innerText:'');
+    const cb=parseCellVal(b.cells[col]?b.cells[col].innerText:'');
+    if(ca.type==='num' && cb.type==='num') return dir==='asc'? ca.val-cb.val : cb.val-ca.val;
+    return dir==='asc'? ca.val.localeCompare(cb.val,'zh-CN') : cb.val.localeCompare(ca.val,'zh-CN');
+  };
+  const doSort=arr=>arr.sort(cmp);
+  const frag=document.createDocumentFragment();
+  if(catBlocks.length){
+    for(const b of catBlocks){ doSort(b.rows); frag.appendChild(b.cat); b.rows.forEach(r=>frag.appendChild(r)); }
+  } else {
+    doSort(plain); plain.forEach(r=>frag.appendChild(r));
+  }
+  if(totalRow) frag.appendChild(totalRow);
+  table.appendChild(frag);
+}
+function makeSortable(root){
+  root.querySelectorAll('table').forEach(table=>{
+    const header=table.rows[0]; if(!header) return;
+    for(const th of header.cells){ th.title='点击按此列排序'; }
+    header.addEventListener('click', e=>{
+      const th=e.target.closest('th'); if(!th) return;
+      sortTable(table, Array.from(header.cells).indexOf(th));
+    });
+  });
+}
+
+function populateProjSelect(){
+  try{
+    const sel=document.getElementById('selProj'); if(!sel) return;
+    const names=[];
+    const pre='ks_ref_data_v1_';
+    for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf(pre)===0) names.push(k.slice(pre.length)); }
+    const cur=getProj();
+    let opts=names.map(n=>'<option value="'+escapeAttr(n)+'"'+(n===cur?' selected':'')+'>'+escapeHtml(n)+'</option>').join('');
+    opts+='<option value="__new__">＋ 新建项目…</option>';
+    sel.innerHTML=opts;
+    if(cur && names.indexOf(cur)>=0) sel.value=cur;   // 显式同步，避免依赖 selected 属性
+  }catch(e){}
+}
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function showResults(){
+  const dates=STATE.agg.dates;
+  populateDates(dates);
+  populateProjSelect();
+  document.getElementById('mapPanel').classList.remove('hide');
+  document.getElementById('reportPanel').classList.remove('hide');
+  safeRender();
+}
+function loadFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    STATE.rawCsv=e.target.result;
+    STATE.rows=parseCSV(e.target.result);
+    const dates=Array.from(new Set(STATE.rows.map(r=>r.date))).filter(Boolean).sort();
+    if(!dates.length){ alert('未解析到有效数据，请检查 CSV 格式'); return; }
+    STATE.launch=dates[0]; STATE.D=dates[dates.length-1]; STATE.P=addDays(STATE.D,-1);
+    STATE.firstWeek=firstWeekDays(STATE.launch);
+    STATE.proj=getProj();
+    try{ localStorage.setItem(LS_LAST, STATE.proj); }catch(e){}
+    STATE.override=loadOverrides(STATE.proj)||{};
+    STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
+    saveData();
+    showResults();
+  };
+  reader.readAsText(file);
+}
+function safeRender(){
+  try{ renderMapping(); renderReport(); }
+  catch(e){ document.getElementById('reportBody').innerHTML='<div class="insight danger">渲染出错：'+(e&&e.message||e)+'</div>'; console.error(e); }
+}
+function applyAndRender(){
+  STATE.firstWeek=firstWeekDays(STATE.launch);
+  STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
+  safeRender();
+}
+function loadText(text){
+  STATE.rawCsv=text;
+  STATE.rows=parseCSV(text);
+  const dates=Array.from(new Set(STATE.rows.map(r=>r.date))).filter(Boolean).sort();
+  if(!dates.length){ alert('未解析到有效数据，请检查 CSV 格式'); return; }
+  STATE.launch=dates[0]; STATE.D=dates[dates.length-1]; STATE.P=addDays(STATE.D,-1);
+  STATE.firstWeek=firstWeekDays(STATE.launch);
+  STATE.proj=getProj();
+  try{ localStorage.setItem(LS_LAST, STATE.proj); }catch(e){}
+  STATE.override=loadOverrides(STATE.proj)||{};
+  STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
+  saveData();
+  showResults();
+}
+function populateDates(dates){
+  const selD=document.getElementById('selD'), selP=document.getElementById('selP');
+  const opts=dates.slice().reverse().map(d=>'<option value="'+d+'">'+d.slice(5)+'</option>').join('');
+  selD.innerHTML=opts; selP.innerHTML=opts;
+  selD.value=STATE.D;
+  // 对比日默认取 D 之前的那个日期
+  const idx=dates.indexOf(STATE.D);
+  STATE.P = idx>0 ? dates[idx-1] : addDays(STATE.D,-1);
+  selP.value=STATE.P;
+}
+document.getElementById('drop').addEventListener('click',()=>document.getElementById('file').click());
+document.getElementById('file').addEventListener('change',e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); });
+const drop=document.getElementById('drop');
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hover');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hover');}));
+drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
+// 报表工具栏：分析日/对比日/项目
+document.getElementById('selD').addEventListener('change',e=>{
+  STATE.D=e.target.value;
+  const idx=STATE.agg.dates.indexOf(STATE.D);
+  STATE.P = idx>0 ? STATE.agg.dates[idx-1] : addDays(STATE.D,-1);
+  document.getElementById('selP').value=STATE.P;
+  applyAndRender();
+});
+document.getElementById('selP').addEventListener('change',e=>{ STATE.P=e.target.value; applyAndRender(); });
+// 周环比自定义控件（基准周/对比周/等天数）通过事件委托监听
+const reportBodyEl=document.getElementById('reportBody');
+reportBodyEl.addEventListener('change',e=>{
+  if(e.target.id==='cmpWeekA'){ STATE.cmpWeekA=e.target.value; STATE.cmpDays=null; applyAndRender(); }
+  else if(e.target.id==='cmpWeekB'){ STATE.cmpWeekB=e.target.value; STATE.cmpDays=null; applyAndRender(); }
+  else if(e.target.id==='cmpDays'){ STATE.cmpDays=parseInt(e.target.value,10)||1; applyAndRender(); }
+});
+document.getElementById('selProj').addEventListener('change',e=>{
+  const val=e.target.value;
+  if(val==='__new__'){                       // 新建项目：输入名字，清空等待上传
+    const nm=(prompt('输入新项目名称：')||'').trim();
+    if(!nm){ populateProjSelect(); return; }  // 取消则保持原选项
+    STATE.proj=nm;
+    try{ localStorage.setItem(LS_LAST, nm); }catch(e){}
+    STATE.override=loadOverrides(nm)||{}; STATE.rawCsv=null;
+    document.getElementById('reportBody').innerHTML='<div class="insight">已选择项目「'+escapeHtml(nm)+'」，请上传或粘贴 CSV 生成报表。</div>';
+    document.getElementById('mapPanel').classList.add('hide');
+    document.getElementById('reportPanel').classList.add('hide');
+    populateProjSelect();
+    return;
+  }
+  STATE.proj=val;                            // 已存项目：切换即载入其报表
+  try{ localStorage.setItem(LS_LAST, val); }catch(e){}
+  const saved=loadSavedData(val);
+  if(saved&&saved.csv){ restoreFrom(saved); }
+  else{ STATE.override=loadOverrides(val)||{}; applyAndRender(); }
+});
+// 分类调整区：折叠/展开、搜索、筛选
+document.getElementById('mapList').addEventListener('click', e=>{
+  const h=e.target.closest('.map-head'); if(!h) return;
+  const id=h.dataset.sec; STATE.mapCollapsed[id]=!(STATE.mapCollapsed[id]!==undefined?STATE.mapCollapsed[id]:false);
+  renderMapping();
+});
+document.getElementById('mapExpand').addEventListener('click',()=>{ CAT_ORDER.concat('__warn__').forEach(id=>STATE.mapCollapsed[id]=false); renderMapping(); });
+document.getElementById('mapCollapse').addEventListener('click',()=>{ CAT_ORDER.forEach(id=>STATE.mapCollapsed[id]=true); renderMapping(); });
+document.getElementById('mapSearch').addEventListener('input',renderMapping);
+document.getElementById('mapOnlyWarn').addEventListener('change',renderMapping);
+document.getElementById('btnClear').addEventListener('click',()=>{
+  if(!confirm('清除【'+STATE.proj+'】项目已记住的手动归类？下次上传该项目将恢复默认规则。')) return;
+  try{ localStorage.removeItem(lsKey(STATE.proj)); }catch(e){}
+  STATE.override={}; applyAndRender();
+});
+function restoreFrom(saved){
+  STATE.rows=parseCSV(saved.csv);
+  const dates=Array.from(new Set(STATE.rows.map(r=>r.date))).filter(Boolean).sort();
+  if(!dates.length) return false;
+  STATE.launch=saved.launch||dates[0];
+  STATE.firstWeek=saved.firstWeek||firstWeekDays(STATE.launch);
+  STATE.proj=saved.proj||getProj();
+  STATE.override=loadOverrides(STATE.proj)||{};
+  STATE.rawCsv=saved.csv;
+  STATE.D=(saved.D&&dates.includes(saved.D))?saved.D:dates[dates.length-1];
+  STATE.P=(saved.P&&dates.includes(saved.P))?saved.P:addDays(STATE.D,-1);
+  STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
+  showResults();
+  return true;
+}
+// 刷新后自动恢复上次浏览的项目与报表（数据仅存于本机浏览器）
+try{
+  const lp=localStorage.getItem(LS_LAST);
+  populateProjSelect();
+  if(lp){
+    STATE.proj=lp;
+    const saved=loadSavedData(lp);
+    if(saved&&saved.csv){ restoreFrom(saved); }
+    else{ document.getElementById('selProj').value=lp; }
+  } else {
+    document.getElementById('reportBody').innerHTML='<div class="insight">请先在右上角「项目」选择 <b>＋ 新建项目…</b> 创建项目，然后上传或粘贴 CSV 生成报表。</div>';
+  }
+}catch(e){}
+document.getElementById('btnParse').addEventListener('click',()=>{
+  const t=document.getElementById('csvPaste').value.trim();
+  if(!t){ alert('请先粘贴 CSV 文本'); return; }
+  loadText(t);
+});
+// SAMPLE CSV removed per UX feedback
+// 自定义 chart tooltip（比 <title> 更稳定、即时）
+const tip=document.getElementById('chartTip');
+document.addEventListener('mouseover', e=>{
+  const r=e.target.closest('[data-tip]'); if(!r) return;
+  const html=r.getAttribute('data-tip').replace(/\n/g,'<br>');
+  tip.innerHTML='<b>'+(html.split('<br>')[0])+'</b>'+html.slice(html.indexOf('<br>'));
+  tip.style.opacity='1';
+});
+document.addEventListener('mousemove', e=>{
+  if(tip.style.opacity!=='1') return;
+  const pad=10;
+  let x=e.clientX+pad, y=e.clientY+pad;
+  if(x+tip.offsetWidth>innerWidth) x=e.clientX-tip.offsetWidth-pad;
+  if(y+tip.offsetHeight>innerHeight) y=e.clientY-tip.offsetHeight-pad;
+  tip.style.left=x+'px'; tip.style.top=y+'px';
+});
+document.addEventListener('mouseout', e=>{ if(!e.relatedTarget||!e.relatedTarget.closest('[data-tip]')) tip.style.opacity='0'; });
+document.getElementById('btnDl').addEventListener('click',()=>{
+  const blob=new Blob(['<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><style>'+document.querySelector('style').innerHTML+'</style></head><body><div class="wrap">'+STATE.html+'</div></body></html>'],{type:'text/html'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ks-channel-report-'+STATE.D+'.html'; a.click();
+});
+</script></body></html>
