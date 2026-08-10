@@ -47,15 +47,31 @@ Kickstarter 后台 **Referrers** 导出，列为：
 
 > **https://yuuto0331.github.io/Yuref-Kickstarter-Referrer-Report/**
 
-（若链接打不开，按下方「部署」自行开启；首次开启后约 1 分钟生效。）
+## 📧 发给同事的快速介绍（可直接复制）
 
-## 🛠 部署（维护者）
+```
+Yuref · Kickstarter 渠道拆分工具
 
-仓库根目录即 GitHub Pages 源：
+一个纯前端的轻量工具，把 Kickstarter 后台导出的 referrers CSV
+自动按渠道口径拆成报表，打开网页就能看，不用装软件。
 
-1. 仓库 **Settings → Pages → Build and deployment → Source: Deploy from a branch**。
-2. **Branch: main**，目录 **/ (root)**，点 Save。
-3. 等待约 1 分钟，访问上方链接即可。
+🔒 隐私：数据只存在你自己的浏览器(localStorage)，不上传任何服务器。
+
+怎么用（30 秒上手）：
+1. 打开 https://yuuto0331.github.io/Yuref-Kickstarter-Referrer-Report/
+2. 顶部「项目」下拉里选已有项目，或「＋ 新建项目」建一个自己的
+3. 把 KS 后台导出的 referrers CSV 拖进上传区，或粘贴 CSV 文本后点「生成报表」
+4. 页面自动出：渠道拆分 / 周趋势 / 周环比 / 待确认归类
+5. 归类有疑问的在「分类调整」里手动改一下，自动保存
+6. 需要留档就点「下载报表 HTML」
+
+📎 注意：数据只存在本机浏览器，换设备/清缓存会丢，重要数据记得下载备份。
+
+CSV 格式（KS 导出默认即此）：
+Referrer, Date, Type, # of Pledges, %, Pledged
+
+有问题随时联系 Theo。
+```
 
 ## 🧩 技术说明
 
