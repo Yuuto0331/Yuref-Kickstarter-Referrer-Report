@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KS 渠道拆分工具</title><link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiMyNTYzZWIiLz48cGF0aCBkPSJNOSAyMSBMOSAxNSBNMTYgMjEgTDE2IDExIE0yMyAyMSBMMjMgMTciIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=">
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yuref - Kickstarter Referrer Report</title><link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiMyNTYzZWIiLz48cGF0aCBkPSJNOSAyMSBMOSAxNSBNMTYgMjEgTDE2IDExIE0yMyAyMSBMMjMgMTciIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=">
 <style>
 :root{--bg:#f5f7fa;--panel:#fff;--ink:#1f2933;--muted:#6b7280;--line:#e5e7eb;--green:#1a7f37;--red:#c0392b;--blue:#2563eb;--shadow:0 1px 3px rgba(0,0,0,.08)}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
@@ -10,7 +10,7 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .app-header h1{font-size:22px;margin:0 0 3px}.app-header p{color:var(--muted);margin:0;font-size:13px}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;background:#eaf5ea;color:var(--green);font-size:12px;font-weight:600;border:1px solid #cdeccd}
 .app-footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center}
-.proj-group{display:flex;align-items:center;gap:10px}.drop-ic{font-size:34px;margin-bottom:8px;line-height:1}
+.proj-group{display:flex;align-items:center;gap:10px}
 .panel{background:var(--panel);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin:18px 0;transition:box-shadow .15s}.panel:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
 .panel h2{margin:0 0 14px;font-size:16px}.upload-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}.upload-head h2{margin:0}.proj-top{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:500}.proj-top select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
 .drop{border:2px dashed #cbd5e1;border-radius:12px;padding:32px 28px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:#fafbfc}
@@ -91,7 +91,6 @@ note{color:var(--muted);font-size:12px}
       <p>上传 referrers CSV → 自动按口径拆分 → 页面直接看结果</p>
     </div>
   </div>
-  <span class="badge">🔒 本地优先 · 数据不上传</span>
 </header>
 
 <div class="panel" id="uploadPanel">
@@ -102,7 +101,7 @@ note{color:var(--muted);font-size:12px}
       <button class="btn ghost sm" id="btnRenameTop" title="重命名当前项目">✎ 重命名</button>
     </div>
   </div>
-  <div class="drop" id="drop"><div class="drop-ic">📊</div>把 Kickstarter <b>referrers CSV</b> 拖到这里，或 <b>点击选择文件</b><input type="file" id="file" accept=".csv" class="hide"></div>
+  <div class="drop" id="drop">把 Kickstarter <b>referrers CSV</b> 拖到这里，或 <b>点击选择文件</b><input type="file" id="file" accept=".csv" class="hide"></div>
   <div style="margin:14px 0 6px;color:var(--muted);font-size:13px">若无法上传文件，可直接<b>粘贴 CSV 文本</b>：</div>
   <textarea id="csvPaste" rows="5" placeholder="粘贴 KS referrers CSV 内容（含表头 Referrer,Date,Type,# of Pledges,%,Pledged）" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:Menlo,Consolas,monospace;font-size:12px;resize:vertical"></textarea>
   <div>
