@@ -188,7 +188,7 @@ function hasExplicitRule(ref, typ){
   if(ref.startsWith('Meta_ads')||ref.startsWith('Google_ads')) return true;
   if(ref.startsWith('Prelaunch')||['Brand Banner','Store Banner','Navigator','Anouncement Bar'].includes(ref)||ref==='store.heygears.com') return true;
   if(ref.endsWith('.kb')) return true;
-  if(ref.includes('Backer')||['Gadget_Trend','PR_GadgetTrend02'].includes(ref)) return true;
+  if(ref.includes('Backer')||ref.startsWith('Gadget_Trend')||ref==='PR_GadgetTrend02') return true;
   if(ref.startsWith('3DPI')||ref.startsWith('All3DP')||ref==='PR_MMF'||NONKICK_SET.has(ref)) return true;
   if(ref.startsWith('KOL')) return true;
   if(SOCIAL_SET.has(ref)) return true;
@@ -200,7 +200,7 @@ function defaultClassify(ref, typ){
   if(ref.startsWith('Meta_ads')||ref.startsWith('Google_ads')) return '付费广告';
   if(ref.startsWith('Prelaunch')||['Brand Banner','Store Banner','Navigator','Anouncement Bar'].includes(ref)||ref==='store.heygears.com') return '独立站';
   if(ref.endsWith('.kb')) return 'Kickbooster';
-  if(ref.includes('Backer')||['Gadget_Trend','PR_GadgetTrend02'].includes(ref)) return '众筹 PR';
+  if(ref.includes('Backer')||ref.startsWith('Gadget_Trend')||ref==='PR_GadgetTrend02') return '众筹 PR';
   if(ref.startsWith('3DPI')||ref.startsWith('All3DP')||ref==='PR_MMF'||NONKICK_SET.has(ref)) return '非众筹 PR';
   if(ref.startsWith('KOL')) return 'KOL';
   if(SOCIAL_SET.has(ref)) return '社媒运营';
