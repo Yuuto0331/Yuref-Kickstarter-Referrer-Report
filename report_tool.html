@@ -6,7 +6,7 @@
 .wrap{max-width:1100px;margin:0 auto;padding:24px 28px 60px}
 header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;font-size:13px}
 .panel{background:var(--panel);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin:18px 0;transition:box-shadow .15s}.panel:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
-.panel h2{margin:0 0 14px;font-size:16px}
+.panel h2{margin:0 0 14px;font-size:16px}.upload-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}.upload-head h2{margin:0}.proj-top{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:500}.proj-top select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
 .drop{border:2px dashed #cbd5e1;border-radius:12px;padding:32px 28px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:#fafbfc}
 .drop.hover,.drop:hover{border-color:var(--blue);background:#eff6ff;color:var(--blue)}
 .drop b{color:var(--ink)}
@@ -77,7 +77,10 @@ note{color:var(--muted);font-size:12px}
 <header><h1>Kickstarter 渠道拆分工具</h1><p>上传 referrers CSV → 自动按口径拆分 → 页面直接看结果。纯前端，数据不出本机。</p></header>
 
 <div class="panel" id="uploadPanel">
-  <h2>① 上传数据</h2>
+  <div class="upload-head">
+    <h2>① 上传数据</h2>
+    <label class="proj-top">项目 <select id="selProjTop"></select></label>
+  </div>
   <div class="drop" id="drop">把 Kickstarter <b>referrers CSV</b> 拖到这里，或 <b>点击选择文件</b><input type="file" id="file" accept=".csv" class="hide"></div>
   <div style="margin:14px 0 6px;color:var(--muted);font-size:13px">若无法上传文件，可直接<b>粘贴 CSV 文本</b>：</div>
   <textarea id="csvPaste" rows="5" placeholder="粘贴 KS referrers CSV 内容（含表头 Referrer,Date,Type,# of Pledges,%,Pledged）" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:Menlo,Consolas,monospace;font-size:12px;resize:vertical"></textarea>
@@ -538,7 +541,9 @@ function makeSortable(root){
 
 function populateProjSelect(){
   try{
-    const sel=document.getElementById('selProj'); if(!sel) return;
+    const sel=document.getElementById('selProj');
+    const selTop=document.getElementById('selProjTop');
+    if(!sel) return;
     const names=[];
     const pre='ks_ref_data_v1_';
     for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf(pre)===0) names.push(k.slice(pre.length)); }
@@ -546,7 +551,8 @@ function populateProjSelect(){
     let opts=names.map(n=>'<option value="'+escapeAttr(n)+'"'+(n===cur?' selected':'')+'>'+escapeHtml(n)+'</option>').join('');
     opts+='<option value="__new__">＋ 新建项目…</option>';
     sel.innerHTML=opts;
-    if(cur && names.indexOf(cur)>=0) sel.value=cur;   // 显式同步，避免依赖 selected 属性
+    if(selTop) selTop.innerHTML=opts;
+    if(cur && names.indexOf(cur)>=0){ sel.value=cur; if(selTop) selTop.value=cur; }   // 显式同步两个下拉
   }catch(e){}
 }
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -631,9 +637,10 @@ reportBodyEl.addEventListener('change',e=>{
   else if(e.target.id==='cmpWeekB'){ STATE.cmpWeekB=e.target.value; STATE.cmpDays=null; applyAndRender(); }
   else if(e.target.id==='cmpDays'){ STATE.cmpDays=parseInt(e.target.value,10)||1; applyAndRender(); }
 });
-document.getElementById('selProj').addEventListener('change',e=>{
-  const val=e.target.value;
-  if(val==='__new__'){                       // 新建项目：输入名字，清空等待上传
+document.getElementById('selProj').addEventListener('change',e=>setProject(e.target.value));
+document.getElementById('selProjTop').addEventListener('change',e=>setProject(e.target.value));
+function setProject(val){
+  if(val==='__new__'){                       // 新建项目：输入名字，有数据则迁移、无数据则空等
     const nm=(prompt('输入新项目名称：')||'').trim();
     if(!nm){ populateProjSelect(); return; }  // 取消则保持原选项
     const hadData=!!STATE.rawCsv;            // 当前是否已有报表
@@ -642,10 +649,13 @@ document.getElementById('selProj').addEventListener('change',e=>{
     STATE.override=loadOverrides(nm)||{};
     if(hadData){
       saveData();                            // 已有报表则归属到新项目名下（不丢失，无需重传）
-      document.getElementById('reportBody').insertAdjacentHTML('afterbegin','<div class="insight">已新建项目「'+escapeHtml(nm)+'」并保存当前报表。</div>');
+      const rb=document.getElementById('reportBody');
+      if(rb) rb.insertAdjacentHTML('afterbegin','<div class="insight">已新建项目「'+escapeHtml(nm)+'」并保存当前报表。</div>');
     } else {
       STATE.rawCsv=null;                     // 无数据则新建空项目，等待上传
-      document.getElementById('reportBody').innerHTML='<div class="insight">已新建项目「'+escapeHtml(nm)+'」，请上传或粘贴 CSV 生成报表。</div>';
+      try{ localStorage.setItem(lsDataKey(nm), JSON.stringify({proj:nm, csv:'', D:null, P:null, launch:null, firstWeek:null})); }catch(e){}  // 登记项目名，使下拉与刷新可识别
+      const rb=document.getElementById('reportBody');
+      if(rb) rb.innerHTML='<div class="insight">已新建项目「'+escapeHtml(nm)+'」，请上传或粘贴 CSV 生成报表。</div>';
       document.getElementById('mapPanel').classList.add('hide');
       document.getElementById('reportPanel').classList.add('hide');
     }
@@ -657,7 +667,7 @@ document.getElementById('selProj').addEventListener('change',e=>{
   const saved=loadSavedData(val);
   if(saved&&saved.csv){ restoreFrom(saved); }
   else{ STATE.override=loadOverrides(val)||{}; applyAndRender(); }
-});
+}
 // 分类调整区：折叠/展开、搜索、筛选
 document.getElementById('mapList').addEventListener('click', e=>{
   const h=e.target.closest('.map-head'); if(!h) return;
@@ -696,9 +706,9 @@ try{
     STATE.proj=lp;
     const saved=loadSavedData(lp);
     if(saved&&saved.csv){ restoreFrom(saved); }
-    else{ document.getElementById('selProj').value=lp; }
+    else{ const s1=document.getElementById('selProj'),s2=document.getElementById('selProjTop'); if(s1)s1.value=lp; if(s2)s2.value=lp; }
   } else {
-    document.getElementById('reportBody').innerHTML='<div class="insight">请先在右上角「项目」选择 <b>＋ 新建项目…</b> 创建项目，然后上传或粘贴 CSV 生成报表。</div>';
+    document.getElementById('reportBody').innerHTML='<div class="insight">请先在上方「项目」选择 <b>＋ 新建项目…</b> 创建项目，然后上传或粘贴 CSV 生成报表。</div>';
   }
 }catch(e){}
 document.getElementById('btnParse').addEventListener('click',()=>{
