@@ -636,12 +636,19 @@ document.getElementById('selProj').addEventListener('change',e=>{
   if(val==='__new__'){                       // 新建项目：输入名字，清空等待上传
     const nm=(prompt('输入新项目名称：')||'').trim();
     if(!nm){ populateProjSelect(); return; }  // 取消则保持原选项
+    const hadData=!!STATE.rawCsv;            // 当前是否已有报表
     STATE.proj=nm;
     try{ localStorage.setItem(LS_LAST, nm); }catch(e){}
-    STATE.override=loadOverrides(nm)||{}; STATE.rawCsv=null;
-    document.getElementById('reportBody').innerHTML='<div class="insight">已选择项目「'+escapeHtml(nm)+'」，请上传或粘贴 CSV 生成报表。</div>';
-    document.getElementById('mapPanel').classList.add('hide');
-    document.getElementById('reportPanel').classList.add('hide');
+    STATE.override=loadOverrides(nm)||{};
+    if(hadData){
+      saveData();                            // 已有报表则归属到新项目名下（不丢失，无需重传）
+      document.getElementById('reportBody').insertAdjacentHTML('afterbegin','<div class="insight">已新建项目「'+escapeHtml(nm)+'」并保存当前报表。</div>');
+    } else {
+      STATE.rawCsv=null;                     // 无数据则新建空项目，等待上传
+      document.getElementById('reportBody').innerHTML='<div class="insight">已新建项目「'+escapeHtml(nm)+'」，请上传或粘贴 CSV 生成报表。</div>';
+      document.getElementById('mapPanel').classList.add('hide');
+      document.getElementById('reportPanel').classList.add('hide');
+    }
     populateProjSelect();
     return;
   }
