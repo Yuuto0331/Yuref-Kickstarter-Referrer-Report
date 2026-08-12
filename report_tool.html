@@ -739,9 +739,11 @@ function renderReport(){
     ensureNoOverlap();
 
     const rangeField=(id,start,end,label)=>`<div class="date-group"><label>${label}</label><div class="date-range-field" id="${id}" data-start="${start}" data-end="${end}"><svg class="drf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span class="drf-text">${formatDateDisplay(start)} - ${formatDateDisplay(end)}</span></div></div>`;
+    const resetBtn = STATE.cmpMode==='custom' ? `<div class="date-group"><label>&nbsp;</label><button class="btn ghost sm" id="btnResetRolling">恢复滚动三日</button></div>` : '';
     controls=`<div class="cmp-controls">
       ${rangeField('drfA',STATE.cmpRangeAStart,STATE.cmpRangeAEnd,'基准区间')}
       ${rangeField('drfB',STATE.cmpRangeBStart,STATE.cmpRangeBEnd,'对比区间')}
+      ${resetBtn}
     </div>`;
 
     const daysA=dates.filter(d=>d>=STATE.cmpRangeAStart && d<=STATE.cmpRangeAEnd);
@@ -763,11 +765,9 @@ function renderReport(){
     <table><tr><th>渠道</th><th class="num">基准区间</th><th class="num">对比区间</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmpRangeRows}</table>`;
   }
 
-  const resetBtn = STATE.cmpMode==='custom' ? `<div style="display:flex;justify-content:flex-end;margin:-8px 0 12px"><button class="btn ghost sm" id="btnResetRolling">恢复滚动三日</button></div>` : '';
   const rangeCmpHtml = `<h4 style="margin-top:28px">区间对比</h4>
     <div class="desc">默认展示滚动三日对比；点击下方日期字段可自定义基准 / 对比区间，修改后自动切换为自定义对比。</div>
     ${controls}
-    ${resetBtn}
     ${STATE.cmpMode==='custom' && canCustom ? cmpRangeContent : cmp3Html}`;
   let wkBlocks='<div class="week-grid">'+weeks.map((w,i)=>weekCard('第'+w+'周（'+weekLabels[i]+'）', weekly[i])).join('')+'</div>';
   const Dlbl=D.slice(5), Plbl=P.slice(5);
