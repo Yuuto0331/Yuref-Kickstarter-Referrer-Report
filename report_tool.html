@@ -153,8 +153,27 @@ note{color:var(--muted);font-size:12px}
 .data-info{margin-top:12px;padding:10px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:8px;font-size:13px;color:#374151;display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .data-info .meta{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;flex-wrap:wrap}
 .data-info b{color:var(--ink);font-weight:600}
+/* 自定义日期范围选择器 */
+.date-range-field{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-size:13px;cursor:pointer;transition:.15s;min-width:180px}
+.date-range-field:hover{border-color:var(--blue);background:#f8fbff;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.drf-icon{width:16px;height:16px;color:var(--muted)}
+.range-picker-pop{position:absolute;z-index:1200;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.16);width:280px;max-width:calc(100vw - 20px)}
+.range-picker-pop.hide{display:none}
+.rp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.rp-title{font-size:14px;font-weight:700;color:var(--ink)}
+.rp-nav{width:28px;height:28px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font-size:16px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center}
+.rp-nav:hover{border-color:var(--blue);color:var(--blue);background:#eff6ff}
+.rp-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px}
+.rp-weekdays span{text-align:center;font-size:11px;color:var(--muted);font-weight:600}
+.rp-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.rp-day{width:32px;height:32px;border-radius:8px;border:none;background:transparent;color:var(--ink);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.12s}
+.rp-day:hover:not(.disabled){background:#eff6ff;color:var(--blue)}
+.rp-day.inrange{background:#dbeafe}
+.rp-day.sel{background:var(--blue);color:#fff;font-weight:600}
+.rp-day.disabled{color:#c9cdd4;cursor:default}
+.rp-day.disabled:hover{background:transparent;color:#c9cdd4}
 </style></head>
-<body><div id="toastWrap" class="toast-wrap"></div><div id="chartTip"></div><div class="wrap">
+<body><div id="toastWrap" class="toast-wrap"></div><div id="chartTip"></div><div id="rangePicker" class="range-picker-pop hide"><div class="rp-header"><button class="rp-nav" data-dir="-1">‹</button><span class="rp-title"></span><button class="rp-nav" data-dir="1">›</button></div><div class="rp-weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="rp-days"></div></div><div class="wrap">
 <header class="app-header">
   <div class="brand">
     <svg class="logo" viewBox="0 0 40 40"><defs><linearGradient id="lg" x1="0" y1="0" x2="40" y2="40"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1d4ed8"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#lg)"/><path d="M11 27 L11 19 M20 27 L20 15 M29 27 L29 21" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -338,6 +357,89 @@ function saveData(){ try{ if(STATE.rawCsv) localStorage.setItem(lsDataKey(STATE.
 function loadSavedData(proj){ try{ return JSON.parse(localStorage.getItem(lsDataKey(proj))||'null'); }catch(e){ return null; } }
 function getProj(){ const v=(document.getElementById('selProj').value||'').trim(); return (v&&v!=='__new__')?v:(STATE.proj||'default'); }
 function fmt(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+
+// ---------- 自定义日期范围选择器 ----------
+const rangePicker={el:null,target:null,onChange:null,viewYear:null,viewMonth:null,minD:null,maxD:null,start:null,end:null};
+function parseYM(d){ return {y:parseInt(d.slice(0,4),10),m:parseInt(d.slice(5,7),10)}; }
+function formatDateDisplay(d){ return d?d.slice(0,4)+'/'+d.slice(5,7)+'/'+d.slice(8,10):'-'; }
+function daysInMonth(y,m){ return new Date(Date.UTC(y,m,0)).getUTCDate(); }
+function initRangePicker(){
+  rangePicker.el=document.getElementById('rangePicker');
+  if(!rangePicker.el) return;
+  rangePicker.el.querySelectorAll('.rp-nav').forEach(btn=>{
+    btn.addEventListener('click',e=>{
+      e.stopPropagation();
+      const dir=parseInt(btn.dataset.dir,10);
+      let m=rangePicker.viewMonth+dir, y=rangePicker.viewYear;
+      if(m<1){m=12;y--;} else if(m>12){m=1;y++;}
+      rangePicker.viewYear=y; rangePicker.viewMonth=m;
+      renderRangePicker();
+    });
+  });
+  rangePicker.el.querySelector('.rp-days').addEventListener('click',e=>{
+    const day=e.target.closest('.rp-day'); if(!day || day.classList.contains('disabled')) return;
+    const d=day.dataset.date;
+    if(!rangePicker.start || (rangePicker.start && rangePicker.end) || d<rangePicker.start){
+      rangePicker.start=d; rangePicker.end=null;
+    } else {
+      rangePicker.end=d;
+      if(rangePicker.onChange){ rangePicker.onChange(rangePicker.start, rangePicker.end); }
+      closeRangePicker();
+      return;
+    }
+    renderRangePicker();
+  });
+  document.addEventListener('mousedown',e=>{
+    if(!rangePicker.target) return;
+    if(rangePicker.el.contains(e.target) || rangePicker.target.contains(e.target)) return;
+    closeRangePicker();
+  });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape' && rangePicker.target) closeRangePicker(); });
+}
+function openRangePicker(targetEl,start,end,minD,maxD,onChange){
+  if(!rangePicker.el) initRangePicker();
+  rangePicker.target=targetEl; rangePicker.onChange=onChange;
+  rangePicker.minD=minD; rangePicker.maxD=maxD;
+  rangePicker.start=start; rangePicker.end=end;
+  const anchor=start||minD;
+  const ym=parseYM(anchor);
+  rangePicker.viewYear=ym.y; rangePicker.viewMonth=ym.m;
+  renderRangePicker();
+  rangePicker.el.classList.remove('hide');
+  positionRangePicker();
+}
+function closeRangePicker(){ if(rangePicker.el) rangePicker.el.classList.add('hide'); rangePicker.target=null; rangePicker.onChange=null; }
+function positionRangePicker(){
+  const pop=rangePicker.el, target=rangePicker.target; if(!pop||!target) return;
+  const rect=target.getBoundingClientRect();
+  const vw=window.innerWidth;
+  let left=rect.left+window.scrollX;
+  let top=rect.bottom+window.scrollY+6;
+  const w=pop.offsetWidth||280;
+  if(left+w+10>vw) left=vw-w-10;
+  if(left<10) left=10;
+  pop.style.left=left+'px'; pop.style.top=top+'px';
+}
+function renderRangePicker(){
+  const rp=rangePicker;
+  rp.el.querySelector('.rp-title').textContent=rp.viewYear+'年'+rp.viewMonth+'月';
+  const firstDow=new Date(Date.UTC(rp.viewYear,rp.viewMonth-1,1)).getUTCDay();
+  const total=daysInMonth(rp.viewYear,rp.viewMonth);
+  const daysEl=rp.el.querySelector('.rp-days'); daysEl.innerHTML='';
+  for(let i=0;i<firstDow;i++) daysEl.appendChild(document.createElement('span'));
+  for(let d=1;d<=total;d++){
+    const ds=rp.viewYear+'-'+String(rp.viewMonth).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const disabled=ds<rp.minD || ds>rp.maxD;
+    const sel=ds===rp.start || ds===rp.end;
+    const inrange=rp.start && rp.end && ds>rp.start && ds<rp.end;
+    const btn=document.createElement('button');
+    btn.className='rp-day'+(disabled?' disabled':'')+(inrange?' inrange':'')+(sel?' sel':'');
+    btn.type='button';
+    if(!disabled) btn.dataset.date=ds;
+    btn.textContent=d;
+    daysEl.appendChild(btn);
+  }
+}
 
 function aggregate(rows, classifyFn){
   const daily={}; const refDict={}; const dates=new Set();
@@ -608,10 +710,10 @@ function renderReport(){
     const tA=amtA.reduce((a,b)=>a+b,0), tB=amtB.reduce((a,b)=>a+b,0);
     const lblA=`${STATE.cmpRangeAStart.slice(5).replace('-','/')}~${STATE.cmpRangeAEnd.slice(5).replace('-','/')}`;
     const lblB=`${STATE.cmpRangeBStart.slice(5).replace('-','/')}~${STATE.cmpRangeBEnd.slice(5).replace('-','/')}`;
-    const dateIn=(id,cur)=>`<input type="date" id="${id}" value="${cur}" min="${minD}" max="${maxD}">`;
+    const rangeField=(id,start,end,label)=>`<div class="date-group"><label>${label}</label><div class="date-range-field" id="${id}" data-start="${start}" data-end="${end}"><svg class="drf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span class="drf-text">${formatDateDisplay(start)} - ${formatDateDisplay(end)}</span></div></div>`;
     const controls=`<div class="cmp-controls">
-      <div class="date-group"><label>基准区间</label><div class="date-pair">${dateIn('cmpRangeAStart',STATE.cmpRangeAStart)}<span>~</span>${dateIn('cmpRangeAEnd',STATE.cmpRangeAEnd)}</div></div>
-      <div class="date-group"><label>对比区间</label><div class="date-pair">${dateIn('cmpRangeBStart',STATE.cmpRangeBStart)}<span>~</span>${dateIn('cmpRangeBEnd',STATE.cmpRangeBEnd)}</div></div>
+      ${rangeField('drfA',STATE.cmpRangeAStart,STATE.cmpRangeAEnd,'基准区间')}
+      ${rangeField('drfB',STATE.cmpRangeBStart,STATE.cmpRangeBEnd,'对比区间')}
     </div>`;
     let cmpRangeRows='';
     CAT_ORDER.slice().sort((a,b)=>Math.abs(cmpRange[b][1]-cmpRange[b][0])-Math.abs(cmpRange[a][1]-cmpRange[a][0])).forEach(c=>{
@@ -849,17 +951,23 @@ document.getElementById('selD').addEventListener('change',e=>{
   applyAndRender();
 });
 document.getElementById('selP').addEventListener('change',e=>{ STATE.P=e.target.value; applyAndRender(); });
-// 区间对比控件（模式/日期范围）通过事件委托监听
+// 区间对比控件（模式）通过事件委托监听
 const reportBodyEl=document.getElementById('reportBody');
 reportBodyEl.addEventListener('change',e=>{
   if(e.target.id==='cmpMode'){ STATE.cmpMode=e.target.value; applyAndRender(); }
-  else if(e.target.id==='cmpRangeAStart'){ STATE.cmpRangeAStart=e.target.value; applyAndRender(); }
-  else if(e.target.id==='cmpRangeAEnd'){ STATE.cmpRangeAEnd=e.target.value; applyAndRender(); }
-  else if(e.target.id==='cmpRangeBStart'){ STATE.cmpRangeBStart=e.target.value; applyAndRender(); }
-  else if(e.target.id==='cmpRangeBEnd'){ STATE.cmpRangeBEnd=e.target.value; applyAndRender(); }
 });
-// 汇总/明细合并表：点击渠道行展开/收起其下 referrer 明细
+// 汇总/明细合并表：点击渠道行展开/收起其下 referrer 明细；日期范围字段点击打开日历
 reportBodyEl.addEventListener('click', e=>{
+  const drf=e.target.closest('.date-range-field');
+  if(drf){
+    const dates=STATE.agg.dates, minD=dates[0], maxD=dates[dates.length-1];
+    if(drf.id==='drfA'){
+      openRangePicker(drf, STATE.cmpRangeAStart, STATE.cmpRangeAEnd, minD, maxD, (s,en)=>{ STATE.cmpRangeAStart=s; STATE.cmpRangeAEnd=en; applyAndRender(); });
+    } else if(drf.id==='drfB'){
+      openRangePicker(drf, STATE.cmpRangeBStart, STATE.cmpRangeBEnd, minD, maxD, (s,en)=>{ STATE.cmpRangeBStart=s; STATE.cmpRangeBEnd=en; applyAndRender(); });
+    }
+    return;
+  }
   const tr=e.target.closest('tr.cat'); if(!tr) return;
   const cat=tr.dataset.cat;
   STATE.detailCollapsed[cat]=!(STATE.detailCollapsed[cat]!==undefined?STATE.detailCollapsed[cat]:true);
@@ -1023,4 +1131,5 @@ document.getElementById('btnDl').addEventListener('click',()=>{
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ks-channel-report-'+STATE.D+'.html'; a.click();
   showToast('报表下载已开始','info',1500);
 });
+initRangePicker();
 </script></body></html>
