@@ -436,12 +436,6 @@ function catTableCompact(dict){
   h+=`<tr class="total"><td>合计</td><td class="num">${fmt(totAm)}</td><td class="num">100%</td></tr>`;
   return h;
 }
-// 区间汇总：累加 [start,end] 区间内各渠道单量与金额
-function rangeAgg(s,e){
-  const res={}; CAT_ORDER.forEach(c=>res[c]=[0,0]);
-  for(const d of STATE.agg.dates){ if(d<s||d>e) continue; const row=STATE.agg.daily[d]; if(!row) continue; for(const c of CAT_ORDER){ if(row[c]){ res[c][0]+=row[c][0]; res[c][1]+=row[c][1]; } } }
-  return res;
-}
 
 function renderReport(){
   const {daily,refDict,dates}=STATE.agg;
@@ -528,21 +522,6 @@ function renderReport(){
   // 周环比表（已整合进 cmpWeekHtml / cmp3Html，见上方）
 
   const Dlbl=D.slice(5), Plbl=P.slice(5);
-  // 区间对比：默认前期 3 天 vs 近期 3 天
-  const alld=STATE.agg.dates, n=alld.length;
-  if(!STATE.cmpA) STATE.cmpA=[alld[0], alld[Math.min(2,n-1)]];
-  if(!STATE.cmpB) STATE.cmpB=[alld[Math.max(0,n-3)], alld[n-1]];
-  const dateOpts=sel=>alld.map(d=>'<option value="'+d+'"'+(d===sel?' selected':'')+'>'+d.slice(5)+'</option>').join('');
-  const ra=rangeAgg(STATE.cmpA[0],STATE.cmpA[1]), rb=rangeAgg(STATE.cmpB[0],STATE.cmpB[1]);
-  let tA=0,tB=0; for(const c of CAT_ORDER){ tA+=ra[c][1]; tB+=rb[c][1]; }
-  let rc='';
-  for(const c of CAT_ORDER){
-    const [apl,aam]=ra[c], [bpl,bam]=rb[c], diff=bam-aam, pct=aam?diff/aam*100:0;
-    const pc=aam?(pct>=0?'+':'')+pct.toFixed(0)+'%':(bam?'新增':'—');
-    const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
-    rc+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${apl}</td><td class="num">${bpl}</td><td class="num">${fmt(aam)}</td><td class="num">${fmt(bam)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
-  }
-  rc+=`<tr class="total"><td>合计</td><td class="num"></td><td class="num"></td><td class="num">${fmt(tA)}</td><td class="num">${fmt(tB)}</td><td class="num">${(tB-tA>0?'+':'')+fmt(tB-tA)}</td><td class="num">${tA?((tB-tA)/tA*100>=0?'+':'')+((tB-tA)/tA*100).toFixed(0)+'%':'—'}</td></tr>`;
   const html=`
   <div class="kpis">
     <div class="kpi blue"><div class="label">${Dlbl} 当日单量</div><div class="val">${curPl}</div><div class="sub">较 ${Plbl}：${curPl-prevPl>=0?'+':''}${curPl-prevPl} 单</div></div>
@@ -558,14 +537,6 @@ function renderReport(){
     <div class="chart-wrap">${svgStacked(weekly, weekLabels)}</div>${wkBlocks}
     ${cmpWeekHtml}
     ${cmp3Html}
-  </div>
-  <div class="module"><h3>区间对比</h3><div class="desc">选两个日期区间，比较各渠道金额变化（默认：前期 3 天 vs 近期 3 天）。</div>
-    <div class="cmp-controls">
-      <label>区间 A <select id="cmpAStart">${dateOpts(STATE.cmpA[0])}</select> ~ <select id="cmpAEnd">${dateOpts(STATE.cmpA[1])}</select></label>
-      <label>区间 B <select id="cmpBStart">${dateOpts(STATE.cmpB[0])}</select> ~ <select id="cmpBEnd">${dateOpts(STATE.cmpB[1])}</select></label>
-    </div>
-    <div class="chart-wrap">${svgGroup(CAT_ORDER, CAT_ORDER.map(c=>ra[c][1]), CAT_ORDER.map(c=>rb[c][1]), '区间 A（'+STATE.cmpA[0].slice(5)+'~'+STATE.cmpA[1].slice(5)+'）', '区间 B（'+STATE.cmpB[0].slice(5)+'~'+STATE.cmpB[1].slice(5)+'）')}</div>
-    <table><tr><th>渠道</th><th class="num">A 单量</th><th class="num">B 单量</th><th class="num">A 金额</th><th class="num">B 金额</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${rc}</table>
   </div>`;
   document.getElementById('reportBody').innerHTML=html;
   STATE.html=html;
@@ -680,7 +651,6 @@ function loadFile(file){
     try{ localStorage.setItem(LS_LAST, STATE.proj); }catch(e){}
     STATE.override=loadOverrides(STATE.proj)||{};
     STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
-    STATE.cmpA=null; STATE.cmpB=null;
     saveData();
     showToast('已上传 '+file.name+'，解析到 '+STATE.rows.length.toLocaleString('en-US')+' 行（'+dates[0].slice(5)+' ~ '+dates[dates.length-1].slice(5)+'）','success',4000);
     updateDataInfo(file.name);
@@ -720,7 +690,6 @@ function loadText(text){
   try{ localStorage.setItem(LS_LAST, STATE.proj); }catch(e){}
   STATE.override=loadOverrides(STATE.proj)||{};
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
-  STATE.cmpA=null; STATE.cmpB=null;
   saveData();
   showToast('已从粘贴文本生成报表，共 '+STATE.rows.length.toLocaleString('en-US')+' 行（'+dates[0].slice(5)+' ~ '+dates[dates.length-1].slice(5)+'）','success',4000);
   updateDataInfo('粘贴文本');
@@ -757,13 +726,6 @@ reportBodyEl.addEventListener('change',e=>{
   if(e.target.id==='cmpWeekA'){ STATE.cmpWeekA=e.target.value; STATE.cmpDays=null; applyAndRender(); }
   else if(e.target.id==='cmpWeekB'){ STATE.cmpWeekB=e.target.value; STATE.cmpDays=null; applyAndRender(); }
   else if(e.target.id==='cmpDays'){ STATE.cmpDays=parseInt(e.target.value,10)||1; applyAndRender(); }
-  else if(['cmpAStart','cmpAEnd','cmpBStart','cmpBEnd'].includes(e.target.id)){
-    const as=document.getElementById('cmpAStart').value, ae=document.getElementById('cmpAEnd').value;
-    const bs=document.getElementById('cmpBStart').value, be=document.getElementById('cmpBEnd').value;
-    STATE.cmpA=[as<=ae?as:ae, as<=ae?ae:as];
-    STATE.cmpB=[bs<=be?bs:be, bs<=be?be:bs];
-    applyAndRender();
-  }
 });
 // 汇总/明细合并表：点击渠道行展开/收起其下 referrer 明细
 reportBodyEl.addEventListener('click', e=>{
@@ -858,7 +820,6 @@ function restoreFrom(saved){
   STATE.D=(saved.D&&dates.includes(saved.D))?saved.D:dates[dates.length-1];
   STATE.P=(saved.P&&dates.includes(saved.P))?saved.P:addDays(STATE.D,-1);
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
-  STATE.cmpA=null; STATE.cmpB=null;
   showResults();
   updateDataInfo();
   return true;
