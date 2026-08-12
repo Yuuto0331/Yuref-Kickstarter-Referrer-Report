@@ -79,8 +79,8 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue);bo
 .module .desc{color:var(--muted);font-size:13px;margin-bottom:16px}
 .guide h3{padding-left:0}.guide h3::before{display:none}
 .chart-wrap{position:relative;margin:8px 0 18px}
-.chart-wrap svg rect:hover{opacity:.82;cursor:pointer}
-.chart-wrap svg rect{transition:opacity .12s}
+.chart-wrap svg g{cursor:pointer;transition:opacity .12s}
+.chart-wrap svg g:hover path{opacity:.82}
 .rpt-toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin:0 0 16px;padding:12px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:10px}
 .rpt-dates{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
 .rpt-dates label,.rpt-right label.lbl{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
@@ -671,47 +671,49 @@ function fmtTick(tv){ return tv>=1e6 ? '$'+(tv/1e6).toFixed(tv%1e6?1:0)+'M' : '$
 
 function svgStacked(weekly, labels){
   const n=weekly.length; if(!n) return '<div class="insight note">暂无周数据。</div>';
-  const W=800,H=340,M={l:70,r:30,t:44,b:70}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
+  const W=800,H=348,M={l:62,r:22,t:38,b:62}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
   const weekTotals=weekly.map(w=>CAT_ORDER.reduce((s,c)=>s+(w[c]||0),0));
   const yMax=niceMax(Math.max(1,...weekTotals)); const ticks=[]; for(let i=0;i<=4;i++) ticks.push(yMax*i/4);
-  const slot=cw/n, barW=Math.min(64, slot*0.5), centers=weekly.map((_,i)=>M.l+slot*(i+0.5));
+  const slot=cw/n, barW=Math.min(58, slot*0.46), centers=weekly.map((_,i)=>M.l+slot*(i+0.5));
+  const topRound=(x,y,w,h,r)=>{ if(!(h>0)) return ''; r=Math.min(r,h/2); return `M ${x.toFixed(1)},${(y+r).toFixed(1)} A ${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${(x+r).toFixed(1)},${y.toFixed(1)} L ${(x+w-r).toFixed(1)},${y.toFixed(1)} A ${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${(x+w).toFixed(1)},${(y+r).toFixed(1)} L ${(x+w).toFixed(1)},${(y+h).toFixed(1)} L ${x.toFixed(1)},${(y+h).toFixed(1)} Z`; };
+  let grid='';
+  for(const tv of ticks){ const y=H-M.b-tv/yMax*ch; grid+=`<line x1="${M.l}" y1="${y.toFixed(1)}" x2="${W-M.r}" y2="${y.toFixed(1)}" stroke="#eef2f7"/><text x="${M.l-9}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#9aa4b2">${fmtTick(tv)}</text>`; }
   let rects='';
   for(let i=0;i<n;i++){
-    const cx=centers[i], x=cx-barW/2, v=weekTotals[i];
-    const h=v/yMax*ch, y=H-M.b-h;
-    const top5=CAT_ORDER.map(c=>({c,v:weekly[i][c]||0})).filter(o=>o.v>0).sort((a,b)=>b.v-a.v).slice(0,3)
-      .map(o=>`${o.c} ${fmt(o.v)}`).join(' · ');
-    const tip=`${labels[i]} 总额：${fmt(v)}${top5?'\n Top3：'+top5:''}`;
-    rects+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="6" fill="url(#weekBar)" stroke="#fff" stroke-width="1" data-tip="${escapeAttr(tip)}"><title>${escapeAttr(tip)}</title></rect>`;
-    if(h>2) rects+=`<text x="${(cx).toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">${fmtTick(v)}</text>`;
+    const cx=centers[i], x=cx-barW/2, v=weekTotals[i], h=v/yMax*ch, y=H-M.b-h;
+    const top3=CAT_ORDER.map(c=>({c,v:weekly[i][c]||0})).filter(o=>o.v>0).sort((a,b)=>b.v-a.v).slice(0,3).map(o=>`${o.c} ${fmt(o.v)}`).join(' · ');
+    const tip=`${labels[i]} 总额：${fmt(v)}${top3?'\n Top3：'+top3:''}`;
+    rects+=`<g data-tip="${escapeAttr(tip)}"><title>${escapeAttr(tip)}</title><path d="${topRound(x,y,barW,h,7)}" fill="url(#weekBar)"/></g>`;
+    if(h>2) rects+=`<text x="${cx.toFixed(1)}" y="${(y-8).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">${fmtTick(v)}</text>`;
   }
-  let axis=`<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H-M.b}" stroke="#9ca3af"/><line x1="${M.l}" y1="${H-M.b}" x2="${W-M.r}" y2="${H-M.b}" stroke="#9ca3af"/>`;
   let lab='';
-  for(const tv of ticks){ const y=H-M.b-tv/yMax*ch; axis+=`<line x1="${M.l-5}" y1="${y.toFixed(1)}" x2="${M.l}" y2="${y.toFixed(1)}" stroke="#9ca3af"/>`; lab+=`<text x="${M.l-10}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#6b7280">${fmtTick(tv)}</text>`; }
-  for(let i=0;i<n;i++){ const cx=centers[i]; lab+=`<text x="${cx}" y="${H-M.b+25}" text-anchor="middle" font-size="12" fill="#374151">${labels[i]}</text>`; }
-  return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet"><defs><linearGradient id="weekBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs>${rects}${axis}${lab}</svg>`;
+  for(let i=0;i<n;i++){ const cx=centers[i]; lab+=`<text x="${cx}" y="${H-M.b+20}" text-anchor="middle" font-size="12.5" font-weight="600" fill="#475569">${escapeAttr(labels[i])}</text>`; }
+  const axis=`<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H-M.b}" stroke="#cbd5e1" stroke-width="1.2"/><line x1="${M.l}" y1="${H-M.b}" x2="${W-M.r}" y2="${H-M.b}" stroke="#cbd5e1" stroke-width="1.2"/>`;
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet"><defs><linearGradient id="weekBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs>${grid}${rects}${axis}${lab}</svg>`;
 }
 function svgGroup(cats, amtA, amtB, lblA, lblB){
-  const W=900,H=380,M={l:70,r:30,t:84,b:110}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
+  const W=920,H=400,M={l:62,r:22,t:30,b:96}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
   const yMax=niceMax(Math.max(1,...amtA,...amtB)); const ticks=[]; for(let i=0;i<=4;i++) ticks.push(yMax*i/4);
-  const n=cats.length, groupW=cw/n, barW=groupW/3;
-  const topRound=(x,y,w,h,r)=>{ if(!(h>0)) return ''; r=Math.min(r,h/2); return `<path d="M ${x.toFixed(1)},${(y+r).toFixed(1)} A ${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${(x+r).toFixed(1)},${y.toFixed(1)} L ${(x+w-r).toFixed(1)},${y.toFixed(1)} A ${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${(x+w).toFixed(1)},${(y+r).toFixed(1)} L ${(x+w).toFixed(1)},${(y+h).toFixed(1)} L ${x.toFixed(1)},${(y+h).toFixed(1)} Z"/>`; };
+  const n=cats.length, groupW=cw/n, barW=Math.min(36, groupW/3.4), gap=4, pairW=2*barW+gap;
+  const topRound=(x,y,w,h,r)=>{ if(!(h>0)) return ''; r=Math.min(r,h/2); return `M ${x.toFixed(1)},${(y+r).toFixed(1)} A ${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${(x+r).toFixed(1)},${y.toFixed(1)} L ${(x+w-r).toFixed(1)},${y.toFixed(1)} A ${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${(x+w).toFixed(1)},${(y+r).toFixed(1)} L ${(x+w).toFixed(1)},${(y+h).toFixed(1)} L ${x.toFixed(1)},${(y+h).toFixed(1)} Z`; };
+  let grid='';
+  for(const tv of ticks){ const y=H-M.b-tv/yMax*ch; grid+=`<line x1="${M.l}" y1="${y.toFixed(1)}" x2="${W-M.r}" y2="${y.toFixed(1)}" stroke="#eef2f7"/><text x="${M.l-9}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#9aa4b2">${fmtTick(tv)}</text>`; }
+  const wrap=(s)=>{ if(s.length<=5) return [s]; if(s.indexOf(' ')>0){ const p=s.split(' '); if(p.length===2) return p; } const o=[]; for(let i=0;i<s.length;i+=5) o.push(s.slice(i,i+5)); return o; };
   let rects='',lab='';
   for(let i=0;i<cats.length;i++){
-    const c=cats[i], xb=M.l+i*groupW+groupW/6;
-    const hA=amtA[i]/yMax*ch, hB=amtB[i]/yMax*ch;
-    const yA=H-M.b-hA, yB=H-M.b-hB;
+    const c=cats[i], cx=M.l+i*groupW+groupW/2, xb=cx-pairW/2;
+    const hA=amtA[i]/yMax*ch, hB=amtB[i]/yMax*ch, yA=H-M.b-hA, yB=H-M.b-hB;
     const tA=`${c}\n${lblA}\n金额：${fmt(amtA[i])}`, tB=`${c}\n${lblB}\n金额：${fmt(amtB[i])}`;
-    rects+=`<g fill="#94a3b8" data-tip="${escapeAttr(tA)}"><title>${escapeAttr(tA)}</title>${topRound(xb,yA,barW,hA,6)}</g>`;
-    rects+=`<g fill="#2563eb" data-tip="${escapeAttr(tB)}"><title>${escapeAttr(tB)}</title>${topRound(xb+barW,yB,barW,hB,6)}</g>`;
-    if(hA>0) lab+=`<text x="${(xb+barW/2).toFixed(1)}" y="${(H-M.b-hA-5).toFixed(1)}" text-anchor="middle" font-size="10" fill="#64748b">${fmtTick(amtA[i])}</text>`;
-    if(hB>0) lab+=`<text x="${(xb+barW+barW/2).toFixed(1)}" y="${(H-M.b-hB-5).toFixed(1)}" text-anchor="middle" font-size="10" fill="#1d4ed8">${fmtTick(amtB[i])}</text>`;
-    lab+=`<text x="${(xb+barW).toFixed(1)}" y="${H-M.b+18}" transform="rotate(45,${(xb+barW).toFixed(1)},${H-M.b+18})" text-anchor="start" font-size="11" fill="#374151">${c}</text>`;
+    rects+=`<g fill="url(#grpA)" data-tip="${escapeAttr(tA)}"><title>${escapeAttr(tA)}</title><path d="${topRound(xb,yA,barW,hA,5)}"/></g>`;
+    rects+=`<g fill="url(#grpB)" data-tip="${escapeAttr(tB)}"><title>${escapeAttr(tB)}</title><path d="${topRound(xb+barW+gap,yB,barW,hB,5)}"/></g>`;
+    if(hA>0) lab+=`<text x="${(xb+barW/2).toFixed(1)}" y="${(H-M.b-hA-6).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#94a3b8">${fmtTick(amtA[i])}</text>`;
+    if(hB>0) lab+=`<text x="${(xb+barW+gap+barW/2).toFixed(1)}" y="${(H-M.b-hB-6).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#2563eb">${fmtTick(amtB[i])}</text>`;
+    const lines=wrap(c), ly=H-M.b+20;
+    lines.forEach((ln,k)=> lab+=`<text x="${cx.toFixed(1)}" y="${(ly+k*15).toFixed(1)}" text-anchor="middle" font-size="11.5" fill="#475569">${escapeAttr(ln)}</text>`);
   }
-  let axis=`<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H-M.b}" stroke="#9ca3af"/><line x1="${M.l}" y1="${H-M.b}" x2="${W-M.r}" y2="${H-M.b}" stroke="#9ca3af"/>`;
-  for(const tv of ticks){ const y=H-M.b-tv/yMax*ch; axis+=`<line x1="${M.l-5}" y1="${y.toFixed(1)}" x2="${M.l}" y2="${y.toFixed(1)}" stroke="#9ca3af"/>`; lab+=`<text x="${M.l-10}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#6b7280">${fmtTick(tv)}</text>`; }
-  const legend=`<g transform="translate(20,14)"><rect x="0" y="0" width="12" height="12" fill="#94a3b8"/><text x="18" y="11" text-anchor="start" font-size="12" fill="#374151">${escapeAttr(lblA)}</text><rect x="0" y="20" width="12" height="12" fill="#2563eb"/><text x="18" y="31" text-anchor="start" font-size="12" fill="#374151">${escapeAttr(lblB)}</text></g>`;
-  return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet">${legend}${rects}${axis}${lab}</svg>`;
+  const axis=`<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H-M.b}" stroke="#cbd5e1" stroke-width="1.2"/><line x1="${M.l}" y1="${H-M.b}" x2="${W-M.r}" y2="${H-M.b}" stroke="#cbd5e1" stroke-width="1.2"/>`;
+  const legend=`<div class="legend" style="margin:0 0 8px"><span class="lg"><span class="sw" style="background:#94a3b8"></span>${escapeAttr(lblA)}</span><span class="lg"><span class="sw" style="background:#2563eb"></span>${escapeAttr(lblB)}</span></div>`;
+  return legend+`<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet"><defs><linearGradient id="grpA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cbd5e1"/><stop offset="1" stop-color="#94a3b8"/></linearGradient><linearGradient id="grpB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs>${grid}${rects}${axis}${lab}</svg>`;
 }
 
 // 横向渠道条形图：按金额排序，左侧名称 + 中间条形 + 右侧金额/占比
