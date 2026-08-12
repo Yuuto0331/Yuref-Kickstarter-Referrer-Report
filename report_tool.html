@@ -94,6 +94,12 @@ note{color:var(--muted);font-size:12px}
 .guide ol li b{color:var(--ink)}
 .guide .g-note{margin-top:18px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
 @media(max-width:560px){.guide{padding:22px 18px}}
+.insight-banner{background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1px solid #dbeafe;border-radius:14px;padding:16px 20px;margin-bottom:8px}
+.insight-banner .ib-title{font-size:13px;font-weight:700;color:#1e40af;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.insight-banner ul{margin:0;padding-left:18px;font-size:13px;line-height:1.75;color:#374151}
+.insight-banner li{margin:2px 0}
+.insight-banner li b{color:var(--ink);font-weight:600}
+.insight-banner li b.up{color:var(--green)}.insight-banner li b.down{color:var(--red)}
 @media(max-width:900px){.params{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.map-row{grid-template-columns:1fr 140px}.map-row.warn{grid-template-columns:1fr 110px 76px}}
 @media(max-width:560px){.kpis{grid-template-columns:1fr}.panel{padding:16px}.module{padding:16px}.rpt-toolbar{gap:10px}.module h3{font-size:16px}}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0}
@@ -458,6 +464,26 @@ function catTableCompact(dict){
   return h;
 }
 
+// 自动洞察：基于当日与对比日数据，生成 1-3 句自然语言小结
+function genInsights(cur, prev, D, P){
+  const out=[];
+  let tCur=0, tPrev=0;
+  CAT_ORDER.forEach(c=>{ tCur+=(cur[c]?cur[c][1]:0); tPrev+=(prev[c]?prev[c][1]:0); });
+  if(tCur>0){
+    const diff=tCur-tPrev, pct=tPrev?(diff/tPrev*100):0;
+    out.push(`<b>${D.slice(5)}</b> 当日金额 <b>${fmt(tCur)}</b>${tPrev?`，较 ${P.slice(5)} <b class="${diff>0?'up':(diff<0?'down':'')}">${diff>0?'+':''}${pct.toFixed(0)}%</b>`:''}。`);
+  }
+  let topC=null, topV=0;
+  CAT_ORDER.forEach(c=>{ const v=cur[c]?cur[c][1]:0; if(v>topV){ topV=v; topC=c; } });
+  if(topC && topV>0) out.push(`占比最高的渠道是 <b>${topC}</b>，占当日金额 <b>${(topV/tCur*100).toFixed(0)}%</b>。`);
+  let gC=null, gD=-1;
+  CAT_ORDER.forEach(c=>{ const d=(cur[c]?cur[c][1]:0)-(prev[c]?prev[c][1]:0); if(d>gD){ gD=d; gC=c; } });
+  if(gC && gD>0){ const base=prev[gC]?prev[gC][1]:0; const gp=base>0?`（+${(gD/base*100).toFixed(0)}%）`:'（新增）'; out.push(`环比增长最快的是 <b>${gC}</b>，金额 <b class="up">+${fmt(gD)}</b>${gp}。`); }
+  let dC=null, dD=1;
+  CAT_ORDER.forEach(c=>{ const d=(cur[c]?cur[c][1]:0)-(prev[c]?prev[c][1]:0); if(d<dD){ dD=d; dC=c; } });
+  if(dC && dD<0){ const base=prev[dC]?prev[dC][1]:0; if(base && dD/base<=-0.1) out.push(`下滑最明显的是 <b>${dC}</b>，金额 <b class="down">${fmt(dD)}</b>。`); }
+  return out;
+}
 function renderReport(){
   const {daily,refDict,dates}=STATE.agg;
   const D=STATE.D, P=STATE.P, launch=STATE.launch;
@@ -552,6 +578,7 @@ function renderReport(){
     <div class="kpi gray"><div class="kpi-ic">${KPI_ICONS.total}</div><div class="label">全期累计（${dates[0].slice(5)}-${Dlbl}）</div><div class="val">${fmt(campAm)}</div><div class="sub">${campPl} 单</div></div>
     <div class="kpi green"><div class="kpi-ic">${KPI_ICONS.week}</div><div class="label">自然周覆盖</div><div class="val">${weeks.length} 周</div><div class="sub">${weekLabels.join(' · ')}</div></div>
   </div>
+  <div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>${genInsights(cur, prev, D, P).map(s=>'<li>'+s+'</li>').join('')}</ul></div>
   <div class="module"><h3>${Dlbl} 渠道汇总与明细</h3><div class="desc">各渠道单量与金额分布；点击渠道行可展开 / 收起其下具体 referrer 来源明细（默认收起）。</div>
     <table id="catDetail"><tr><th>渠道 / Referrer</th><th class="num">单量</th><th class="num">金额</th><th class="num">单量占比</th><th class="num">金额占比</th></tr>${catDetailTable(cur, refD)}</table></div>
   <div class="module"><h3>前一日对比（${Plbl} → ${Dlbl}）</h3><div class="desc">各渠道两天金额变化，上涨绿、下滑红。</div>
