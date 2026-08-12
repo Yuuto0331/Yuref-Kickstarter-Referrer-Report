@@ -106,7 +106,9 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:42px;top:50%;t
 .map-row .map-act{justify-self:end;padding:5px 8px;font-size:12px;white-space:nowrap}
 .map-row.warn{background:#fffbeb}
 .map-row.saved{background:#eff6ff}
-.map-ref{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.map-ref{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative;padding-left:32px;color:#475569}
+.map-ref::before{content:'';position:absolute;left:14px;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--blue);opacity:.2}
+.map-ref::after{content:'└';position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:11px;color:#94a3b8;font-family:system-ui,sans-serif}
 .map-row select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
 .map-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
 .map-tools input[type=text]{flex:1;min-width:160px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px}
