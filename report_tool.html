@@ -15,8 +15,41 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .badge{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;background:#eaf5ea;color:var(--green);font-size:12px;font-weight:600;border:1px solid #cdeccd}
 .app-footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center}
 .proj-group{display:flex;align-items:center;gap:10px}
+.proj-switcher{position:relative}
+.proj-trigger{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;transition:.15s;font-family:inherit}
+.proj-trigger:hover{border-color:var(--blue);box-shadow:0 2px 8px rgba(37,99,235,.12)}
+.proj-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex:none}
+.proj-name{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--ink)}
+.proj-caret{width:16px;height:16px;color:var(--muted);flex:none}
+.proj-menu{position:absolute;top:calc(100% + 8px);right:0;width:290px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.16);padding:8px;z-index:1100;display:none}
+.proj-menu.open{display:block;animation:pmIn .14s ease}
+@keyframes pmIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.proj-menu-head{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:6px 10px 8px}
+.proj-list{max-height:240px;overflow:auto;margin:0 -2px}
+.proj-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;cursor:pointer;transition:.12s}
+.proj-item:hover{background:#f3f6fb}
+.proj-item.active{background:#eef4ff}
+.pi-avatar{width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px}
+.pi-text{flex:1;min-width:0}
+.pi-name{font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pi-meta{font-size:11px;color:var(--muted)}
+.pi-check{color:var(--blue);font-weight:700;opacity:0;font-size:13px}
+.proj-item.active .pi-check{opacity:1}
+.proj-menu-actions{display:flex;gap:6px;padding:8px 4px 2px;border-top:1px solid var(--line);margin-top:6px}
+.proj-act{flex:1;padding:7px 4px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--muted);font-size:12px;cursor:pointer;transition:.15s;font-family:inherit}
+.proj-act:hover{border-color:var(--blue);color:var(--blue);background:#f8fbff}
+.proj-act.danger:hover{border-color:#fca5a5;color:#dc2626;background:#fef2f2}
+.proj-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;border:1px solid #e2e8f0}
+.proj-chip::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--blue)}
+.modal-mask{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:2000}
+.modal-mask.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:22px 24px;width:340px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal h3{margin:0 0 14px;font-size:16px}
+.modal input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+
 .panel{background:var(--panel);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin:18px 0;transition:box-shadow .15s}.panel:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
-.panel h2{margin:0 0 14px;font-size:16px}.upload-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}.upload-head h2{margin:0}.proj-top{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:500}.proj-top select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
+.panel h2{margin:0 0 14px;font-size:16px}.upload-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}.upload-head h2{margin:0}
 .drop{border:2px dashed #cbd5e1;border-radius:16px;padding:38px 28px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:#fafbfc;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .drop.hover,.drop:hover{border-color:var(--blue);background:linear-gradient(135deg,#eff6ff,#f8fafc);color:var(--blue)}
 .drop b{color:var(--ink)}
@@ -206,8 +239,22 @@ note{color:var(--muted);font-size:12px}
   <div class="upload-head">
     <h2>① 上传数据</h2>
     <div class="proj-group">
-      <label class="proj-top">项目 <select id="selProjTop"></select></label>
-      <button class="btn ghost sm" id="btnRenameTop" title="重命名当前项目">✎ 重命名</button>
+      <div class="proj-switcher" id="projSwitcherTop">
+        <button class="proj-trigger" id="projTriggerTop" aria-haspopup="true" title="切换 / 管理项目">
+          <span class="proj-avatar" id="projAvatarTop">Y</span>
+          <span class="proj-name" id="projNameTop">default</span>
+          <svg class="proj-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="proj-menu" id="projMenuTop">
+          <div class="proj-menu-head">我的项目</div>
+          <div class="proj-list" id="projListTop"></div>
+          <div class="proj-menu-actions">
+            <button class="proj-act" id="btnNewProjTop">＋ 新建</button>
+            <button class="proj-act" id="btnRenameProjTop">✎ 重命名</button>
+            <button class="proj-act danger" id="btnDeleteProjTop">🗑 删除</button>
+          </div>
+        </div>
+      </div>
       <button class="btn ghost sm" id="btnGuide" title="查看使用说明">? 使用说明</button>
     </div>
   </div>
@@ -249,8 +296,7 @@ note{color:var(--muted);font-size:12px}
       <label>对比日<select id="selP"></select></label>
     </div>
     <div class="rpt-right">
-      <label class="lbl">项目<select id="selProj"></select></label>
-      <button class="btn ghost sm" id="btnRename" title="重命名当前项目">✎</button>
+      <span class="proj-chip" id="projChip">default</span>
       <button class="btn ghost sm" id="btnDl">下载报表 HTML</button>
     </div>
   </div>
@@ -259,6 +305,16 @@ note{color:var(--muted);font-size:12px}
 <footer class="app-footer">Yuref · Kickstarter Referrer Report — 纯前端单文件工具，数据仅存于本机浏览器。<br>Developer: Theo Yan</footer>
 </div>
 
+<div class="modal-mask" id="nameModal">
+  <div class="modal">
+    <h3 id="nameModalTitle">新建项目</h3>
+    <input id="nameInput" type="text" placeholder="输入项目名称" maxlength="40" autocomplete="off">
+    <div class="modal-actions">
+      <button class="btn ghost sm" id="nameCancel">取消</button>
+      <button class="btn sm" id="nameOk">确定</button>
+    </div>
+  </div>
+</div>
 <script>
 // ==CORE_START==
 const CAT_ORDER = ['付费广告','KS 站内自然','独立站','Kickbooster','众筹 PR','非众筹 PR','KOL','社媒运营','EDM','其他'];
@@ -373,7 +429,7 @@ function saveOverrides(proj){ try{ localStorage.setItem(lsKey(proj), JSON.string
 function lsDataKey(proj){ return 'ks_ref_data_v1_'+(proj||'default'); }
 function saveData(){ try{ if(STATE.rawCsv) localStorage.setItem(lsDataKey(STATE.proj), JSON.stringify({proj:STATE.proj, csv:STATE.rawCsv, D:STATE.D, P:STATE.P, launch:STATE.launch, firstWeek:STATE.firstWeek, lastSource:STATE.lastSource})); }catch(e){} }
 function loadSavedData(proj){ try{ return JSON.parse(localStorage.getItem(lsDataKey(proj))||'null'); }catch(e){ return null; } }
-function getProj(){ const v=(document.getElementById('selProj').value||'').trim(); return (v&&v!=='__new__')?v:(STATE.proj||'default'); }
+function getProj(){ return STATE.proj||'default'; }
 function fmt(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
 
 // ---------- 自定义日期范围选择器 ----------
@@ -909,27 +965,44 @@ function makeSortable(root){
   });
 }
 
-function populateProjSelect(){
+function projColor(name){
+  const palette=['#2563eb','#7c3aed','#0ea5e9','#10b981','#f59e0b','#ef4444','#ec4899','#14b8a6'];
+  let h=0; for(const ch of (name||'')) h=(h*31+ch.charCodeAt(0))>>>0;
+  return palette[h%palette.length];
+}
+function projInitial(name){ return (name||'?').trim().charAt(0).toUpperCase(); }
+function listProjNames(){
+  const names=[], pre='ks_ref_data_v1_';
+  for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf(pre)===0) names.push(k.slice(pre.length)); }
+  return names;
+}
+function renderProjMenu(){
   try{
-    const sel=document.getElementById('selProj');
-    const selTop=document.getElementById('selProjTop');
-    if(!sel) return;
-    const names=[];
-    const pre='ks_ref_data_v1_';
-    for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf(pre)===0) names.push(k.slice(pre.length)); }
-    const cur=(typeof STATE!=='undefined'&&STATE.proj)?STATE.proj:getProj();
-    let opts=names.map(n=>'<option value="'+escapeAttr(n)+'"'+(n===cur?' selected':'')+'>'+escapeHtml(n)+'</option>').join('');
-    opts+='<option value="__new__">＋ 新建项目…</option>';
-    sel.innerHTML=opts;
-    if(selTop) selTop.innerHTML=opts;
-    if(cur && names.indexOf(cur)>=0){ sel.value=cur; if(selTop) selTop.value=cur; }   // 显式同步两个下拉
+    const names=listProjNames();
+    const cur=STATE.proj||getProj();
+    const avatar=document.getElementById('projAvatarTop'), nameEl=document.getElementById('projNameTop'), chip=document.getElementById('projChip');
+    if(avatar){ avatar.textContent=projInitial(cur); avatar.style.background=projColor(cur); }
+    if(nameEl) nameEl.textContent=cur;
+    if(chip) chip.textContent=cur;
+    const list=document.getElementById('projListTop');
+    if(list){
+      list.innerHTML=names.map(n=>{
+        const meta=loadSavedData(n);
+        const cnt=meta&&meta.csv?Math.max(0,(meta.csv.split(/\r?\n/).filter(l=>l.trim()).length)-1):0;
+        const sub=(meta&&meta.csv)?(cnt.toLocaleString('en-US')+' 行 · '+(meta.D||'-').slice(5)):'暂无数据';
+        return '<div class="proj-item'+(n===cur?' active':'')+'" data-proj="'+escapeAttr(n)+'">'
+          +'<span class="pi-avatar" style="background:'+projColor(n)+'">'+projInitial(n)+'</span>'
+          +'<div class="pi-text"><div class="pi-name">'+escapeHtml(n)+'</div><div class="pi-meta">'+sub+'</div></div>'
+          +'<span class="pi-check">✓</span></div>';
+      }).join('') || '<div class="pi-meta" style="padding:10px">还没有项目，点下方「＋ 新建」。</div>';
+    }
   }catch(e){}
 }
 function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function showResults(){
   const dates=STATE.agg.dates;
   populateDates(dates);
-  populateProjSelect();
+  renderProjMenu();
   document.getElementById('mapPanel').classList.remove('hide');
   document.getElementById('reportPanel').classList.remove('hide');
   safeRender();
@@ -1069,44 +1142,49 @@ reportBodyEl.addEventListener('click', e=>{
   const caret=tr.querySelector('.caret'); if(caret) caret.textContent=collapsed?'▸':'▾';
 });
 function cssEscape(s){ return String(s).replace(/["\\]/g,'\\$&'); }
-document.getElementById('selProj').addEventListener('change',e=>setProject(e.target.value));
-document.getElementById('selProjTop').addEventListener('change',e=>setProject(e.target.value));
 function setProject(val){
-  if(val==='__new__'){                       // 新建项目：输入名字，有数据则迁移、无数据则空等
-    const nm=(prompt('输入新项目名称：')||'').trim();
-    if(!nm){ populateProjSelect(); return; }  // 取消则保持原选项
-    const hadData=!!STATE.rawCsv;            // 当前是否已有报表
-    STATE.proj=nm;
-    try{ localStorage.setItem(LS_LAST, nm); }catch(e){}
-    STATE.override=loadOverrides(nm)||{};
-    if(hadData){
-      saveData();                            // 已有报表则归属到新项目名下（不丢失，无需重传）
-      updateDataInfo();
-      showToast('已新建项目「'+nm+'」并保存当前报表','success',3000);
-    } else {
-      STATE.rawCsv=null;                     // 无数据则新建空项目，等待上传
-      try{ localStorage.setItem(lsDataKey(nm), JSON.stringify({proj:nm, csv:'', D:null, P:null, launch:null, firstWeek:null})); }catch(e){}  // 登记项目名，使下拉与刷新可识别
+  if(val==='__new__'){ return; }
+  STATE.proj=val;
+  try{ localStorage.setItem(LS_LAST, val); }catch(e){}
+  const saved=loadSavedData(val);
+  if(saved&&saved.csv){ restoreFrom(saved); showToast('已切换到项目「'+val+'」','success',3000); }
+  else{
+    STATE.override=loadOverrides(val)||{};
+    if(!STATE.rawCsv){
       document.getElementById('mapPanel').classList.add('hide');
       document.getElementById('reportPanel').classList.add('hide');
       document.getElementById('dataInfo').classList.add('hide');
       document.getElementById('reportBody').innerHTML='';
-      showToast('已新建项目「'+nm+'」，请上传或粘贴 CSV 生成报表','info',3000);
-    }
-    populateProjSelect();
-    return;
+    } else { applyAndRender(); }
+    showToast('已切换到项目「'+val+'」','info',2500);
   }
-  STATE.proj=val;                            // 已存项目：切换即载入其报表
-  try{ localStorage.setItem(LS_LAST, val); }catch(e){}
-  const saved=loadSavedData(val);
-  if(saved&&saved.csv){ restoreFrom(saved); showToast('已切换到项目「'+val+'」','success',3000); }
-  else{ STATE.override=loadOverrides(val)||{}; applyAndRender(); showToast('已切换到项目「'+val+'」','info',2500); }
   updateDataInfo();
+  renderProjMenu();
 }
-function doRename(){
+function newProject(nm){
+  if(!nm) return;
+  const hadData=!!STATE.rawCsv;
+  STATE.proj=nm;
+  try{ localStorage.setItem(LS_LAST, nm); }catch(e){}
+  STATE.override=loadOverrides(nm)||{};
+  if(hadData){
+    saveData(); updateDataInfo();
+    showToast('已新建项目「'+nm+'」并保存当前报表','success',3000);
+  } else {
+    STATE.rawCsv=null;
+    try{ localStorage.setItem(lsDataKey(nm), JSON.stringify({proj:nm, csv:'', D:null, P:null, launch:null, firstWeek:null})); }catch(e){}
+    document.getElementById('mapPanel').classList.add('hide');
+    document.getElementById('reportPanel').classList.add('hide');
+    document.getElementById('dataInfo').classList.add('hide');
+    document.getElementById('reportBody').innerHTML='';
+    showToast('已新建项目「'+nm+'」，请上传或粘贴 CSV 生成报表','info',3000);
+  }
+  renderProjMenu();
+}
+function doRenameTo(nm){
+  if(!nm) return;
   const oldName=STATE.proj;
-  if(!oldName){ return; }
-  const nm=(prompt('重命名项目「'+oldName+'」为：', oldName)||'').trim();
-  if(!nm || nm===oldName){ return; }
+  if(nm===oldName) return;
   if(/[\/\\]/.test(nm)){ alert('项目名称不能包含 / 或 \\\\'); return; }
   const existed=localStorage.getItem(lsDataKey(nm))||localStorage.getItem(lsKey(nm));
   if(existed && !confirm('项目「'+nm+'」已存在，重命名将合并覆盖其数据，确定？')) return;
@@ -1116,12 +1194,57 @@ function doRename(){
   localStorage.removeItem(lsKey(oldName));
   STATE.proj=nm;
   try{ localStorage.setItem(LS_LAST, nm); }catch(e){}
-  populateProjSelect();
-  updateDataInfo();
+  renderProjMenu(); updateDataInfo();
   showToast('项目已重命名为「'+nm+'」','success',3000);
 }
-document.getElementById('btnRenameTop').addEventListener('click',doRename);
-document.getElementById('btnRename').addEventListener('click',doRename);
+function deleteProject(){
+  const nm=STATE.proj;
+  if(!nm) return;
+  if(STATE.proj==='default' && listProjNames().length===0) return;
+  if(!confirm('确定删除项目「'+nm+'」？该项目的报表与手动归类将被永久清除（仅本机数据）。')) return;
+  try{ localStorage.removeItem(lsDataKey(nm)); localStorage.removeItem(lsKey(nm)); }catch(e){}
+  const names=listProjNames();
+  if(names.length){
+    const next=names[0]; STATE.proj=next; try{ localStorage.setItem(LS_LAST,next); }catch(e){}
+    const saved=loadSavedData(next);
+    if(saved&&saved.csv) restoreFrom(saved);
+    else{ STATE.rawCsv=null; STATE.override=loadOverrides(next)||{}; document.getElementById('mapPanel').classList.add('hide'); document.getElementById('reportPanel').classList.add('hide'); document.getElementById('dataInfo').classList.add('hide'); document.getElementById('reportBody').innerHTML=''; applyAndRender(); }
+  } else {
+    STATE.proj='default'; try{ localStorage.setItem(LS_LAST,'default'); }catch(e){}
+    STATE.rawCsv=null; STATE.override={}; document.getElementById('mapPanel').classList.add('hide'); document.getElementById('reportPanel').classList.add('hide'); document.getElementById('dataInfo').classList.add('hide'); document.getElementById('reportBody').innerHTML='';
+  }
+  renderProjMenu(); showToast('已删除项目「'+nm+'」','info',3000);
+}
+// 项目切换器：弹层开关
+function toggleProjMenu(){ const m=document.getElementById('projMenuTop'); if(!m) return; const open=m.classList.contains('open'); document.querySelectorAll('.proj-menu.open').forEach(x=>x.classList.remove('open')); if(!open) m.classList.add('open'); }
+function closeProjMenus(){ document.querySelectorAll('.proj-menu.open').forEach(x=>x.classList.remove('open')); }
+// 命名弹窗（新建 / 重命名）
+function openNameModal(mode){
+  const modal=document.getElementById('nameModal'), input=document.getElementById('nameInput'), title=document.getElementById('nameModalTitle');
+  if(!modal) return;
+  title.textContent = mode==='rename' ? '重命名项目「'+STATE.proj+'」' : '新建项目';
+  input.value = mode==='rename' ? (STATE.proj==='default'?'':STATE.proj) : '';
+  modal.dataset.mode=mode; modal.classList.add('open'); setTimeout(()=>input.focus(),40);
+}
+function closeNameModal(){ const m=document.getElementById('nameModal'); if(m) m.classList.remove('open'); }
+function submitNameModal(){
+  const modal=document.getElementById('nameModal'), mode=modal.dataset.mode, nm=(document.getElementById('nameInput').value||'').trim();
+  if(!nm){ closeNameModal(); return; }
+  closeNameModal();
+  if(mode==='rename') doRenameTo(nm); else newProject(nm);
+}
+// 事件绑定
+document.getElementById('projTriggerTop').addEventListener('click',e=>{ e.stopPropagation(); toggleProjMenu(); });
+document.getElementById('projListTop').addEventListener('click',e=>{ const it=e.target.closest('.proj-item'); if(!it) return; closeProjMenus(); setProject(it.dataset.proj); });
+document.getElementById('btnNewProjTop').addEventListener('click',()=>{ closeProjMenus(); openNameModal('new'); });
+document.getElementById('btnRenameProjTop').addEventListener('click',()=>{ closeProjMenus(); openNameModal('rename'); });
+document.getElementById('btnDeleteProjTop').addEventListener('click',()=>{ closeProjMenus(); deleteProject(); });
+document.getElementById('nameOk').addEventListener('click',submitNameModal);
+document.getElementById('nameCancel').addEventListener('click',closeNameModal);
+document.getElementById('nameInput').addEventListener('keydown',e=>{ if(e.key==='Enter') submitNameModal(); if(e.key==='Escape') closeNameModal(); });
+document.getElementById('nameModal').addEventListener('click',e=>{ if(e.target.id==='nameModal') closeNameModal(); });
+document.addEventListener('click',e=>{ if(!e.target.closest('.proj-switcher')) closeProjMenus(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeProjMenus(); });
 // 分类调整区：折叠/展开、搜索、筛选
 document.getElementById('mapList').addEventListener('click', e=>{
   const h=e.target.closest('.map-head'); if(!h) return;
@@ -1158,12 +1281,11 @@ function restoreFrom(saved){
 // 刷新后自动恢复上次浏览的项目与报表（数据仅存于本机浏览器）
 try{
   const lp=localStorage.getItem(LS_LAST);
-  populateProjSelect();
+  renderProjMenu();
   if(lp){
     STATE.proj=lp;
     const saved=loadSavedData(lp);
     if(saved&&saved.csv){ restoreFrom(saved); showToast('已恢复项目「'+lp+'」的上一次数据（'+STATE.rows.length.toLocaleString('en-US')+' 行）','info',4000); }
-    else{ const s1=document.getElementById('selProj'),s2=document.getElementById('selProjTop'); if(s1)s1.value=lp; if(s2)s2.value=lp; }
   } else {
     renderGuide();
   }
