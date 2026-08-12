@@ -127,6 +127,7 @@ note{color:var(--muted);font-size:12px}
     <div class="proj-group">
       <label class="proj-top">项目 <select id="selProjTop"></select></label>
       <button class="btn ghost sm" id="btnRenameTop" title="重命名当前项目">✎ 重命名</button>
+      <button class="btn ghost sm" id="btnGuide" title="查看使用说明">? 使用说明</button>
     </div>
   </div>
   <div class="drop" id="drop">把 Kickstarter <b>referrers CSV</b> 拖到这里，或 <b>点击选择文件</b><input type="file" id="file" accept=".csv" class="hide"></div>
@@ -864,8 +865,14 @@ document.getElementById('btnParse').addEventListener('click',()=>{
   if(!t){ showToast('请先粘贴 CSV 文本','info',2000); return; }
   loadText(t);
 });
-// 首屏引导卡：未选择/未恢复项目时展示三步上手流程
+document.getElementById('btnGuide').addEventListener('click',()=>{
+  renderGuide();
+  document.getElementById('reportPanel').classList.remove('hide');
+  window.scrollTo({top:document.getElementById('reportPanel').offsetTop-20,behavior:'smooth'});
+});
+// 首屏引导卡：未选择/未恢复项目时展示三步上手流程；也可随时通过「使用说明」按钮调出
 function renderGuide(){
+  const hasData=!!STATE.rows;
   document.getElementById('reportBody').innerHTML=`<div class="guide">
     <h3>开始生成你的 Kickstarter 渠道报表</h3>
     <p class="lead">三步即可：上传数据 →（可选）调整分类 → 查看渠道汇总与趋势。</p>
@@ -875,7 +882,10 @@ function renderGuide(){
       <li><div><b>查看报表</b>：渠道汇总与明细、前一日对比、自然周趋势会自动生成，可切换分析日。</div></li>
     </ol>
     <div class="g-note">🔒 数据仅存于本机浏览器，不会上传服务器。</div>
+    ${hasData?'<div style="margin-top:20px"><button class="btn sm" id="btnBackRpt">查看报表 →</button></div>':''}
   </div>`;
+  const back=document.getElementById('btnBackRpt');
+  if(back) back.addEventListener('click',()=>applyAndRender());
 }
 // SAMPLE CSV removed per UX feedback
 // 自定义 chart tooltip（比 <title> 更稳定、即时）
