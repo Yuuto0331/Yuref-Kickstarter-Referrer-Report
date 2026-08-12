@@ -692,13 +692,12 @@ function svgStacked(weekly, labels){
   return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet"><defs><linearGradient id="weekBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#60a5fa"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs>${grid}${rects}${axis}${lab}</svg>`;
 }
 function svgGroup(cats, amtA, amtB, lblA, lblB){
-  const W=920,H=400,M={l:62,r:22,t:30,b:96}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
+  const W=920,H=380,M={l:62,r:22,t:30,b:80}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
   const yMax=niceMax(Math.max(1,...amtA,...amtB)); const ticks=[]; for(let i=0;i<=4;i++) ticks.push(yMax*i/4);
-  const n=cats.length, groupW=cw/n, barW=Math.min(36, groupW/3.4), gap=4, pairW=2*barW+gap;
+  const n=cats.length, groupW=cw/n, barW=Math.min(34, groupW/3.5), gap=4, pairW=2*barW+gap;
   const topRound=(x,y,w,h,r)=>{ if(!(h>0)) return ''; r=Math.min(r,h/2); return `M ${x.toFixed(1)},${(y+r).toFixed(1)} A ${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${(x+r).toFixed(1)},${y.toFixed(1)} L ${(x+w-r).toFixed(1)},${y.toFixed(1)} A ${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${(x+w).toFixed(1)},${(y+r).toFixed(1)} L ${(x+w).toFixed(1)},${(y+h).toFixed(1)} L ${x.toFixed(1)},${(y+h).toFixed(1)} Z`; };
   let grid='';
   for(const tv of ticks){ const y=H-M.b-tv/yMax*ch; grid+=`<line x1="${M.l}" y1="${y.toFixed(1)}" x2="${W-M.r}" y2="${y.toFixed(1)}" stroke="#eef2f7"/><text x="${M.l-9}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#9aa4b2">${fmtTick(tv)}</text>`; }
-  const wrap=(s)=>{ if(s.length<=5) return [s]; if(s.indexOf(' ')>0){ const p=s.split(' '); if(p.length===2) return p; } const o=[]; for(let i=0;i<s.length;i+=5) o.push(s.slice(i,i+5)); return o; };
   let rects='',lab='';
   for(let i=0;i<cats.length;i++){
     const c=cats[i], cx=M.l+i*groupW+groupW/2, xb=cx-pairW/2;
@@ -708,8 +707,7 @@ function svgGroup(cats, amtA, amtB, lblA, lblB){
     rects+=`<g fill="url(#grpB)" data-tip="${escapeAttr(tB)}"><title>${escapeAttr(tB)}</title><path d="${topRound(xb+barW+gap,yB,barW,hB,5)}"/></g>`;
     if(hA>0) lab+=`<text x="${(xb+barW/2).toFixed(1)}" y="${(H-M.b-hA-6).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#94a3b8">${fmtTick(amtA[i])}</text>`;
     if(hB>0) lab+=`<text x="${(xb+barW+gap+barW/2).toFixed(1)}" y="${(H-M.b-hB-6).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#2563eb">${fmtTick(amtB[i])}</text>`;
-    const lines=wrap(c), ly=H-M.b+20;
-    lines.forEach((ln,k)=> lab+=`<text x="${cx.toFixed(1)}" y="${(ly+k*15).toFixed(1)}" text-anchor="middle" font-size="11.5" fill="#475569">${escapeAttr(ln)}</text>`);
+    lab+=`<text x="${cx.toFixed(1)}" y="${H-M.b+18}" text-anchor="middle" font-size="10.5" fill="#475569">${escapeAttr(c)}</text>`;
   }
   const axis=`<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H-M.b}" stroke="#cbd5e1" stroke-width="1.2"/><line x1="${M.l}" y1="${H-M.b}" x2="${W-M.r}" y2="${H-M.b}" stroke="#cbd5e1" stroke-width="1.2"/>`;
   const legend=`<div class="legend" style="margin:0 0 8px"><span class="lg"><span class="sw" style="background:#94a3b8"></span>${escapeAttr(lblA)}</span><span class="lg"><span class="sw" style="background:#2563eb"></span>${escapeAttr(lblB)}</span></div>`;
