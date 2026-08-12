@@ -639,13 +639,15 @@ function svgGroup(cats, amtA, amtB, lblA, lblB){
   const W=900,H=380,M={l:70,r:30,t:84,b:110}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
   const yMax=niceMax(Math.max(1,...amtA,...amtB)); const ticks=[]; for(let i=0;i<=4;i++) ticks.push(yMax*i/4);
   const n=cats.length, groupW=cw/n, barW=groupW/3;
+  const topRound=(x,y,w,h,r)=>{ if(!(h>0)) return ''; r=Math.min(r,h/2); return `<path d="M ${x.toFixed(1)},${(y+r).toFixed(1)} A ${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${(x+r).toFixed(1)},${y.toFixed(1)} L ${(x+w-r).toFixed(1)},${y.toFixed(1)} A ${r.toFixed(1)},${r.toFixed(1)} 0 0 1 ${(x+w).toFixed(1)},${(y+r).toFixed(1)} L ${(x+w).toFixed(1)},${(y+h).toFixed(1)} L ${x.toFixed(1)},${(y+h).toFixed(1)} Z"/>`; };
   let rects='',lab='';
   for(let i=0;i<cats.length;i++){
     const c=cats[i], xb=M.l+i*groupW+groupW/6;
     const hA=amtA[i]/yMax*ch, hB=amtB[i]/yMax*ch;
+    const yA=H-M.b-hA, yB=H-M.b-hB;
     const tA=`${c}\n${lblA}\n金额：${fmt(amtA[i])}`, tB=`${c}\n${lblB}\n金额：${fmt(amtB[i])}`;
-    rects+=`<rect x="${xb.toFixed(1)}" y="${(H-M.b-hA).toFixed(1)}" width="${barW.toFixed(1)}" height="${hA.toFixed(1)}" fill="#94a3b8" data-tip="${escapeAttr(tA)}"><title>${escapeAttr(tA)}</title></rect>`;
-    rects+=`<rect x="${(xb+barW).toFixed(1)}" y="${(H-M.b-hB).toFixed(1)}" width="${barW.toFixed(1)}" height="${hB.toFixed(1)}" fill="#2563eb" data-tip="${escapeAttr(tB)}"><title>${escapeAttr(tB)}</title></rect>`;
+    rects+=`<g fill="#94a3b8" data-tip="${escapeAttr(tA)}"><title>${escapeAttr(tA)}</title>${topRound(xb,yA,barW,hA,6)}</g>`;
+    rects+=`<g fill="#2563eb" data-tip="${escapeAttr(tB)}"><title>${escapeAttr(tB)}</title>${topRound(xb+barW,yB,barW,hB,6)}</g>`;
     if(hA>0) lab+=`<text x="${(xb+barW/2).toFixed(1)}" y="${(H-M.b-hA-5).toFixed(1)}" text-anchor="middle" font-size="10" fill="#64748b">${fmtTick(amtA[i])}</text>`;
     if(hB>0) lab+=`<text x="${(xb+barW+barW/2).toFixed(1)}" y="${(H-M.b-hB-5).toFixed(1)}" text-anchor="middle" font-size="10" fill="#1d4ed8">${fmtTick(amtB[i])}</text>`;
     lab+=`<text x="${(xb+barW).toFixed(1)}" y="${H-M.b+18}" transform="rotate(45,${(xb+barW).toFixed(1)},${H-M.b+18})" text-anchor="start" font-size="11" fill="#374151">${c}</text>`;
