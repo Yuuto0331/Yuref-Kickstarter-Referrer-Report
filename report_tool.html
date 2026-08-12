@@ -45,14 +45,6 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue);bo
 .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin:2px 0 12px}
 .legend .lg{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
 .legend .lg .sw{width:11px;height:11px;border-radius:3px;display:inline-block}
-/* 前一日对比：水平涨跌条 */
-.cmp-chart{margin:6px 0 14px}
-.cmp-chart .row{display:grid;grid-template-columns:120px 1fr auto;align-items:center;gap:10px;padding:5px 0}
-.cmp-chart .nm{font-size:13px;color:#374151;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cmp-chart .track{position:relative;height:18px;background:#f1f5f9;border-radius:9px;overflow:hidden}
-.cmp-chart .fill{position:absolute;top:0;left:0;height:100%;border-radius:9px;opacity:.92}
-.cmp-chart .badge{font-size:12px;font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
-.cmp-chart .badge.up{color:#16a34a}.cmp-chart .badge.down{color:#dc2626}
 /* 周明细卡片 */
 .week-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:6px}
 .week-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
@@ -63,7 +55,7 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue);bo
 .wc-row .wc-fill{display:block;height:100%;border-radius:4px}
 .wc-row .wc-val{font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:#374151}
 .wc-row .wc-pct{font-size:11px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
-@media(max-width:760px){.week-grid{grid-template-columns:1fr}.cmp-chart .row{grid-template-columns:96px 1fr auto}}
+@media(max-width:760px){.week-grid{grid-template-columns:1fr}}
 @media(max-width:900px){.rpt-toolbar{flex-direction:column;align-items:stretch}.rpt-right{justify-content:space-between}}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left}
 th{background:#f8fafc;font-weight:600;color:var(--muted);font-size:12px;cursor:pointer;user-select:none}td.num{text-align:left;font-variant-numeric:tabular-nums}
@@ -436,7 +428,7 @@ function svgStacked(weekly, labels){
       const h=v/yMax*ch, y=bottom-h;
       const pct=weekTotals[i]?((v/weekTotals[i])*100).toFixed(1):0;
       const tip=`${c} · ${labels[i]}\n金额：${fmt(v)}\n占本周：${pct}%`;
-      rects+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="${CAT_COLORS[c]}" stroke="#fff" stroke-width="1" data-tip="${escapeAttr(tip)}"><title>${escapeAttr(tip)}</title></rect>`;
+      rects+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${CAT_COLORS[c]}" stroke="#fff" stroke-width="1" data-tip="${escapeAttr(tip)}"><title>${escapeAttr(tip)}</title></rect>`;
       bottom-=h;
     }
   }
@@ -486,18 +478,6 @@ function svgHBar(cats, amounts){
 // 渠道图例 chips：颜色 → 渠道名，供堆叠柱等共用
 function channelLegend(){
   return '<div class="legend">'+CAT_ORDER.filter(c=>CAT_COLORS[c]).map(c=>'<span class="lg"><span class="sw" style="background:'+CAT_COLORS[c]+'"></span>'+c+'</span>').join('')+'</div>';
-}
-// 前一日对比：水平涨跌条（当日金额条 + 变化徽章）
-function svgCmpHBar(cats, prevAmts, curAmts, pLbl, dLbl){
-  const max=Math.max(...curAmts,1); let rows='';
-  cats.forEach((c,i)=>{
-    const cam=curAmts[i], pam=prevAmts[i], diff=cam-pam, pct=pam?diff/pam*100:0;
-    const pc=pam?(pct>=0?'+':'')+pct.toFixed(0)+'%':(cam?'新增':'0%');
-    const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
-    const bw=(cam/max)*100;
-    rows+=`<div class="row"><div class="nm"><span class="dot" style="background:${CAT_COLORS[c]}"></span>${escapeAttr(c)}</div><div class="track"><span class="fill" style="width:${bw.toFixed(1)}%;background:${CAT_COLORS[c]}" data-tip="${escapeAttr(c)}\n${pLbl}：${fmt(pam)}\n${dLbl}：${fmt(cam)}"></span></div><div class="badge ${cls}">${sign}${fmt(diff)} (${pc})</div></div>`;
-  });
-  return '<div class="cmp-chart">'+rows+'</div>';
 }
 // 单周明细卡片：每行渠道带彩色进度条 + 金额 + 占比
 function weekCard(label, dict){
@@ -626,9 +606,6 @@ function renderReport(){
     cmpRows+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${ppl}</td><td class="num">${cpl}</td><td class="num">${fmt(pam)}</td><td class="num">${fmt(cam)}</td><td class="num">${sign}${diff?fmt(diff):'$0'}</td></tr>`;
   }
   cmpRows+=`<tr class="total"><td>合计</td><td class="num">${prevPl}</td><td class="num">${curPl}</td><td class="num">${fmt(prevAm)}</td><td class="num">${fmt(curAm)}</td><td class="num">${(curAm-prevAm>0?'+':'')+fmt(curAm-prevAm)}</td></tr>`;
-  const cmpCats=CAT_ORDER.filter(c=>(cur[c]&&cur[c][1]>0)||(prev[c]&&prev[c][1]>0));
-  const cmpChart=svgCmpHBar(cmpCats, cmpCats.map(c=>(prev[c]?prev[c][1]:0)), cmpCats.map(c=>(cur[c]?cur[c][1]:0)), Plbl, Dlbl);
-
   // 周环比表（已整合进 cmpWeekHtml / cmp3Html，见上方）
 
   const dCls=v=>v>0?'up':(v<0?'down':'');
@@ -646,8 +623,7 @@ function renderReport(){
   <div class="module"><h3>${Dlbl} 渠道汇总与明细</h3><div class="desc">各渠道单量与金额分布；点击渠道行可展开 / 收起其下具体 referrer 来源明细（默认收起）。</div>
     ${hbar?'<div class="chart-wrap">'+hbar+'</div>':''}
     <table id="catDetail"><tr><th>渠道 / Referrer</th><th class="num">单量</th><th class="num">金额</th><th class="num">单量占比</th><th class="num">金额占比</th></tr>${catDetailTable(cur, refD)}</table></div>
-  <div class="module"><h3>前一日对比（${Plbl} → ${Dlbl}）</h3><div class="desc">各渠道两天金额变化，上涨绿、下滑红；条形为当日金额，右侧徽章为变化额与变化%。</div>
-    ${cmpChart}
+  <div class="module"><h3>前一日对比（${Plbl} → ${Dlbl}）</h3><div class="desc">各渠道两天金额变化，上涨绿、下滑红。</div>
     <table><tr><th>渠道</th><th class="num">${Plbl} 单量</th><th class="num">${Dlbl} 单量</th><th class="num">${Plbl} 金额</th><th class="num">${Dlbl} 金额</th><th class="num">金额变化</th></tr>${cmpRows}</table></div>
   <div class="module"><h3>自然周汇总</h3><div class="desc">众筹期内各自然周渠道出单金额（按上线日 ${launch} 划分）。堆叠柱展示每周渠道构成；下方含周环比与滚动三日对比。</div>
     ${channelLegend()}
