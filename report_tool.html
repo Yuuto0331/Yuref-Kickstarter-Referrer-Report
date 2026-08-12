@@ -62,6 +62,10 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue);bo
 .chip{padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);font-size:13px;cursor:pointer;transition:.15s;font-family:inherit}
 .chip:hover{border-color:var(--blue);color:var(--blue);background:#f8fbff}
 .chip.active{border-color:var(--blue);background:var(--blue);color:#fff;font-weight:600}
+.overview-summary .ov-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:18px}
+.overview-summary .ov-kpi{background:linear-gradient(135deg,#f8fafc,#f0f7ff);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.overview-summary .ov-kpi .label{font-size:12px;color:var(--muted);margin-bottom:4px}
+.overview-summary .ov-kpi .val{font-size:22px;font-weight:700;color:var(--ink)}
 .date-pair{display:flex;align-items:center;gap:8px}
 .date-pair input[type=date]{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff;color:var(--ink);font-family:inherit}
 .date-pair span{color:var(--muted);font-size:12px}
@@ -488,11 +492,11 @@ function rollingIntervals(){
 function applyQuickRange(type){
   const dates=STATE.agg.dates, minD=dates[0], maxD=dates[dates.length-1], D=STATE.D;
   if(type==='r3'){ STATE.cmpMode='rolling3'; STATE.cmpQuick='r3'; applyAndRender(); return; }
+  if(type==='all'){ STATE.cmpMode='overview'; STATE.cmpQuick='all'; applyAndRender(); return; }
   STATE.cmpMode='custom'; STATE.cmpQuick=type;
   let aS,aE,bS,bE;
   if(type==='7'){ aS=clampDate(addDays(D,-13),minD,maxD); aE=clampDate(addDays(D,-7),minD,maxD); bS=clampDate(addDays(D,-6),minD,maxD); bE=D; }
   else if(type==='14'){ aS=clampDate(addDays(D,-27),minD,maxD); aE=clampDate(addDays(D,-14),minD,maxD); bS=clampDate(addDays(D,-13),minD,maxD); bE=D; }
-  else if(type==='all'){ const mid=Math.floor(dates.length/2); aS=minD; aE=dates[mid-1]||minD; bS=dates[mid]||maxD; bE=maxD; }
   else { return; }
   STATE.cmpRangeAStart=aS; STATE.cmpRangeAEnd=aE; STATE.cmpRangeBStart=bS; STATE.cmpRangeBEnd=bE;
   ensureNoOverlap();
@@ -727,10 +731,10 @@ function renderReport(){
   const weekly=weeks.map(w=>{ const o={}; for(const d of dates){ if(weekOf(d,launch,fw)===w){ for(const c of CAT_ORDER){ if(daily[d][c]){ o[c]=(o[c]||0)+daily[d][c][1]; } } } } return o; });
   const weekLabels=weeks.map(w=>{ const wd=dates.filter(d=>weekOf(d,launch,fw)===w); return wd[0].slice(5)+'-'+wd[wd.length-1].slice(5); });
 
-  // 区间对比：默认滚动三日，可切换为手动选择日期范围
+  // 区间对比：默认滚动三日，可切换为手动选择日期范围或全期汇总
   const canCustom = dates.length>=2;
   if(!canCustom) STATE.cmpMode='rolling3';
-  else if(STATE.cmpMode!=='rolling3' && STATE.cmpMode!=='custom') STATE.cmpMode='rolling3';
+  else if(STATE.cmpMode!=='rolling3' && STATE.cmpMode!=='custom' && STATE.cmpMode!=='overview') STATE.cmpMode='rolling3';
 
   // 滚动三日
   const dRecent=[addDays(D,-2),addDays(D,-1),D], dPrior=[addDays(D,-5),addDays(D,-4),addDays(D,-3)];
@@ -745,12 +749,11 @@ function renderReport(){
     cmp3Rows+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
   });
   cmp3Rows+=`<tr class="total"><td>合计</td><td class="num">${fmt(t3p)}</td><td class="num">${fmt(t3r)}</td><td class="num">${(t3r-t3p>0?'+':'')+fmt(t3r-t3p)}</td><td class="num">${t3p?((t3r-t3p)/t3p*100>=0?'+':'')+((t3r-t3p)/t3p*100).toFixed(0)+'%':'—'}</td></tr>`;
-  const cmp3Html=`<div class="desc">固定 3 天滑动窗口：前三天（${priorLbl}） vs 近三天（${recentLbl}）。</div>
-    <div class="chart-wrap">${svgGroup(order3, amt3P, amt3R, '前三天（'+priorLbl+'）', '近三天（'+recentLbl+'）')}</div>
+  const cmp3Html=`<div class="chart-wrap">${svgGroup(order3, amt3P, amt3R, '前三天（'+priorLbl+'）', '近三天（'+recentLbl+'）')}</div>
     <table><tr><th>渠道</th><th class="num">前三天（${priorLbl}）</th><th class="num">近三天（${recentLbl}）</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmp3Rows}</table>`;
 
   // 自选日期范围
-  let cmpRangeContent='', controls='';
+  let cmpRangeContent='', controls='', overviewHtml='';
   if(canCustom){
     const minD=dates[0], maxD=dates[dates.length-1];
     const clamp=(d)=> d<minD?minD:(d>maxD?maxD:d);
@@ -770,12 +773,13 @@ function renderReport(){
     const showAEnd   = STATE.cmpMode==='rolling3' ? ri.aE : STATE.cmpRangeAEnd;
     const showBStart = STATE.cmpMode==='rolling3' ? ri.bS : STATE.cmpRangeBStart;
     const showBEnd   = STATE.cmpMode==='rolling3' ? ri.bE : STATE.cmpRangeBEnd;
-    const chips=[{k:'r3',t:'滚动三日'},{k:'7',t:'近 7 天'},{k:'14',t:'近 14 天'},{k:'all',t:'全期'},{k:'custom',t:'自定义'}];
+    const chips=[{k:'r3',t:'滚动三日'},{k:'7',t:'近 7 天'},{k:'14',t:'近 14 天'},{k:'all',t:'全期汇总'},{k:'custom',t:'自定义'}];
     const chipHtml='<div class="cmp-chips">'+chips.map(c=>'<button class="chip'+(STATE.cmpQuick===c.k?' active':'')+'" data-q="'+c.k+'">'+c.t+'</button>').join('')+'</div>';
-    controls=`${chipHtml}<div class="cmp-controls">
+    const dateFields = STATE.cmpMode==='overview' ? '' : `<div class="cmp-controls">
       ${rangeField('drfA',showAStart,showAEnd,'基准区间')}
       ${rangeField('drfB',showBStart,showBEnd,'对比区间')}
     </div>`;
+    controls=`${chipHtml}${dateFields}`;
 
     const daysA=dates.filter(d=>d>=STATE.cmpRangeAStart && d<=STATE.cmpRangeAEnd);
     const daysB=dates.filter(d=>d>=STATE.cmpRangeBStart && d<=STATE.cmpRangeBEnd);
@@ -791,13 +795,18 @@ function renderReport(){
       cmpRangeRows+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
     });
     cmpRangeRows+=`<tr class="total"><td>合计</td><td class="num">${fmt(tA)}</td><td class="num">${fmt(tB)}</td><td class="num">${(tB-tA>0?'+':'')+fmt(tB-tA)}</td><td class="num">${tA?((tB-tA)/tA*100>=0?'+':'')+((tB-tA)/tA*100).toFixed(0)+'%':'—'}</td></tr>`;
-    cmpRangeContent=`<div class="desc">${lblA} vs ${lblB}。手动选择两个日期区间，对比渠道金额变化。</div>
-    <div class="chart-wrap">${svgGroup(CAT_ORDER, amtA, amtB, lblA, lblB)}</div>
+    cmpRangeContent=`<div class="chart-wrap">${svgGroup(CAT_ORDER, amtA, amtB, lblA, lblB)}</div>
     <table><tr><th>渠道</th><th class="num">基准区间</th><th class="num">对比区间</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmpRangeRows}</table>`;
+
+    // 全期汇总
+    const overview={}; CAT_ORDER.forEach(c=>{ overview[c]=dates.reduce((s,d)=>s+(daily[d][c]?daily[d][c][1]:0),0); });
+    const overviewCats=CAT_ORDER.filter(c=>overview[c]>0).sort((a,b)=>overview[b]-overview[a]);
+    const overviewAmts=overviewCats.map(c=>overview[c]);
+    overviewHtml=`<div class="overview-summary"><div class="ov-row"><div class="ov-kpi"><div class="label">累计金额</div><div class="val">${fmt(campAm)}</div></div><div class="ov-kpi"><div class="label">累计单量</div><div class="val">${campPl}</div></div><div class="ov-kpi"><div class="label">覆盖天数</div><div class="val">${dates.length}</div></div></div><div class="chart-wrap">${svgHBar(overviewCats, overviewAmts)}</div></div>`;
   }
 
   const rangeCmpHtml = `${controls}
-    ${STATE.cmpMode==='custom' && canCustom ? cmpRangeContent : cmp3Html}`;
+    ${STATE.cmpMode==='overview' ? overviewHtml : (STATE.cmpMode==='custom' && canCustom ? cmpRangeContent : cmp3Html)}`;
   let wkBlocks='<div class="week-grid">'+weeks.map((w,i)=>weekCard('第'+w+'周（'+weekLabels[i]+'）', weekly[i])).join('')+'</div>';
   const Dlbl=D.slice(5), Plbl=P.slice(5);
 
@@ -833,7 +842,7 @@ function renderReport(){
     ${channelLegend()}
     <div class="chart-wrap">${svgStacked(weekly, weekLabels)}</div>${wkBlocks}
   </div>
-  <div class="module"><h3>区间对比</h3><div class="desc">默认展示滚动三日对比；点击下方日期字段可自定义基准 / 对比区间，修改后自动切换为自定义对比。</div>
+  <div class="module"><h3>区间对比 / 全期汇总</h3><div class="desc">切换不同时间窗口查看渠道变化，或查看全期累计汇总。默认展示滚动三日对比。</div>
     ${rangeCmpHtml}
   </div>`;
   document.getElementById('reportBody').innerHTML=html;
