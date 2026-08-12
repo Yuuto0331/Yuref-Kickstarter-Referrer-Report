@@ -118,17 +118,24 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue);bo
 .wc-row .wc-pct{font-size:11px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 @media(max-width:760px){.week-grid{grid-template-columns:1fr}}
 @media(max-width:900px){.rpt-toolbar{flex-direction:column;align-items:stretch}.rpt-right{justify-content:space-between}}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left}
+.tbl-card{border:1px solid var(--line);border-radius:12px;overflow:auto;-webkit-overflow-scrolling:touch;margin:6px 0;background:#fff}
+.tbl-card table{margin:0;box-shadow:none}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}
+th{background:#f8fafc;font-weight:600;color:var(--muted);font-size:12px;cursor:pointer;user-select:none}
+td.num{text-align:left;font-variant-numeric:tabular-nums}
 th:first-child,td:first-child{position:sticky;left:0;z-index:1}
 th:first-child{background:#f8fafc;z-index:2}
 td:first-child{background:#fff}
+tbody tr:last-child td{border-bottom:none}
 tr:nth-child(even) td:first-child{background:#fafbfc}
 tr.total td:first-child,tr.cat td:first-child{background:#f8fafc}
 tr.sub td:first-child{background:#fff}
-th{background:#f8fafc;font-weight:600;color:var(--muted);font-size:12px;cursor:pointer;user-select:none}td.num{text-align:left;font-variant-numeric:tabular-nums}
 tr:nth-child(even) td{background:#fafbfc}
 tr.total td{font-weight:700;background:#f1f5f9}tr.cat td{font-weight:600;background:#f8fafc}
 tr.cat{cursor:pointer}tr.cat:hover td{background:#eef2f7}
+tbody tr:not(.cat):not(.total):hover td{background:#f8fbff}
+tbody tr:not(.cat):not(.total):hover td:first-child{background:#f8fbff}
 tr.sub td{background:#fff}
 tr.sub td:first-child{position:relative;padding-left:32px}
 tr.sub td:first-child::after{content:'└';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:12px;color:#94a3b8;font-family:system-ui,sans-serif}
@@ -816,7 +823,7 @@ function renderReport(){
   });
   cmp3Rows+=`<tr class="total"><td>合计</td><td class="num">${fmt(t3p)}</td><td class="num">${fmt(t3r)}</td><td class="num">${(t3r-t3p>0?'+':'')+fmt(t3r-t3p)}</td><td class="num">${t3p?((t3r-t3p)/t3p*100>=0?'+':'')+((t3r-t3p)/t3p*100).toFixed(0)+'%':'—'}</td></tr>`;
   const cmp3Html=`<div class="chart-wrap">${svgGroup(order3, amt3P, amt3R, '前三天（'+priorLbl+'）', '近三天（'+recentLbl+'）')}</div>
-    <table><tr><th>渠道</th><th class="num">前三天（${priorLbl}）</th><th class="num">近三天（${recentLbl}）</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmp3Rows}</table>`;
+    <div class="tbl-card"><table><tr><th>渠道</th><th class="num">前三天（${priorLbl}）</th><th class="num">近三天（${recentLbl}）</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmp3Rows}</table></div>`;
 
   // 自选日期范围
   let cmpRangeContent='', controls='', overviewHtml='';
@@ -862,7 +869,7 @@ function renderReport(){
     });
     cmpRangeRows+=`<tr class="total"><td>合计</td><td class="num">${fmt(tA)}</td><td class="num">${fmt(tB)}</td><td class="num">${(tB-tA>0?'+':'')+fmt(tB-tA)}</td><td class="num">${tA?((tB-tA)/tA*100>=0?'+':'')+((tB-tA)/tA*100).toFixed(0)+'%':'—'}</td></tr>`;
     cmpRangeContent=`<div class="chart-wrap">${svgGroup(CAT_ORDER, amtA, amtB, lblA, lblB)}</div>
-    <table><tr><th>渠道</th><th class="num">基准区间</th><th class="num">对比区间</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmpRangeRows}</table>`;
+    <div class="tbl-card"><table><tr><th>渠道</th><th class="num">基准区间</th><th class="num">对比区间</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmpRangeRows}</table></div>`;
 
     // 全期汇总
     const overview={}; CAT_ORDER.forEach(c=>{ overview[c]=dates.reduce((s,d)=>s+(daily[d][c]?daily[d][c][1]:0),0); });
@@ -901,9 +908,9 @@ function renderReport(){
   <div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>${genInsights(cur, prev, D, P).map(s=>'<li>'+s+'</li>').join('')}</ul></div>
   <div class="module"><h3>${Dlbl} 渠道汇总与明细</h3><div class="desc">各渠道单量与金额分布；点击渠道行可展开 / 收起其下具体 referrer 来源明细（默认收起）。</div>
     ${hbar?'<div class="chart-wrap">'+hbar+'</div>':''}
-    <table id="catDetail"><tr><th>渠道 / Referrer</th><th class="num">单量</th><th class="num">金额</th><th class="num">单量占比</th><th class="num">金额占比</th></tr>${catDetailTable(cur, refD)}</table></div>
+    <div class="tbl-card"><table id="catDetail"><tr><th>渠道 / Referrer</th><th class="num">单量</th><th class="num">金额</th><th class="num">单量占比</th><th class="num">金额占比</th></tr>${catDetailTable(cur, refD)}</table></div></div>
   <div class="module"><h3>前一日对比（${Plbl} → ${Dlbl}）</h3><div class="desc">各渠道两天金额变化，上涨绿、下滑红。</div>
-    <table><tr><th>渠道</th><th class="num">${Plbl} 单量</th><th class="num">${Dlbl} 单量</th><th class="num">${Plbl} 金额</th><th class="num">${Dlbl} 金额</th><th class="num">金额变化</th></tr>${cmpRows}</table></div>
+    <div class="tbl-card"><table><tr><th>渠道</th><th class="num">${Plbl} 单量</th><th class="num">${Dlbl} 单量</th><th class="num">${Plbl} 金额</th><th class="num">${Dlbl} 金额</th><th class="num">金额变化</th></tr>${cmpRows}</table></div></div>
   <div class="module"><h3>自然周汇总</h3><div class="desc">众筹期内各自然周渠道出单金额（按上线日 ${launch} 划分）。堆叠柱展示每周渠道构成；下方卡片展示每周明细。</div>
     ${channelLegend()}
     <div class="chart-wrap">${svgStacked(weekly, weekLabels)}</div>${wkBlocks}
