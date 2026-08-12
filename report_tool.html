@@ -8,9 +8,10 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .app-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:6px 0 18px;position:relative}
 .app-header::after{content:'';position:absolute;bottom:8px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#dbeafe,transparent)}
 .brand{display:flex;align-items:center;gap:14px}.logo{width:46px;height:46px;flex:none}
-.app-header h1{font-size:24px;margin:0 0 2px;letter-spacing:-.02em}.app-header h1 strong{color:var(--blue);font-weight:800}.app-header p{color:var(--muted);margin:0;font-size:13px}
-.head-badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
-.head-badges span{font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
+.app-header h1{font-size:24px;margin:0 0 2px;letter-spacing:-.02em}.app-header h1 strong{color:var(--blue);font-weight:800}
+.head-line{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.app-header p{color:var(--muted);margin:0;font-size:13px}
+.head-badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.head-badges span{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;background:#eaf5ea;color:var(--green);font-size:12px;font-weight:600;border:1px solid #cdeccd}
 .app-footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center}
 .proj-group{display:flex;align-items:center;gap:10px}
@@ -142,8 +143,7 @@ note{color:var(--muted);font-size:12px}
     <svg class="logo" viewBox="0 0 40 40"><defs><linearGradient id="lg" x1="0" y1="0" x2="40" y2="40"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1d4ed8"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#lg)"/><path d="M11 27 L11 19 M20 27 L20 15 M29 27 L29 21" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <div>
       <h1><strong>Yuref</strong> · Kickstarter Referrer Report</h1>
-      <p>上传 referrers CSV → 自动按口径拆分 → 即时查看渠道结果</p>
-      <div class="head-badges"><span>纯前端 · 数据不出本机</span><span>自动归类</span></div>
+      <div class="head-line"><p>上传 referrers CSV → 自动按口径拆分 → 即时查看渠道结果</p><div class="head-badges"><span>纯前端 · 数据不出本机</span><span>自动归类</span></div></div>
     </div>
   </div>
 </header>
