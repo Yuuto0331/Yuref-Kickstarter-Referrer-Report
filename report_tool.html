@@ -765,9 +765,7 @@ function renderReport(){
     <table><tr><th>渠道</th><th class="num">基准区间</th><th class="num">对比区间</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmpRangeRows}</table>`;
   }
 
-  const rangeCmpHtml = `<h4 style="margin-top:28px">区间对比</h4>
-    <div class="desc">默认展示滚动三日对比；点击下方日期字段可自定义基准 / 对比区间，修改后自动切换为自定义对比。</div>
-    ${controls}
+  const rangeCmpHtml = `${controls}
     ${STATE.cmpMode==='custom' && canCustom ? cmpRangeContent : cmp3Html}`;
   let wkBlocks='<div class="week-grid">'+weeks.map((w,i)=>weekCard('第'+w+'周（'+weekLabels[i]+'）', weekly[i])).join('')+'</div>';
   const Dlbl=D.slice(5), Plbl=P.slice(5);
@@ -800,9 +798,11 @@ function renderReport(){
     <table id="catDetail"><tr><th>渠道 / Referrer</th><th class="num">单量</th><th class="num">金额</th><th class="num">单量占比</th><th class="num">金额占比</th></tr>${catDetailTable(cur, refD)}</table></div>
   <div class="module"><h3>前一日对比（${Plbl} → ${Dlbl}）</h3><div class="desc">各渠道两天金额变化，上涨绿、下滑红。</div>
     <table><tr><th>渠道</th><th class="num">${Plbl} 单量</th><th class="num">${Dlbl} 单量</th><th class="num">${Plbl} 金额</th><th class="num">${Dlbl} 金额</th><th class="num">金额变化</th></tr>${cmpRows}</table></div>
-  <div class="module"><h3>自然周汇总</h3><div class="desc">众筹期内各自然周渠道出单金额（按上线日 ${launch} 划分）。堆叠柱展示每周渠道构成；下方卡片展示每周明细，并支持区间对比。</div>
+  <div class="module"><h3>自然周汇总</h3><div class="desc">众筹期内各自然周渠道出单金额（按上线日 ${launch} 划分）。堆叠柱展示每周渠道构成；下方卡片展示每周明细。</div>
     ${channelLegend()}
     <div class="chart-wrap">${svgStacked(weekly, weekLabels)}</div>${wkBlocks}
+  </div>
+  <div class="module"><h3>区间对比</h3><div class="desc">默认展示滚动三日对比；点击下方日期字段可自定义基准 / 对比区间，修改后自动切换为自定义对比。</div>
     ${rangeCmpHtml}
   </div>`;
   document.getElementById('reportBody').innerHTML=html;
