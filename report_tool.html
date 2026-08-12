@@ -17,9 +17,21 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .proj-group{display:flex;align-items:center;gap:10px}
 .panel{background:var(--panel);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin:18px 0;transition:box-shadow .15s}.panel:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
 .panel h2{margin:0 0 14px;font-size:16px}.upload-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}.upload-head h2{margin:0}.proj-top{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);font-weight:500}.proj-top select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
-.drop{border:2px dashed #cbd5e1;border-radius:12px;padding:32px 28px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:#fafbfc}
-.drop.hover,.drop:hover{border-color:var(--blue);background:#eff6ff;color:var(--blue)}
+.drop{border:2px dashed #cbd5e1;border-radius:16px;padding:38px 28px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:#fafbfc;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.drop.hover,.drop:hover{border-color:var(--blue);background:linear-gradient(135deg,#eff6ff,#f8fafc);color:var(--blue)}
 .drop b{color:var(--ink)}
+.up-icon{width:46px;height:46px;margin-bottom:12px;color:var(--blue);opacity:.9}
+.up-title{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.up-sub{font-size:13px;color:var(--muted)}
+.paste-toggle{text-align:center;margin:14px 0 0;font-size:13px;color:var(--blue);cursor:pointer;font-weight:500}
+.paste-toggle:hover{text-decoration:underline}
+.paste-area{display:none;margin-top:12px}
+.paste-area.open{display:block}
+.paste-area textarea{margin-bottom:10px}
+.upload-note{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6}
+.data-info{margin-top:14px;padding:12px 16px;background:linear-gradient(135deg,#f0f9ff,#f0fdf4);border:1px solid #dbeafe;border-radius:10px;font-size:13px;color:#374151;display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.data-info .meta{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;flex-wrap:wrap}
+.data-info b{color:var(--ink);font-weight:600}
 .params{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
 .params label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px}
 .params input{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px}
@@ -157,13 +169,18 @@ note{color:var(--muted);font-size:12px}
       <button class="btn ghost sm" id="btnGuide" title="查看使用说明">? 使用说明</button>
     </div>
   </div>
-  <div class="drop" id="drop">把 Kickstarter <b>referrers CSV</b> 拖到这里，或 <b>点击选择文件</b><input type="file" id="file" accept=".csv" class="hide"></div>
-  <div style="margin:14px 0 6px;color:var(--muted);font-size:13px">若无法上传文件，可直接<b>粘贴 CSV 文本</b>：</div>
-  <textarea id="csvPaste" rows="5" placeholder="粘贴 KS referrers CSV 内容（含表头 Referrer,Date,Type,# of Pledges,%,Pledged）" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:Menlo,Consolas,monospace;font-size:12px;resize:vertical"></textarea>
-  <div>
+  <div class="drop" id="drop">
+    <svg class="up-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <div class="up-title">把 Kickstarter <b>referrers CSV</b> 拖到这里</div>
+    <div class="up-sub">或 <span>点击选择文件</span></div>
+    <input type="file" id="file" accept=".csv" class="hide">
+  </div>
+  <div class="paste-toggle" id="pasteToggle">无法上传？粘贴 CSV 文本</div>
+  <div class="paste-area" id="pasteArea">
+    <textarea id="csvPaste" rows="5" placeholder="粘贴 KS referrers CSV 内容（含表头 Referrer,Date,Type,# of Pledges,%,Pledged）" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:Menlo,Consolas,monospace;font-size:12px;resize:vertical"></textarea>
     <button class="btn" id="btnParse">生成报表</button>
   </div>
-  <div style="margin-top:10px"><note>上传后会自动生成；粘贴文本后点击「生成报表」。分析日 / 对比日 / 项目名在报表上方工具栏选择；如需调整口径，见下方「分类口径调整」。</note></div>
+  <div class="upload-note">上传后会自动生成；粘贴文本后点击「生成报表」。分析日 / 对比日 / 项目名在报表上方工具栏选择；如需调整口径，见下方「分类口径调整」。</div>
   <div id="dataInfo" class="data-info hide"></div>
 </div>
 
@@ -933,6 +950,11 @@ try{
     renderGuide();
   }
 }catch(e){}
+document.getElementById('pasteToggle').addEventListener('click',()=>{
+  const pa=document.getElementById('pasteArea');
+  pa.classList.toggle('open');
+  document.getElementById('pasteToggle').textContent=pa.classList.contains('open')?'收起粘贴区':'无法上传？粘贴 CSV 文本';
+});
 document.getElementById('btnParse').addEventListener('click',()=>{
   const t=document.getElementById('csvPaste').value.trim();
   if(!t){ showToast('请先粘贴 CSV 文本','info',2000); return; }
