@@ -84,8 +84,17 @@ note{color:var(--muted);font-size:12px}
 @media(max-width:900px){.params{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.map-row{grid-template-columns:1fr 140px}.map-row.warn{grid-template-columns:1fr 110px 76px}}
 #chartTip{position:fixed;pointer-events:none;z-index:1000;background:rgba(15,23,42,.92);color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;line-height:1.5;box-shadow:0 6px 24px rgba(0,0,0,.2);opacity:0;transition:opacity .08s;max-width:260px;white-space:pre-line}
 #chartTip b{display:block;margin-bottom:3px;font-size:13px}
+.toast-wrap{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:1100;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{pointer-events:auto;background:#fff;color:var(--ink);padding:10px 16px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.14);border:1px solid var(--line);font-size:13px;display:flex;align-items:center;gap:8px;animation:toastIn .2s ease;max-width:min(90vw,560px)}
+.toast.success{border-left:4px solid var(--green)}.toast.error{border-left:4px solid var(--red)}.toast.info{border-left:4px solid var(--blue)}
+.toast.fade{animation:toastOut .25s ease forwards}
+@keyframes toastIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-8px)}}
+.data-info{margin-top:12px;padding:10px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:8px;font-size:13px;color:#374151;display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.data-info .meta{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;flex-wrap:wrap}
+.data-info b{color:var(--ink);font-weight:600}
 </style></head>
-<body><div id="chartTip"></div><div class="wrap">
+<body><div id="toastWrap"></div><div id="chartTip"></div><div class="wrap">
 <header class="app-header">
   <div class="brand">
     <svg class="logo" viewBox="0 0 32 32"><circle cx="16" cy="16" r="15" fill="#2563eb"/><path d="M9 21 L9 15 M16 21 L16 11 M23 21 L23 17" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
@@ -111,6 +120,7 @@ note{color:var(--muted);font-size:12px}
     <button class="btn" id="btnParse">生成报表</button>
   </div>
   <div style="margin-top:10px"><note>上传后会自动生成；粘贴文本后点击「生成报表」。分析日 / 对比日 / 项目名在报表上方工具栏选择；如需调整口径，见下方「分类口径调整」。</note></div>
+  <div id="dataInfo" class="data-info hide"></div>
 </div>
 
 <div class="panel hide" id="mapPanel">
@@ -240,7 +250,7 @@ function loadOverrides(proj){ try{ return JSON.parse(localStorage.getItem(lsKey(
 function saveOverrides(proj){ try{ localStorage.setItem(lsKey(proj), JSON.stringify(STATE.override)); }catch(e){} }
 // 原始 CSV 也按项目名存一份，刷新后自动恢复报表（仍仅存于本机浏览器）
 function lsDataKey(proj){ return 'ks_ref_data_v1_'+(proj||'default'); }
-function saveData(){ try{ if(STATE.rawCsv) localStorage.setItem(lsDataKey(STATE.proj), JSON.stringify({proj:STATE.proj, csv:STATE.rawCsv, D:STATE.D, P:STATE.P, launch:STATE.launch, firstWeek:STATE.firstWeek})); }catch(e){} }
+function saveData(){ try{ if(STATE.rawCsv) localStorage.setItem(lsDataKey(STATE.proj), JSON.stringify({proj:STATE.proj, csv:STATE.rawCsv, D:STATE.D, P:STATE.P, launch:STATE.launch, firstWeek:STATE.firstWeek, lastSource:STATE.lastSource})); }catch(e){} }
 function loadSavedData(proj){ try{ return JSON.parse(localStorage.getItem(lsDataKey(proj))||'null'); }catch(e){ return null; } }
 function getProj(){ const v=(document.getElementById('selProj').value||'').trim(); return (v&&v!=='__new__')?v:(STATE.proj||'default'); }
 function fmt(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
@@ -264,7 +274,7 @@ function aggregate(rows, classifyFn){
 // ==CORE_END==
 
 // ---------- 以下为界面/渲染逻辑（依赖 DOM） ----------
-let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpWeekA:null, cmpWeekB:null, cmpDays:null, detailCollapsed:{} };
+let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpWeekA:null, cmpWeekB:null, cmpDays:null, detailCollapsed:{}, lastSource:'' };
 
 function finalClassify(ref, typ){
   if(STATE.override[ref]!==undefined) return STATE.override[ref];
@@ -304,13 +314,13 @@ function renderMapping(){
       body.appendChild(row);
     }
     body.querySelectorAll('select').forEach(s=>{
-      s.addEventListener('change', e=>{ STATE.override[e.target.dataset.ref]=e.target.value; saveOverrides(STATE.proj); applyAndRender(); });
+      s.addEventListener('change', e=>{ STATE.override[e.target.dataset.ref]=e.target.value; saveOverrides(STATE.proj); applyAndRender(); showToast('已保存「'+e.target.dataset.ref+'」的归类','success',1500); });
     });
     body.querySelectorAll('.map-act').forEach(b=>{
       b.addEventListener('click', e=>{
         e.stopPropagation();
         const ref=e.target.dataset.ref;
-        if(e.target.dataset.act==='other'){ STATE.override[ref]='其他'; saveOverrides(STATE.proj); applyAndRender(); }
+        if(e.target.dataset.act==='other'){ STATE.override[ref]='其他'; saveOverrides(STATE.proj); applyAndRender(); showToast('已将「'+ref+'」归为「其他」','success',1500); }
       });
     });
     if(opts.headAction){
@@ -320,6 +330,7 @@ function renderMapping(){
         if(opts.headAction==='allOther'){
           items.forEach(it=>STATE.override[it.ref]='其他');
           saveOverrides(STATE.proj); applyAndRender();
+          showToast('已将 '+items.length+' 个待确认项归为「其他」','success',2000);
         }
       });
     }
@@ -592,13 +603,32 @@ function showResults(){
   document.getElementById('reportPanel').classList.remove('hide');
   safeRender();
 }
+let toastId=0;
+function showToast(msg,type='info',duration=3000){
+  const wrap=document.getElementById('toastWrap'); if(!wrap) return;
+  const id='t'+(++toastId);
+  const el=document.createElement('div'); el.className='toast '+type; el.id=id;
+  const icon=type==='success'?'✓':(type==='error'?'✕':'ℹ');
+  el.innerHTML='<span style="font-weight:700">'+icon+'</span><span>'+escapeHtml(msg)+'</span>';
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.classList.add('fade'); setTimeout(()=>el.remove(),250); }, duration);
+}
+function updateDataInfo(sourceLabel){
+  const di=document.getElementById('dataInfo'); if(!di) return;
+  if(!STATE.rows||!STATE.rows.length){ di.classList.add('hide'); return; }
+  const dates=Array.from(new Set(STATE.rows.map(r=>r.date))).filter(Boolean).sort();
+  const src=sourceLabel || STATE.lastSource || '已缓存数据';
+  di.innerHTML='<div><b>当前数据</b>：'+escapeHtml(src)+'</div><div class="meta"><span>'+STATE.rows.length.toLocaleString('en-US')+' 行</span><span>·</span><span>'+(dates[0]||'-').slice(5)+' ~ '+(dates[dates.length-1]||'-').slice(5)+'</span><span>·</span><span>项目：'+escapeHtml(STATE.proj||'default')+'</span></div>';
+  di.classList.remove('hide');
+}
 function loadFile(file){
   const reader=new FileReader();
   reader.onload=e=>{
     STATE.rawCsv=e.target.result;
+    STATE.lastSource=file.name;
     STATE.rows=parseCSV(e.target.result);
     const dates=Array.from(new Set(STATE.rows.map(r=>r.date))).filter(Boolean).sort();
-    if(!dates.length){ alert('未解析到有效数据，请检查 CSV 格式'); return; }
+    if(!dates.length){ showToast('未解析到有效数据，请检查 CSV 格式','error',4000); return; }
     STATE.launch=dates[0]; STATE.D=dates[dates.length-1]; STATE.P=addDays(STATE.D,-1);
     STATE.firstWeek=firstWeekDays(STATE.launch);
     STATE.proj=getProj();
@@ -606,6 +636,8 @@ function loadFile(file){
     STATE.override=loadOverrides(STATE.proj)||{};
     STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
     saveData();
+    showToast('已上传 '+file.name+'，解析到 '+STATE.rows.length.toLocaleString('en-US')+' 行（'+dates[0].slice(5)+' ~ '+dates[dates.length-1].slice(5)+'）','success',4000);
+    updateDataInfo(file.name);
     showResults();
   };
   reader.readAsText(file);
@@ -621,9 +653,10 @@ function applyAndRender(){
 }
 function loadText(text){
   STATE.rawCsv=text;
+  STATE.lastSource='粘贴文本';
   STATE.rows=parseCSV(text);
   const dates=Array.from(new Set(STATE.rows.map(r=>r.date))).filter(Boolean).sort();
-  if(!dates.length){ alert('未解析到有效数据，请检查 CSV 格式'); return; }
+  if(!dates.length){ showToast('未解析到有效数据，请检查 CSV 格式','error',4000); return; }
   STATE.launch=dates[0]; STATE.D=dates[dates.length-1]; STATE.P=addDays(STATE.D,-1);
   STATE.firstWeek=firstWeekDays(STATE.launch);
   STATE.proj=getProj();
@@ -631,6 +664,8 @@ function loadText(text){
   STATE.override=loadOverrides(STATE.proj)||{};
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
   saveData();
+  showToast('已从粘贴文本生成报表，共 '+STATE.rows.length.toLocaleString('en-US')+' 行（'+dates[0].slice(5)+' ~ '+dates[dates.length-1].slice(5)+'）','success',4000);
+  updateDataInfo('粘贴文本');
   showResults();
 }
 function populateDates(dates){
@@ -688,15 +723,16 @@ function setProject(val){
     STATE.override=loadOverrides(nm)||{};
     if(hadData){
       saveData();                            // 已有报表则归属到新项目名下（不丢失，无需重传）
-      const rb=document.getElementById('reportBody');
-      if(rb) rb.insertAdjacentHTML('afterbegin','<div class="insight">已新建项目「'+escapeHtml(nm)+'」并保存当前报表。</div>');
+      updateDataInfo();
+      showToast('已新建项目「'+nm+'」并保存当前报表','success',3000);
     } else {
       STATE.rawCsv=null;                     // 无数据则新建空项目，等待上传
       try{ localStorage.setItem(lsDataKey(nm), JSON.stringify({proj:nm, csv:'', D:null, P:null, launch:null, firstWeek:null})); }catch(e){}  // 登记项目名，使下拉与刷新可识别
-      const rb=document.getElementById('reportBody');
-      if(rb) rb.innerHTML='<div class="insight">已新建项目「'+escapeHtml(nm)+'」，请上传或粘贴 CSV 生成报表。</div>';
       document.getElementById('mapPanel').classList.add('hide');
       document.getElementById('reportPanel').classList.add('hide');
+      document.getElementById('dataInfo').classList.add('hide');
+      document.getElementById('reportBody').innerHTML='';
+      showToast('已新建项目「'+nm+'」，请上传或粘贴 CSV 生成报表','info',3000);
     }
     populateProjSelect();
     return;
@@ -704,8 +740,9 @@ function setProject(val){
   STATE.proj=val;                            // 已存项目：切换即载入其报表
   try{ localStorage.setItem(LS_LAST, val); }catch(e){}
   const saved=loadSavedData(val);
-  if(saved&&saved.csv){ restoreFrom(saved); }
-  else{ STATE.override=loadOverrides(val)||{}; applyAndRender(); }
+  if(saved&&saved.csv){ restoreFrom(saved); showToast('已切换到项目「'+val+'」','success',3000); }
+  else{ STATE.override=loadOverrides(val)||{}; applyAndRender(); showToast('已切换到项目「'+val+'」','info',2500); }
+  updateDataInfo();
 }
 function doRename(){
   const oldName=STATE.proj;
@@ -722,8 +759,8 @@ function doRename(){
   STATE.proj=nm;
   try{ localStorage.setItem(LS_LAST, nm); }catch(e){}
   populateProjSelect();
-  const rb=document.getElementById('reportBody');
-  if(rb) rb.insertAdjacentHTML('afterbegin','<div class="insight">项目已重命名为「'+escapeHtml(nm)+'」。</div>');
+  updateDataInfo();
+  showToast('项目已重命名为「'+nm+'」','success',3000);
 }
 document.getElementById('btnRenameTop').addEventListener('click',doRename);
 document.getElementById('btnRename').addEventListener('click',doRename);
@@ -741,6 +778,7 @@ document.getElementById('btnClear').addEventListener('click',()=>{
   if(!confirm('清除【'+STATE.proj+'】项目已记住的手动归类？下次上传该项目将恢复默认规则。')) return;
   try{ localStorage.removeItem(lsKey(STATE.proj)); }catch(e){}
   STATE.override={}; applyAndRender();
+  showToast('已清除「'+STATE.proj+'」的手动归类','info',2500);
 });
 function restoreFrom(saved){
   STATE.rows=parseCSV(saved.csv);
@@ -751,10 +789,12 @@ function restoreFrom(saved){
   STATE.proj=saved.proj||getProj();
   STATE.override=loadOverrides(STATE.proj)||{};
   STATE.rawCsv=saved.csv;
+  STATE.lastSource=saved.lastSource||'已缓存数据';
   STATE.D=(saved.D&&dates.includes(saved.D))?saved.D:dates[dates.length-1];
   STATE.P=(saved.P&&dates.includes(saved.P))?saved.P:addDays(STATE.D,-1);
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
   showResults();
+  updateDataInfo();
   return true;
 }
 // 刷新后自动恢复上次浏览的项目与报表（数据仅存于本机浏览器）
@@ -764,7 +804,7 @@ try{
   if(lp){
     STATE.proj=lp;
     const saved=loadSavedData(lp);
-    if(saved&&saved.csv){ restoreFrom(saved); }
+    if(saved&&saved.csv){ restoreFrom(saved); showToast('已恢复项目「'+lp+'」的上一次数据（'+STATE.rows.length.toLocaleString('en-US')+' 行）','info',4000); }
     else{ const s1=document.getElementById('selProj'),s2=document.getElementById('selProjTop'); if(s1)s1.value=lp; if(s2)s2.value=lp; }
   } else {
     document.getElementById('reportBody').innerHTML='<div class="insight">请先在上方「项目」选择 <b>＋ 新建项目…</b> 创建项目，然后上传或粘贴 CSV 生成报表。</div>';
@@ -772,7 +812,7 @@ try{
 }catch(e){}
 document.getElementById('btnParse').addEventListener('click',()=>{
   const t=document.getElementById('csvPaste').value.trim();
-  if(!t){ alert('请先粘贴 CSV 文本'); return; }
+  if(!t){ showToast('请先粘贴 CSV 文本','info',2000); return; }
   loadText(t);
 });
 // SAMPLE CSV removed per UX feedback
@@ -796,5 +836,6 @@ document.addEventListener('mouseout', e=>{ if(!e.relatedTarget||!e.relatedTarget
 document.getElementById('btnDl').addEventListener('click',()=>{
   const blob=new Blob(['<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><style>'+document.querySelector('style').innerHTML+'</style></head><body><div class="wrap">'+STATE.html+'</div></body></html>'],{type:'text/html'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ks-channel-report-'+STATE.D+'.html'; a.click();
+  showToast('报表下载已开始','info',1500);
 });
 </script></body></html>
