@@ -5,7 +5,8 @@
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
 .wrap{max-width:1100px;margin:0 auto;padding:24px 28px 60px}
 header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;font-size:13px}
-.app-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:6px 0}
+.app-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:6px 0 18px;position:relative}
+.app-header::after{content:'';position:absolute;bottom:8px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,#dbeafe,transparent)}
 .brand{display:flex;align-items:center;gap:14px}.logo{width:42px;height:42px;flex:none}
 .app-header h1{font-size:22px;margin:0 0 3px}.app-header p{color:var(--muted);margin:0;font-size:13px}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;background:#eaf5ea;color:var(--green);font-size:12px;font-weight:600;border:1px solid #cdeccd}
@@ -26,7 +27,9 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .btn.sm{padding:6px 12px;font-size:12px;margin-top:0}
 select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
 .module{background:var(--panel);border-radius:14px;padding:22px 26px;box-shadow:var(--shadow);margin:18px 0}
-.module h3{margin:0 0 4px;font-size:18px}.module .desc{color:var(--muted);font-size:13px;margin-bottom:16px}
+.module h3{position:relative;margin:0 0 4px;font-size:18px;padding-left:14px}.module h3::before{content:'';position:absolute;left:0;top:8px;width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.module .desc{color:var(--muted);font-size:13px;margin-bottom:16px}
+.guide h3{padding-left:0}.guide h3::before{display:none}
 .chart-wrap{position:relative;margin:8px 0 18px}
 .chart-wrap svg rect:hover{opacity:.82;cursor:pointer}
 .chart-wrap svg rect{transition:opacity .12s}
@@ -79,8 +82,6 @@ note{color:var(--muted);font-size:12px}
 .kpi{position:relative;overflow:hidden;background:var(--panel);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);border-left:4px solid var(--line);transition:transform .1s,box-shadow .15s}
 .kpi:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
 .kpi.blue{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-left-color:var(--blue)}
-.kpi.green{background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-left-color:var(--green)}
-.kpi.gray{background:linear-gradient(135deg,#f8fafc,#eef2f7);border-left-color:#94a3b8}
 .kpi .label{font-size:13px;color:var(--muted);margin-bottom:6px}.kpi .val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
 .kpi .sub{font-size:12px;margin-top:6px;color:var(--muted)}
 .kpi .kpi-ic{position:absolute;top:13px;right:13px;width:32px;height:32px;opacity:.95;pointer-events:none;background:rgba(255,255,255,.65);border-radius:9px;padding:5px}
@@ -195,8 +196,8 @@ const NONKICK_SET = new Set(['3DNatives_Article','3DP_Article','Makezine_Article
 const KPI_ICONS = {
   orders:'<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4v8H3zM10 7h4v14h-4zM17 3h4v18h-4z"/></svg>',
   money:'<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M12 9v6M9.5 12h5"/></svg>',
-  total:'<svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg>',
-  week:'<svg viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>'
+  total:'<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg>',
+  week:'<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>'
 };
 
 function parseCSV(text){
@@ -577,8 +578,8 @@ function renderReport(){
   <div class="kpis">
     <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.orders}</div><div class="label">${Dlbl} 当日单量</div><div class="val">${curPl}</div><div class="sub">较 ${Plbl}：<span class="${dCls(curPl-prevPl)}">${curPl-prevPl>=0?'+':''}${curPl-prevPl} 单</span></div></div>
     <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.money}</div><div class="label">${Dlbl} 当日金额</div><div class="val">${fmt(curAm)}</div><div class="sub">较 ${Plbl}：<span class="${dCls(curAm-prevAm)}">${curAm-prevAm>=0?'+':''}${dTxt(curAm-prevAm)}</span></div></div>
-    <div class="kpi gray"><div class="kpi-ic">${KPI_ICONS.total}</div><div class="label">全期累计（${dates[0].slice(5)}-${Dlbl}）</div><div class="val">${fmt(campAm)}</div><div class="sub">${campPl} 单</div></div>
-    <div class="kpi green"><div class="kpi-ic">${KPI_ICONS.week}</div><div class="label">自然周覆盖</div><div class="val">${weeks.length} 周</div><div class="sub">${weekLabels.join(' · ')}</div></div>
+    <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.total}</div><div class="label">全期累计（${dates[0].slice(5)}-${Dlbl}）</div><div class="val">${fmt(campAm)}</div><div class="sub">${campPl} 单</div></div>
+    <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.week}</div><div class="label">自然周覆盖</div><div class="val">${weeks.length} 周</div><div class="sub">${weekLabels.join(' · ')}</div></div>
   </div>
   <div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>${genInsights(cur, prev, D, P).map(s=>'<li>'+s+'</li>').join('')}</ul></div>
   <div class="module"><h3>${Dlbl} 渠道汇总与明细</h3><div class="desc">各渠道单量与金额分布；点击渠道行可展开 / 收起其下具体 referrer 来源明细（默认收起）。</div>
