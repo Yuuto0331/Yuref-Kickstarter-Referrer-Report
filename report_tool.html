@@ -440,6 +440,40 @@ function renderRangePicker(){
     daysEl.appendChild(btn);
   }
 }
+function diffDays(a,b){ return Math.round((new Date(b+'T00:00:00Z').getTime()-new Date(a+'T00:00:00Z').getTime())/86400000); }
+function clampDate(d,minD,maxD){ return d<minD?minD:(d>maxD?maxD:d); }
+function setCmpRange(side,start,end){
+  const dates=STATE.agg.dates, minD=dates[0], maxD=dates[dates.length-1];
+  let aS=STATE.cmpRangeAStart, aE=STATE.cmpRangeAEnd, bS=STATE.cmpRangeBStart, bE=STATE.cmpRangeBEnd;
+  if(side==='A'){ aS=start; aE=end; } else { bS=start; bE=end; }
+  if(aS>aE){ const t=aS; aS=aE; aE=t; }
+  if(bS>bE){ const t=bS; bS=bE; bE=t; }
+  aS=clampDate(aS,minD,maxD); aE=clampDate(aE,minD,maxD); bS=clampDate(bS,minD,maxD); bE=clampDate(bE,minD,maxD);
+  if(aS<=bE && bS<=aE){
+    if(side==='A'){
+      const bLen=diffDays(bS,bE);
+      let nBS=addDays(aE,1), nBE=addDays(nBS,bLen);
+      if(nBE>maxD){ nBE=clampDate(addDays(aS,-1),minD,maxD); nBS=clampDate(addDays(nBE,-bLen),minD,maxD); }
+      bS=nBS; bE=nBE;
+    } else {
+      const aLen=diffDays(aS,aE);
+      let nAE=addDays(bS,-1), nAS=addDays(nAE,-aLen);
+      if(nAS<minD){ nAS=clampDate(addDays(bE,1),minD,maxD); nAE=clampDate(addDays(nAS,aLen),minD,maxD); }
+      aS=nAS; aE=nAE;
+    }
+  }
+  STATE.cmpRangeAStart=clampDate(aS,minD,maxD); STATE.cmpRangeAEnd=clampDate(aE,minD,maxD);
+  STATE.cmpRangeBStart=clampDate(bS,minD,maxD); STATE.cmpRangeBEnd=clampDate(bE,minD,maxD);
+}
+function ensureNoOverlap(){
+  const dates=STATE.agg.dates, minD=dates[0], maxD=dates[dates.length-1];
+  let aS=STATE.cmpRangeAStart, aE=STATE.cmpRangeAEnd, bS=STATE.cmpRangeBStart, bE=STATE.cmpRangeBEnd;
+  if(!(aS<=bE && bS<=aE)) return;
+  const bLen=diffDays(bS,bE);
+  let nBS=addDays(aE,1), nBE=addDays(nBS,bLen);
+  if(nBE>maxD){ nBE=clampDate(addDays(aS,-1),minD,maxD); nBS=clampDate(addDays(nBE,-bLen),minD,maxD); }
+  STATE.cmpRangeBStart=nBS; STATE.cmpRangeBEnd=nBE;
+}
 
 function aggregate(rows, classifyFn){
   const daily={}; const refDict={}; const dates=new Set();
@@ -690,7 +724,7 @@ function renderReport(){
     <table><tr><th>渠道</th><th class="num">前三天（${priorLbl}）</th><th class="num">近三天（${recentLbl}）</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmp3Rows}</table>`;
 
   // 自选日期范围
-  let cmpRangeHtml='';
+  let cmpRangeContent='', controls='';
   if(canCustom){
     const minD=dates[0], maxD=dates[dates.length-1];
     const clamp=(d)=> d<minD?minD:(d>maxD?maxD:d);
@@ -702,6 +736,13 @@ function renderReport(){
     if(!STATE.cmpRangeBEnd || STATE.cmpRangeBEnd<minD || STATE.cmpRangeBEnd>maxD) STATE.cmpRangeBEnd=defaultBEnd;
     if(STATE.cmpRangeAStart>STATE.cmpRangeAEnd){ const t=STATE.cmpRangeAStart; STATE.cmpRangeAStart=STATE.cmpRangeAEnd; STATE.cmpRangeAEnd=t; }
     if(STATE.cmpRangeBStart>STATE.cmpRangeBEnd){ const t=STATE.cmpRangeBStart; STATE.cmpRangeBStart=STATE.cmpRangeBEnd; STATE.cmpRangeBEnd=t; }
+    ensureNoOverlap();
+
+    const rangeField=(id,start,end,label)=>`<div class="date-group"><label>${label}</label><div class="date-range-field" id="${id}" data-start="${start}" data-end="${end}"><svg class="drf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span class="drf-text">${formatDateDisplay(start)} - ${formatDateDisplay(end)}</span></div></div>`;
+    controls=`<div class="cmp-controls">
+      ${rangeField('drfA',STATE.cmpRangeAStart,STATE.cmpRangeAEnd,'基准区间')}
+      ${rangeField('drfB',STATE.cmpRangeBStart,STATE.cmpRangeBEnd,'对比区间')}
+    </div>`;
 
     const daysA=dates.filter(d=>d>=STATE.cmpRangeAStart && d<=STATE.cmpRangeAEnd);
     const daysB=dates.filter(d=>d>=STATE.cmpRangeBStart && d<=STATE.cmpRangeBEnd);
@@ -710,11 +751,6 @@ function renderReport(){
     const tA=amtA.reduce((a,b)=>a+b,0), tB=amtB.reduce((a,b)=>a+b,0);
     const lblA=`${STATE.cmpRangeAStart.slice(5).replace('-','/')}~${STATE.cmpRangeAEnd.slice(5).replace('-','/')}`;
     const lblB=`${STATE.cmpRangeBStart.slice(5).replace('-','/')}~${STATE.cmpRangeBEnd.slice(5).replace('-','/')}`;
-    const rangeField=(id,start,end,label)=>`<div class="date-group"><label>${label}</label><div class="date-range-field" id="${id}" data-start="${start}" data-end="${end}"><svg class="drf-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span class="drf-text">${formatDateDisplay(start)} - ${formatDateDisplay(end)}</span></div></div>`;
-    const controls=`<div class="cmp-controls">
-      ${rangeField('drfA',STATE.cmpRangeAStart,STATE.cmpRangeAEnd,'基准区间')}
-      ${rangeField('drfB',STATE.cmpRangeBStart,STATE.cmpRangeBEnd,'对比区间')}
-    </div>`;
     let cmpRangeRows='';
     CAT_ORDER.slice().sort((a,b)=>Math.abs(cmpRange[b][1]-cmpRange[b][0])-Math.abs(cmpRange[a][1]-cmpRange[a][0])).forEach(c=>{
       const [a2,a3]=cmpRange[c], diff=a3-a2, pct=a2?diff/a2*100:0, pc=a2?(pct>=0?'+':'')+pct.toFixed(0)+'%':(a3?'新增':'—');
@@ -722,17 +758,17 @@ function renderReport(){
       cmpRangeRows+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
     });
     cmpRangeRows+=`<tr class="total"><td>合计</td><td class="num">${fmt(tA)}</td><td class="num">${fmt(tB)}</td><td class="num">${(tB-tA>0?'+':'')+fmt(tB-tA)}</td><td class="num">${tA?((tB-tA)/tA*100>=0?'+':'')+((tB-tA)/tA*100).toFixed(0)+'%':'—'}</td></tr>`;
-    cmpRangeHtml=`<div class="desc">${lblA} vs ${lblB}。手动选择两个日期区间，对比渠道金额变化。</div>
-    ${controls}
+    cmpRangeContent=`<div class="desc">${lblA} vs ${lblB}。手动选择两个日期区间，对比渠道金额变化。</div>
     <div class="chart-wrap">${svgGroup(CAT_ORDER, amtA, amtB, lblA, lblB)}</div>
     <table><tr><th>渠道</th><th class="num">基准区间</th><th class="num">对比区间</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmpRangeRows}</table>`;
   }
 
-  const modeSelect = canCustom ? `<div class="cmp-controls"><label>对比模式<select id="cmpMode"><option value="rolling3"${STATE.cmpMode==='rolling3'?' selected':''}>滚动三日对比</option><option value="custom"${STATE.cmpMode==='custom'?' selected':''}>手动选日期范围</option></select></label></div>` : '';
+  const resetBtn = STATE.cmpMode==='custom' ? `<div style="display:flex;justify-content:flex-end;margin:-8px 0 12px"><button class="btn ghost sm" id="btnResetRolling">恢复滚动三日</button></div>` : '';
   const rangeCmpHtml = `<h4 style="margin-top:28px">区间对比</h4>
-    <div class="desc">观察不同时间窗口的渠道变化。默认展示滚动三日，也可手动选择两个日期区间对比。</div>
-    ${modeSelect}
-    ${STATE.cmpMode==='custom' && canCustom ? cmpRangeHtml : cmp3Html}`;
+    <div class="desc">默认展示滚动三日对比；点击下方日期字段可自定义基准 / 对比区间，修改后自动切换为自定义对比。</div>
+    ${controls}
+    ${resetBtn}
+    ${STATE.cmpMode==='custom' && canCustom ? cmpRangeContent : cmp3Html}`;
   let wkBlocks='<div class="week-grid">'+weeks.map((w,i)=>weekCard('第'+w+'周（'+weekLabels[i]+'）', weekly[i])).join('')+'</div>';
   const Dlbl=D.slice(5), Plbl=P.slice(5);
 
@@ -951,23 +987,20 @@ document.getElementById('selD').addEventListener('change',e=>{
   applyAndRender();
 });
 document.getElementById('selP').addEventListener('change',e=>{ STATE.P=e.target.value; applyAndRender(); });
-// 区间对比控件（模式）通过事件委托监听
-const reportBodyEl=document.getElementById('reportBody');
-reportBodyEl.addEventListener('change',e=>{
-  if(e.target.id==='cmpMode'){ STATE.cmpMode=e.target.value; applyAndRender(); }
-});
 // 汇总/明细合并表：点击渠道行展开/收起其下 referrer 明细；日期范围字段点击打开日历
+const reportBodyEl=document.getElementById('reportBody');
 reportBodyEl.addEventListener('click', e=>{
   const drf=e.target.closest('.date-range-field');
   if(drf){
     const dates=STATE.agg.dates, minD=dates[0], maxD=dates[dates.length-1];
     if(drf.id==='drfA'){
-      openRangePicker(drf, STATE.cmpRangeAStart, STATE.cmpRangeAEnd, minD, maxD, (s,en)=>{ STATE.cmpRangeAStart=s; STATE.cmpRangeAEnd=en; applyAndRender(); });
+      openRangePicker(drf, STATE.cmpRangeAStart, STATE.cmpRangeAEnd, minD, maxD, (s,en)=>{ setCmpRange('A',s,en); STATE.cmpMode='custom'; applyAndRender(); });
     } else if(drf.id==='drfB'){
-      openRangePicker(drf, STATE.cmpRangeBStart, STATE.cmpRangeBEnd, minD, maxD, (s,en)=>{ STATE.cmpRangeBStart=s; STATE.cmpRangeBEnd=en; applyAndRender(); });
+      openRangePicker(drf, STATE.cmpRangeBStart, STATE.cmpRangeBEnd, minD, maxD, (s,en)=>{ setCmpRange('B',s,en); STATE.cmpMode='custom'; applyAndRender(); });
     }
     return;
   }
+  if(e.target.id==='btnResetRolling'){ STATE.cmpMode='rolling3'; applyAndRender(); return; }
   const tr=e.target.closest('tr.cat'); if(!tr) return;
   const cat=tr.dataset.cat;
   STATE.detailCollapsed[cat]=!(STATE.detailCollapsed[cat]!==undefined?STATE.detailCollapsed[cat]:true);
