@@ -86,6 +86,12 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue);bo
 @media(max-width:760px){.week-grid{grid-template-columns:1fr}}
 @media(max-width:900px){.rpt-toolbar{flex-direction:column;align-items:stretch}.rpt-right{justify-content:space-between}}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left}
+th:first-child,td:first-child{position:sticky;left:0;z-index:1}
+th:first-child{background:#f8fafc;z-index:2}
+td:first-child{background:#fff}
+tr:nth-child(even) td:first-child{background:#fafbfc}
+tr.total td:first-child,tr.cat td:first-child{background:#f8fafc}
+tr.sub td:first-child{background:#fff}
 th{background:#f8fafc;font-weight:600;color:var(--muted);font-size:12px;cursor:pointer;user-select:none}td.num{text-align:left;font-variant-numeric:tabular-nums}
 tr:nth-child(even) td{background:#fafbfc}
 tr.total td{font-weight:700;background:#f1f5f9}tr.cat td{font-weight:600;background:#f8fafc}
@@ -609,27 +615,25 @@ function fmtTick(tv){ return tv>=1e6 ? '$'+(tv/1e6).toFixed(tv%1e6?1:0)+'M' : '$
 
 function svgStacked(weekly, labels){
   const n=weekly.length; if(!n) return '<div class="insight note">暂无周数据。</div>';
-  const W=800,H=320,M={l:70,r:30,t:30,b:70}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
+  const W=800,H=340,M={l:70,r:30,t:44,b:70}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
   const weekTotals=weekly.map(w=>CAT_ORDER.reduce((s,c)=>s+(w[c]||0),0));
   const yMax=niceMax(Math.max(1,...weekTotals)); const ticks=[]; for(let i=0;i<=4;i++) ticks.push(yMax*i/4);
-  const slot=cw/n, barW=Math.min(70, slot*0.6), centers=weekly.map((_,i)=>M.l+slot*(i+0.5));
+  const slot=cw/n, barW=Math.min(64, slot*0.5), centers=weekly.map((_,i)=>M.l+slot*(i+0.5));
   let rects='';
   for(let i=0;i<n;i++){
-    const cx=centers[i], x=cx-barW/2; let bottom=H-M.b;
-    for(const c of CAT_ORDER){
-      const v=weekly[i][c]||0; if(v<=0) continue;
-      const h=v/yMax*ch, y=bottom-h;
-      const pct=weekTotals[i]?((v/weekTotals[i])*100).toFixed(1):0;
-      const tip=`${c} · ${labels[i]}\n金额：${fmt(v)}\n占本周：${pct}%`;
-      rects+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${CAT_COLORS[c]}" stroke="#fff" stroke-width="1" data-tip="${escapeAttr(tip)}"><title>${escapeAttr(tip)}</title></rect>`;
-      bottom-=h;
-    }
+    const cx=centers[i], x=cx-barW/2, v=weekTotals[i];
+    const h=v/yMax*ch, y=H-M.b-h;
+    const top5=CAT_ORDER.map(c=>({c,v:weekly[i][c]||0})).filter(o=>o.v>0).sort((a,b)=>b.v-a.v).slice(0,3)
+      .map(o=>`${o.c} ${fmt(o.v)}`).join(' · ');
+    const tip=`${labels[i]} 总额：${fmt(v)}${top5?'\n Top3：'+top5:''}`;
+    rects+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="6" fill="url(#weekBar)" stroke="#fff" stroke-width="1" data-tip="${escapeAttr(tip)}"><title>${escapeAttr(tip)}</title></rect>`;
+    if(h>2) rects+=`<text x="${(cx).toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">${fmtTick(v)}</text>`;
   }
   let axis=`<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H-M.b}" stroke="#9ca3af"/><line x1="${M.l}" y1="${H-M.b}" x2="${W-M.r}" y2="${H-M.b}" stroke="#9ca3af"/>`;
   let lab='';
   for(const tv of ticks){ const y=H-M.b-tv/yMax*ch; axis+=`<line x1="${M.l-5}" y1="${y.toFixed(1)}" x2="${M.l}" y2="${y.toFixed(1)}" stroke="#9ca3af"/>`; lab+=`<text x="${M.l-10}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#6b7280">${fmtTick(tv)}</text>`; }
-  for(let i=0;i<n;i++){ const cx=centers[i]; lab+=`<text x="${cx}" y="${H-M.b+25}" text-anchor="middle" font-size="12" fill="#374151">${labels[i]}</text><text x="${cx}" y="${H-M.b+42}" text-anchor="middle" font-size="11" fill="#6b7280">${fmt(weekTotals[i])}</text>`; }
-  return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet">${rects}${axis}${lab}</svg>`;
+  for(let i=0;i<n;i++){ const cx=centers[i]; lab+=`<text x="${cx}" y="${H-M.b+25}" text-anchor="middle" font-size="12" fill="#374151">${labels[i]}</text>`; }
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet"><defs><linearGradient id="weekBar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs>${rects}${axis}${lab}</svg>`;
 }
 function svgGroup(cats, amtA, amtB, lblA, lblB){
   const W=900,H=380,M={l:70,r:30,t:84,b:110}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
