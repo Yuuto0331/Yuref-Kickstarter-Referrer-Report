@@ -442,6 +442,24 @@ function svgGroup(cats, amtA, amtB, lblA, lblB){
   return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet">${legend}${rects}${axis}${lab}</svg>`;
 }
 
+// 横向渠道条形图：按金额排序，左侧名称 + 中间条形 + 右侧金额/占比
+function svgHBar(cats, amounts){
+  const total=amounts.reduce((s,v)=>s+v,0), max=Math.max(...amounts,1);
+  const W=720, rowH=34, top=10, bottom=10, left=130, right=140, barH=14, gap=20, barMax=W-left-right-gap;
+  const H=top+bottom+cats.length*rowH;
+  let rows='', baselineX=left;
+  cats.forEach((c,i)=>{
+    const am=amounts[i], pct=total?am/total*100:0, bw=(am/max)*barMax;
+    const y=top+i*rowH+rowH/2;
+    rows+=`<g class="hbar-row">
+      <circle cx="12" cy="${y}" r="4" fill="${CAT_COLORS[c]}"/>
+      <text x="24" y="${y}" dy=".35em" font-size="13" fill="#374151">${escapeAttr(c)}</text>
+      <rect x="${baselineX}" y="${y-barH/2}" width="${bw.toFixed(1)}" height="${barH}" rx="6" fill="${CAT_COLORS[c]}" opacity=".9" data-tip="${escapeAttr(c)}\n金额：${fmt(am)}\n占比：${pct.toFixed(1)}%"/><title>${escapeAttr(c)}：${fmt(am)}（${pct.toFixed(1)}%）</title></rect>
+      <text x="${W-10}" y="${y}" dy=".35em" text-anchor="end" font-size="12" fill="#6b7280">${fmt(am)} · ${pct.toFixed(1)}%</text>
+    </g>`;
+  });
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet">${rows}</svg>`;
+}
 function catDetailTable(dict, refD){
   const totPl=Object.values(dict).reduce((s,v)=>s+v[0],0), totAm=Object.values(dict).reduce((s,v)=>s+v[1],0);
   let h='';
@@ -574,6 +592,8 @@ function renderReport(){
   const Dlbl=D.slice(5), Plbl=P.slice(5);
   const dCls=v=>v>0?'up':(v<0?'down':'');
   const dTxt=v=>fmt(v);
+  const activeCats=CAT_ORDER.filter(c=>cur[c]&&cur[c][1]>0).sort((a,b)=>cur[b][1]-cur[a][1]);
+  const hbar=activeCats.length?svgHBar(activeCats, activeCats.map(c=>cur[c][1])):'';
   const html=`
   <div class="kpis">
     <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.orders}</div><div class="label">${Dlbl} 当日单量</div><div class="val">${curPl}</div><div class="sub">较 ${Plbl}：<span class="${dCls(curPl-prevPl)}">${curPl-prevPl>=0?'+':''}${curPl-prevPl} 单</span></div></div>
@@ -583,6 +603,7 @@ function renderReport(){
   </div>
   <div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>${genInsights(cur, prev, D, P).map(s=>'<li>'+s+'</li>').join('')}</ul></div>
   <div class="module"><h3>${Dlbl} 渠道汇总与明细</h3><div class="desc">各渠道单量与金额分布；点击渠道行可展开 / 收起其下具体 referrer 来源明细（默认收起）。</div>
+    ${hbar?'<div class="chart-wrap">'+hbar+'</div>':''}
     <table id="catDetail"><tr><th>渠道 / Referrer</th><th class="num">单量</th><th class="num">金额</th><th class="num">单量占比</th><th class="num">金额占比</th></tr>${catDetailTable(cur, refD)}</table></div>
   <div class="module"><h3>前一日对比（${Plbl} → ${Dlbl}）</h3><div class="desc">各渠道两天金额变化，上涨绿、下滑红。</div>
     <table><tr><th>渠道</th><th class="num">${Plbl} 单量</th><th class="num">${Dlbl} 单量</th><th class="num">${Plbl} 金额</th><th class="num">${Dlbl} 金额</th><th class="num">金额变化</th></tr>${cmpRows}</table></div>
