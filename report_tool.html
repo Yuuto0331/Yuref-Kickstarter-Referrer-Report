@@ -76,11 +76,24 @@ tr.cat{cursor:pointer}tr.cat:hover td{background:#eef2f7}
 note{color:var(--muted);font-size:12px}
 .hide{display:none}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:8px}
-.kpi{background:var(--panel);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);border-left:4px solid var(--line);transition:transform .1s,box-shadow .15s}
+.kpi{position:relative;overflow:hidden;background:var(--panel);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);border-left:4px solid var(--line);transition:transform .1s,box-shadow .15s}
 .kpi:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
 .kpi.blue{border-left-color:var(--blue)}.kpi.green{border-left-color:var(--green)}.kpi.gray{border-left-color:#94a3b8}
 .kpi .label{font-size:13px;color:var(--muted);margin-bottom:6px}.kpi .val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
 .kpi .sub{font-size:12px;margin-top:6px;color:var(--muted)}
+.kpi .kpi-ic{position:absolute;top:14px;right:14px;width:30px;height:30px;opacity:.9;pointer-events:none}
+.kpi .kpi-ic svg{width:100%;height:100%;display:block}
+.kpi .up{color:var(--green);font-weight:600}
+.kpi .down{color:var(--red);font-weight:600}
+.guide{background:linear-gradient(135deg,#f8fafc,#eef2f7);border:1px solid var(--line);border-radius:16px;padding:30px 32px;box-shadow:var(--shadow)}
+.guide h3{margin:0 0 4px;font-size:18px}
+.guide p.lead{margin:0 0 18px;color:var(--muted);font-size:13px}
+.guide ol{list-style:none;counter-reset:step;margin:0;padding:0;display:grid;gap:12px}
+.guide ol li{counter-increment:step;display:flex;gap:14px;align-items:flex-start;font-size:14px;line-height:1.5}
+.guide ol li::before{content:counter(step);flex:none;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.guide ol li b{color:var(--ink)}
+.guide .g-note{margin-top:18px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+@media(max-width:560px){.guide{padding:22px 18px}}
 @media(max-width:900px){.params{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.map-row{grid-template-columns:1fr 140px}.map-row.warn{grid-template-columns:1fr 110px 76px}}
 @media(max-width:560px){.kpis{grid-template-columns:1fr}.panel{padding:16px}.module{padding:16px}.rpt-toolbar{gap:10px}.module h3{font-size:16px}}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0}
@@ -169,6 +182,13 @@ const CAT_COLORS = {
 };
 const SOCIAL_SET = new Set(['Social-FB','Social-IG','Social-X','TVC','App-BPS','Group-New','X (formerly Twitter)','YouTube','YouTube Live']);
 const NONKICK_SET = new Set(['3DNatives_Article','3DP_Article','Makezine_Article','hackaday.com']);
+// KPI 卡片小图标（单色描边，匹配卡片主题色）
+const KPI_ICONS = {
+  orders:'<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h4v8H3zM10 7h4v14h-4zM17 3h4v18h-4z"/></svg>',
+  money:'<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M12 9v6M9.5 12h5"/></svg>',
+  total:'<svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M21 7v5h-5"/></svg>',
+  week:'<svg viewBox="0 0 24 24" fill="none" stroke="#1a7f37" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>'
+};
 
 function parseCSV(text){
   const lines = text.replace(/\r/g,'').split('\n').filter(l=>l.length);
@@ -522,12 +542,14 @@ function renderReport(){
   // 周环比表（已整合进 cmpWeekHtml / cmp3Html，见上方）
 
   const Dlbl=D.slice(5), Plbl=P.slice(5);
+  const dCls=v=>v>0?'up':(v<0?'down':'');
+  const dTxt=v=>fmt(v);
   const html=`
   <div class="kpis">
-    <div class="kpi blue"><div class="label">${Dlbl} 当日单量</div><div class="val">${curPl}</div><div class="sub">较 ${Plbl}：${curPl-prevPl>=0?'+':''}${curPl-prevPl} 单</div></div>
-    <div class="kpi blue"><div class="label">${Dlbl} 当日金额</div><div class="val">${fmt(curAm)}</div><div class="sub">较 ${Plbl}：${curAm-prevAm>=0?'+':''}${fmt(curAm-prevAm)}</div></div>
-    <div class="kpi gray"><div class="label">全期累计（${dates[0].slice(5)}-${Dlbl}）</div><div class="val">${fmt(campAm)}</div><div class="sub">${campPl} 单</div></div>
-    <div class="kpi green"><div class="label">自然周覆盖</div><div class="val">${weeks.length} 周</div><div class="sub">${weekLabels.join(' · ')}</div></div>
+    <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.orders}</div><div class="label">${Dlbl} 当日单量</div><div class="val">${curPl}</div><div class="sub">较 ${Plbl}：<span class="${dCls(curPl-prevPl)}">${curPl-prevPl>=0?'+':''}${curPl-prevPl} 单</span></div></div>
+    <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.money}</div><div class="label">${Dlbl} 当日金额</div><div class="val">${fmt(curAm)}</div><div class="sub">较 ${Plbl}：<span class="${dCls(curAm-prevAm)}">${curAm-prevAm>=0?'+':''}${dTxt(curAm-prevAm)}</span></div></div>
+    <div class="kpi gray"><div class="kpi-ic">${KPI_ICONS.total}</div><div class="label">全期累计（${dates[0].slice(5)}-${Dlbl}）</div><div class="val">${fmt(campAm)}</div><div class="sub">${campPl} 单</div></div>
+    <div class="kpi green"><div class="kpi-ic">${KPI_ICONS.week}</div><div class="label">自然周覆盖</div><div class="val">${weeks.length} 周</div><div class="sub">${weekLabels.join(' · ')}</div></div>
   </div>
   <div class="module"><h3>${Dlbl} 渠道汇总与明细</h3><div class="desc">各渠道单量与金额分布；点击渠道行可展开 / 收起其下具体 referrer 来源明细（默认收起）。</div>
     <table id="catDetail"><tr><th>渠道 / Referrer</th><th class="num">单量</th><th class="num">金额</th><th class="num">单量占比</th><th class="num">金额占比</th></tr>${catDetailTable(cur, refD)}</table></div>
@@ -834,7 +856,7 @@ try{
     if(saved&&saved.csv){ restoreFrom(saved); showToast('已恢复项目「'+lp+'」的上一次数据（'+STATE.rows.length.toLocaleString('en-US')+' 行）','info',4000); }
     else{ const s1=document.getElementById('selProj'),s2=document.getElementById('selProjTop'); if(s1)s1.value=lp; if(s2)s2.value=lp; }
   } else {
-    document.getElementById('reportBody').innerHTML='<div class="insight">请先在上方「项目」选择 <b>＋ 新建项目…</b> 创建项目，然后上传或粘贴 CSV 生成报表。</div>';
+    renderGuide();
   }
 }catch(e){}
 document.getElementById('btnParse').addEventListener('click',()=>{
@@ -842,6 +864,19 @@ document.getElementById('btnParse').addEventListener('click',()=>{
   if(!t){ showToast('请先粘贴 CSV 文本','info',2000); return; }
   loadText(t);
 });
+// 首屏引导卡：未选择/未恢复项目时展示三步上手流程
+function renderGuide(){
+  document.getElementById('reportBody').innerHTML=`<div class="guide">
+    <h3>开始生成你的 Kickstarter 渠道报表</h3>
+    <p class="lead">三步即可：上传数据 →（可选）调整分类 → 查看渠道汇总与趋势。</p>
+    <ol>
+      <li><div><b>上传 / 粘贴 CSV</b>：在上方「① 上传数据」拖入 Kickstarter referrers 导出，或粘贴文本后点「生成报表」。</div></li>
+      <li><div><b>（可选）调整分类口径</b>：关注标 ⚠️ 的「待确认」项，按需指定渠道；其余默认已自动归类。</div></li>
+      <li><div><b>查看报表</b>：渠道汇总与明细、前一日对比、自然周趋势会自动生成，可切换分析日。</div></li>
+    </ol>
+    <div class="g-note">🔒 数据仅存于本机浏览器，不会上传服务器。</div>
+  </div>`;
+}
 // SAMPLE CSV removed per UX feedback
 // 自定义 chart tooltip（比 <title> 更稳定、即时）
 const tip=document.getElementById('chartTip');
