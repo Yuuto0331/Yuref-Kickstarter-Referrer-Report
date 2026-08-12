@@ -91,9 +91,8 @@ tr:nth-child(even) td{background:#fafbfc}
 tr.total td{font-weight:700;background:#f1f5f9}tr.cat td{font-weight:600;background:#f8fafc}
 tr.cat{cursor:pointer}tr.cat:hover td{background:#eef2f7}
 tr.sub td{background:#fff}
-tr.sub td:first-child{position:relative;padding-left:64px}
-tr.sub td:first-child::before{content:'';position:absolute;left:38px;top:12px;bottom:12px;width:4px;border-radius:2px;background:var(--blue);opacity:.25}
-tr.sub td:first-child::after{content:'└';position:absolute;left:42px;top:50%;transform:translateY(-50%);font-size:12px;color:#94a3b8;font-family:system-ui,sans-serif}
+tr.sub td:first-child{position:relative;padding-left:48px}
+tr.sub td:first-child::after{content:'└';position:absolute;left:26px;top:50%;transform:translateY(-50%);font-size:12px;color:#94a3b8;font-family:system-ui,sans-serif}
 .cat .caret{display:inline-block;color:var(--muted);font-size:11px;margin-left:4px;transition:transform .12s}
 .rcnt{display:inline-block;margin-left:6px;font-size:11px;color:var(--muted);font-weight:400}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
@@ -106,9 +105,8 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:42px;top:50%;t
 .map-row .map-act{justify-self:end;padding:5px 8px;font-size:12px;white-space:nowrap}
 .map-row.warn{background:#fffbeb}
 .map-row.saved{background:#eff6ff}
-.map-ref{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative;padding-left:32px;color:#475569}
-.map-ref::before{content:'';position:absolute;left:14px;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--blue);opacity:.2}
-.map-ref::after{content:'└';position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:11px;color:#94a3b8;font-family:system-ui,sans-serif}
+.map-ref{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative;padding-left:28px;color:#475569}
+.map-ref::after{content:'└';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:11px;color:#94a3b8;font-family:system-ui,sans-serif}
 .map-row select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px}
 .map-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
 .map-tools input[type=text]{flex:1;min-width:160px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:13px}
