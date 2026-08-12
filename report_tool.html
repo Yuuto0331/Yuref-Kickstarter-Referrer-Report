@@ -733,7 +733,7 @@ function renderReport(){
   const fw=STATE.firstWeek;
   const weeks=Array.from(new Set(dates.map(d=>weekOf(d,launch,fw)))).sort((a,b)=>parseInt(a.slice(1),10)-parseInt(b.slice(1),10));
   const weekly=weeks.map(w=>{ const o={}; for(const d of dates){ if(weekOf(d,launch,fw)===w){ for(const c of CAT_ORDER){ if(daily[d][c]){ o[c]=(o[c]||0)+daily[d][c][1]; } } } } return o; });
-  const weekLabels=weeks.map(w=>{ const wd=dates.filter(d=>weekOf(d,launch,fw)===w); return wd[0].slice(5)+'-'+wd[wd.length-1].slice(5); });
+  const weekLabels=weeks.map(w=>{ const wd=dates.filter(d=>weekOf(d,launch,fw)===w); return wd[0].slice(5).replace('-','/')+'-'+wd[wd.length-1].slice(5).replace('-','/'); });
 
   // 区间对比：默认滚动三日，可切换为手动选择日期范围或全期汇总
   const canCustom = dates.length>=2;
