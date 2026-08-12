@@ -615,6 +615,7 @@ function renderReport(){
     <div class="chart-wrap">${svgGroup(order3, amt3P, amt3R, '前三天（'+priorLbl+'）', '近三天（'+recentLbl+'）')}</div>
     <table><tr><th>渠道</th><th class="num">前三天（${priorLbl}）</th><th class="num">近三天（${recentLbl}）</th><th class="num">金额变化</th><th class="num">变化%</th></tr>${cmp3Rows}</table>`;
   let wkBlocks='<div class="week-grid">'+weeks.map((w,i)=>weekCard('第'+w+'周（'+weekLabels[i]+'）', weekly[i])).join('')+'</div>';
+  const Dlbl=D.slice(5), Plbl=P.slice(5);
 
   // 明细（合并进汇总表，默认折叠）
   const refD = refDict[D]||{};
@@ -630,7 +631,6 @@ function renderReport(){
 
   // 周环比表（已整合进 cmpWeekHtml / cmp3Html，见上方）
 
-  const Dlbl=D.slice(5), Plbl=P.slice(5);
   const dCls=v=>v>0?'up':(v<0?'down':'');
   const dTxt=v=>fmt(v);
   const activeCats=CAT_ORDER.filter(c=>cur[c]&&cur[c][1]>0).sort((a,b)=>cur[b][1]-cur[a][1]);
