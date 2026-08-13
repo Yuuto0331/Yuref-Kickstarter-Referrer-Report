@@ -212,8 +212,6 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:12px;top:50%;t
 @keyframes toastOut{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-8px)}}
 .data-info{margin-top:12px;padding:10px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:8px;font-size:13px;color:#374151;display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .data-info .meta{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;flex-wrap:wrap}
-.data-info .meta select{padding:2px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:#fff;color:var(--ink);cursor:pointer}
-.data-info .meta select:hover{border-color:var(--blue)}
 .data-info b{color:var(--ink);font-weight:600}
 /* 自定义日期范围选择器 */
 .date-range-field{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-size:13px;cursor:pointer;transition:.15s;min-width:180px}
@@ -308,7 +306,8 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:12px;top:50%;t
     </div>
     <div class="rpt-right">
       <span class="proj-chip" id="projChip">default</span>
-      <label class="cur-sel">显示币种<select id="displayCurSel"><option value="USD">美元 $</option><option value="HKD">港币 HK$</option></select></label>
+      <label class="cur-sel" title="CSV 中金额的原始币种，按项目记忆">数据币种<select id="origCurSel"><option value="USD">USD $</option><option value="HKD">HKD HK$</option></select></label>
+      <label class="cur-sel" title="报表以哪种币种呈现，可随时切换">显示为<select id="displayCurSel"><option value="USD">美元 $</option><option value="HKD">港币 HK$</option></select></label>
       <button class="btn ghost sm" id="btnDl">下载报表 HTML</button>
     </div>
   </div>
@@ -1080,7 +1079,7 @@ function updateDataInfo(sourceLabel){
   if(!STATE.rows||!STATE.rows.length){ di.classList.add('hide'); return; }
   const dates=Array.from(new Set(STATE.rows.map(r=>r.date))).filter(Boolean).sort();
   const src=sourceLabel || STATE.lastSource || '已缓存数据';
-  di.innerHTML='<div><b>当前数据</b>：'+escapeHtml(src)+'</div><div class="meta"><span>'+STATE.rows.length.toLocaleString('en-US')+' 行</span><span>·</span><span>'+(dates[0]||'-').slice(5)+' ~ '+(dates[dates.length-1]||'-').slice(5)+'</span><span>·</span><span>项目：'+escapeHtml(STATE.proj||'default')+'</span><span>·</span><span>原始币种</span><select id="origCurSel"><option value="USD">USD</option><option value="HKD">HKD</option></select><span>· 按 1 USD = 7.8 HKD 显示为 <b>'+(STATE.displayCur||'USD')+'</b></span></div>';
+  di.innerHTML='<div><b>当前数据</b>：'+escapeHtml(src)+'</div><div class="meta"><span>'+STATE.rows.length.toLocaleString('en-US')+' 行</span><span>·</span><span>'+(dates[0]||'-').slice(5)+' ~ '+(dates[dates.length-1]||'-').slice(5)+'</span><span>·</span><span>项目：'+escapeHtml(STATE.proj||'default')+'</span><span>·</span><span>原始币种：'+(STATE.cur||'USD')+' · 按 1 USD = 7.8 HKD 显示为 <b>'+(STATE.displayCur||'USD')+'</b></span></div>';
   di.classList.remove('hide');
 }
 function loadFile(file){
@@ -1183,9 +1182,8 @@ document.getElementById('displayCurSel').addEventListener('change',e=>{
   STATE.displayCur=e.target.value;
   syncCurrencyUI(); applyAndRender();
 });
-document.getElementById('dataInfo').addEventListener('change',e=>{
-  const sel=e.target.closest('#origCurSel');
-  if(sel){ STATE.cur=sel.value; saveData(); syncCurrencyUI(); applyAndRender(); }
+document.getElementById('origCurSel').addEventListener('change',e=>{
+  STATE.cur=e.target.value; saveData(); syncCurrencyUI(); applyAndRender();
 });
 // 汇总/明细合并表：点击渠道行展开/收起其下 referrer 明细；日期范围字段点击打开日历
 const reportBodyEl=document.getElementById('reportBody');
