@@ -789,6 +789,37 @@ function genInsights(cur, prev, D, P){
   if(dC && dD<0){ const base=prev[dC]?prev[dC][1]:0; if(base && dD/base<=-0.1) out.push(`下滑最明显的是 <b>${dC}</b>，金额 <b class="down">${fmt(dD)}</b>。`); }
   return out;
 }
+// 异常预警框：根据当日与对比日数据触发，无异常则返回空数组（不显示空框）
+function genAlerts(cur, prev, D, P){
+  const out=[];
+  let tCur=0, tPrev=0;
+  CAT_ORDER.forEach(c=>{ tCur+=(cur[c]?cur[c][1]:0); tPrev+=(prev[c]?prev[c][1]:0); });
+  // 无对比日数据
+  if(tPrev===0){
+    out.push(`<div class="insight note">对比日 <b>${P}</b> 不在数据范围内，以下洞察仅基于 <b>${D}</b> 当日绝对值。</div>`);
+    return out;
+  }
+  // 当日总额大幅下滑
+  const tpct=(tCur-tPrev)/tPrev;
+  if(tpct<=-0.2){
+    out.push(`<div class="insight danger">环比预警：<b>${D}</b> 当日金额 <b>${fmt(tCur)}</b>，较 ${P} 下滑 <b>${tpct.toFixed(0)}%</b>，建议核查投放节奏与自然流量波动。</div>`);
+  } else if(tpct>=0.3){
+    out.push(`<div class="insight info">表现强劲：<b>${D}</b> 当日金额 <b>${fmt(tCur)}</b>，环比增长 <b>+${(tpct*100).toFixed(0)}%</b>。</div>`);
+  }
+  // 单一渠道下滑最明显
+  let dC=null, dD=1;
+  CAT_ORDER.forEach(c=>{ const d=(cur[c]?cur[c][1]:0)-(prev[c]?prev[c][1]:0); if(d<dD){ dD=d; dC=c; } });
+  if(dC && dD<0){ const base=prev[dC]?prev[dC][1]:0; if(base>0 && dD/base<=-0.1 && -dD>=50){
+    out.push(`<div class="insight danger">渠道预警：<b>${dC}</b> 当日金额 <b>${fmt(cur[dC]?cur[dC][1]:0)}</b>，较 ${P} 减少 <b>${fmt(-dD)}</b>（${(dD/base*100).toFixed(0)}%）。</div>`);
+  } }
+  // 来源集中度偏高
+  let topC=null, topV=0;
+  CAT_ORDER.forEach(c=>{ const v=cur[c]?cur[c][1]:0; if(v>topV){ topV=v; topC=c; } });
+  if(topC && tCur>0 && topV/tCur>0.5){
+    out.push(`<div class="insight info">集中度提示：<b>${topC}</b> 占当日金额 <b>${(topV/tCur*100).toFixed(0)}%</b>，来源结构偏集中，留意单一渠道依赖风险。</div>`);
+  }
+  return out;
+}
 function renderReport(){
   const {daily,refDict,dates}=STATE.agg;
   const D=STATE.D, P=STATE.P, launch=STATE.launch;
@@ -905,6 +936,7 @@ function renderReport(){
     <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.total}</div><div class="label">全期累计（${dates[0].slice(5)}-${Dlbl}）</div><div class="val">${fmt(campAm)}</div><div class="sub">${campPl} 单</div></div>
     <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.week}</div><div class="label">自然周覆盖</div><div class="val">${weeks.length} 周</div><div class="sub">${weekLabels.join(' · ')}</div></div>
   </div>
+  <div class="alerts">${genAlerts(cur, prev, D, P).join('')}</div>
   <div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>${genInsights(cur, prev, D, P).map(s=>'<li>'+s+'</li>').join('')}</ul></div>
   <div class="module"><h3>${Dlbl} 渠道汇总与明细</h3><div class="desc">各渠道单量与金额分布；点击渠道行可展开 / 收起其下具体 referrer 来源明细（默认收起）。</div>
     ${hbar?'<div class="chart-wrap">'+hbar+'</div>':''}
