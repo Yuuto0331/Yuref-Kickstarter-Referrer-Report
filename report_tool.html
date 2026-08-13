@@ -118,20 +118,16 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue);bo
 .wc-row .wc-pct{font-size:11px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 @media(max-width:760px){.week-grid{grid-template-columns:1fr}}
 @media(max-width:900px){.rpt-toolbar{flex-direction:column;align-items:stretch}.rpt-right{justify-content:space-between}}
-.tbl-card{border:1px solid var(--line);border-radius:12px;overflow:auto;-webkit-overflow-scrolling:touch;margin:6px 0;background:#fff}
+.tbl-card{margin:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tbl-card table{margin:0;box-shadow:none}
-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}
 th{background:#f8fafc;font-weight:600;color:var(--muted);font-size:12px;cursor:pointer;user-select:none}
 td.num{text-align:left;font-variant-numeric:tabular-nums}
 th:first-child,td:first-child{position:sticky;left:0;z-index:1}
 th:first-child{background:#f8fafc;z-index:2}
 td:first-child{background:#fff}
-th:first-child{border-top-left-radius:12px}
-th:last-child{border-top-right-radius:12px}
 tbody tr:last-child td{border-bottom:none}
-tr.total td:first-child{border-bottom-left-radius:12px}
-tr.total td:last-child{border-bottom-right-radius:12px}
 tr:nth-child(even) td:first-child{background:#fafbfc}
 tr.total td:first-child,tr.cat td:first-child{background:#f8fafc}
 tr.sub td:first-child{background:#fff}
