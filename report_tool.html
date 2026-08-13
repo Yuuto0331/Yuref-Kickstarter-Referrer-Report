@@ -811,10 +811,8 @@ function cmpInsightHtml(items, lblA, lblB){
   const neg=diffs.filter(o=>o.d<0).sort((x,y)=>x.d-y.d);
   if(pos.length || neg.length){
     const fmtList=arr=>arr.slice(0,3).map(o=>`「<b>${o.c}</b>」${o.d>0?'+':'-'}${fmt(Math.abs(o.d))}`).join('、');
-    let line='';
-    if(pos.length) line+=`增长渠道：${fmtList(pos)}${pos.length>3?' 等':''}`;
-    if(neg.length) line+=(line?'；':'')+`下滑渠道：${fmtList(neg)}${neg.length>3?' 等':''}`;
-    out.push(`<li>${line}。</li>`);
+    if(pos.length) out.push(`<li>增长渠道：${fmtList(pos)}${pos.length>3?' 等':''}。</li>`);
+    if(neg.length) out.push(`<li>下滑渠道：${fmtList(neg)}${neg.length>3?' 等':''}。</li>`);
   }
   // 3) 结构：只说占比最高的渠道及其份额变化（用 % 表示百分点，相对期统称为“前期”）
   const shares=items.map(o=>({c:o.c, sb:tB>0?o.b/tB:0, sa:tA>0?o.a/tA:0}));
