@@ -796,36 +796,42 @@ function cmpInsightHtml(items, lblA, lblB){
   const out=[];
   let tA=0, tB=0;
   items.forEach(o=>{ tA+=o.a; tB+=o.b; });
+  // 1) 总体变化（自然语言，避免“净$-”）
   if(tA>0){
     const diff=tB-tA, pct=Math.round(diff/tA*100);
-    out.push(`<li>${lblB} 较 ${lblA} <b class="${diff>0?'up':(diff<0?'down':'')}">${diff>0?'+':''}${pct}%</b>，合计金额 <b>${fmt(tB)}</b>（净${diff>0?'+':''}${fmt(diff)}）。</li>`);
+    const changeWord=diff>0?'增加':diff<0?'减少':'持平';
+    const changeAmt=diff!==0?`${changeWord} ${fmt(Math.abs(diff))}`:'无变化';
+    out.push(`<li>${lblB} 较 ${lblA} ${changeAmt}（<b class="${diff>0?'up':(diff<0?'down':'')}">${diff>0?'+':''}${pct}%</b>），合计金额 <b>${fmt(tB)}</b>。</li>`);
   } else if(tB>0){
     out.push(`<li>${lblB} 金额 <b>${fmt(tB)}</b>（${lblA} 无可比数据）。</li>`);
   }
-  // 2) 变化驱动：最大正向/负向贡献渠道及其对冲关系
+  // 2) 贡献分解：分别列出增长最多、下滑最多的渠道（不做对冲判断）
   const diffs=items.map(o=>({c:o.c,d:o.b-o.a}));
   const pos=diffs.filter(o=>o.d>0).sort((x,y)=>y.d-x.d);
   const neg=diffs.filter(o=>o.d<0).sort((x,y)=>x.d-y.d);
-  if(pos[0]&&neg[0]){
-    const pd=pos[0].d, nd=-neg[0].d;
-    const rel=pd>nd*1.5?'增长占主导':nd>pd*1.5?'下滑占主导':'基本对冲';
-    out.push(`<li>变化由「<b>${pos[0].c}</b>」（+${fmt(pd)}）的增长与「<b>${neg[0].c}</b>」（-${fmt(nd)}）的下滑共同驱动，两者${rel}。</li>`);
+  if(pos[0] && neg[0]){
+    out.push(`<li>增长端「<b>${pos[0].c}</b>」贡献最多（+${fmt(pos[0].d)}）；下滑端「<b>${neg[0].c}</b>」拖累最大（-${fmt(-neg[0].d)}）。</li>`);
   } else if(pos[0]){
-    out.push(`<li>整体增长，主要由「<b>${pos[0].c}</b>」拉动（+${fmt(pos[0].d)}）。</li>`);
+    out.push(`<li>整体增长由「<b>${pos[0].c}</b>」拉动最多（+${fmt(pos[0].d)}）。</li>`);
   } else if(neg[0]){
-    out.push(`<li>整体下滑，集中在「<b>${neg[0].c}</b>」（-${fmt(-neg[0].d)}）。</li>`);
+    out.push(`<li>整体下滑主要受「<b>${neg[0].c}</b>」拖累（-${fmt(-neg[0].d)}）。</li>`);
   }
-  // 3) 结构：占比最高渠道及其份额变化 + 显著变动渠道
+  // 3) 结构：占比最高渠道 + 显著份额变动渠道（>=3 个百分点）
   const shares=items.map(o=>({c:o.c, sb:tB>0?o.b/tB:0, sa:tA>0?o.a/tA:0}));
   const top=shares.slice().sort((x,y)=>y.sb-x.sb)[0];
-  const sd=shares.map(o=>({c:o.c,d:o.sb-o.sa})).sort((x,y)=>y.d-x.d);
   if(top){
-    const d=(sd.find(o=>o.c===top.c)||{d:0}).d;
-    let line=`结构上「<b>${top.c}</b>」仍以 ${Math.round(top.sb*100)}% 居首`;
-    if(d>0) line+=`，份额较 ${lblA} 扩大 ${Math.round(d*100)} 个百分点`;
-    else if(d<0) line+=`，份额较 ${lblA} 收窄 ${Math.round(-d*100)} 个百分点`;
-    const mover=sd.find(o=>o.c!==top.c && Math.abs(o.d)>=0.03);
-    if(mover){ const ms=(shares.find(s=>s.c===mover.c)||{sb:0}).sb; line+=`；「<b>${mover.c}</b>」${mover.d>0?'升至':'降至'} ${Math.round(ms*100)}%${mover.d>0?'（+'+Math.round(mover.d*100)+' 个百分点）':'（-'+Math.round(-mover.d*100)+' 个百分点）'}`; }
+    const sd=shares.map(o=>({c:o.c,d:o.sb-o.sa})).sort((x,y)=>y.d-x.d);
+    const topDelta=(sd.find(o=>o.c===top.c)||{d:0}).d;
+    let line=`「<b>${top.c}</b>」以 ${Math.round(top.sb*100)}% 居首`;
+    if(topDelta>0) line+=`，份额较 ${lblA} 扩大 ${Math.round(topDelta*100)} 个百分点`;
+    else if(topDelta<0) line+=`，份额较 ${lblA} 收窄 ${Math.round(-topDelta*100)} 个百分点`;
+    const movers=sd.filter(o=>o.c!==top.c && Math.abs(o.d)>=0.03).slice(0,2);
+    if(movers.length){
+      line+='；'+movers.map(m=>{
+        const sb=(shares.find(s=>s.c===m.c)||{sb:0}).sb;
+        return `「<b>${m.c}</b>」${m.d>0?'升至':'降至'} ${Math.round(sb*100)}%（${m.d>0?'+':''}${Math.round(m.d*100)} 个百分点）`;
+      }).join('、');
+    }
     out.push(`<li>${line}。</li>`);
   }
   if(!out.length) return '';
