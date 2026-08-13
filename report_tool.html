@@ -692,7 +692,7 @@ function svgStacked(weekly, labels){
     const cx=centers[i], x=cx-barW/2, v=weekTotals[i], h=v/yMax*ch, y=H-M.b-h;
     const top3=CAT_ORDER.map(c=>({c,v:weekly[i][c]||0})).filter(o=>o.v>0).sort((a,b)=>b.v-a.v).slice(0,3).map(o=>`${o.c} ${fmt(o.v)}`).join(' · ');
     const tip=`${labels[i]} 总额：${fmt(v)}${top3?'\n Top3：'+top3:''}`;
-    rects+=`<g data-tip="${escapeAttr(tip)}"><title>${escapeAttr(tip)}</title><path d="${topRound(x,y,barW,h,7)}" fill="url(#weekBar)"/></g>`;
+    rects+=`<g data-tip="${escapeAttr(tip)}"><path d="${topRound(x,y,barW,h,7)}" fill="url(#weekBar)"/></g>`;
     if(h>2) rects+=`<text x="${cx.toFixed(1)}" y="${(y-8).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">${fmtTick(v)}</text>`;
   }
   let lab='';
@@ -712,8 +712,8 @@ function svgGroup(cats, amtA, amtB, lblA, lblB){
     const c=cats[i], cx=M.l+i*groupW+groupW/2, xb=cx-pairW/2;
     const hA=amtA[i]/yMax*ch, hB=amtB[i]/yMax*ch, yA=H-M.b-hA, yB=H-M.b-hB;
     const tA=`${c}\n${lblA}\n金额：${fmt(amtA[i])}`, tB=`${c}\n${lblB}\n金额：${fmt(amtB[i])}`;
-    rects+=`<g fill="url(#grpA)" data-tip="${escapeAttr(tA)}"><title>${escapeAttr(tA)}</title><path d="${topRound(xb,yA,barW,hA,5)}"/></g>`;
-    rects+=`<g fill="url(#grpB)" data-tip="${escapeAttr(tB)}"><title>${escapeAttr(tB)}</title><path d="${topRound(xb+barW+gap,yB,barW,hB,5)}"/></g>`;
+    rects+=`<g fill="url(#grpA)" data-tip="${escapeAttr(tA)}"><path d="${topRound(xb,yA,barW,hA,5)}"/></g>`;
+    rects+=`<g fill="url(#grpB)" data-tip="${escapeAttr(tB)}"><path d="${topRound(xb+barW+gap,yB,barW,hB,5)}"/></g>`;
     if(hA>0) lab+=`<text x="${(xb+barW/2).toFixed(1)}" y="${(H-M.b-hA-6).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#94a3b8">${fmtTick(amtA[i])}</text>`;
     if(hB>0) lab+=`<text x="${(xb+barW+gap+barW/2).toFixed(1)}" y="${(H-M.b-hB-6).toFixed(1)}" text-anchor="middle" font-size="9.5" font-weight="600" fill="#2563eb">${fmtTick(amtB[i])}</text>`;
     lab+=`<text x="${cx.toFixed(1)}" y="${H-M.b+18}" text-anchor="middle" font-size="10.5" fill="#475569">${escapeAttr(c)}</text>`;
@@ -735,7 +735,7 @@ function svgHBar(cats, amounts){
     rows+=`<g class="hbar-row">
       <circle cx="12" cy="${y}" r="3" fill="${CAT_COLORS[c]}"/>
       <text x="24" y="${y}" dy=".35em" font-size="12" fill="#374151">${escapeAttr(c)}</text>
-      <rect x="${baselineX}" y="${y-barH/2}" width="${bw.toFixed(1)}" height="${barH}" rx="5" fill="${CAT_COLORS[c]}" opacity=".9" data-tip="${escapeAttr(c)}\n金额：${fmt(am)}\n占比：${pct.toFixed(1)}%"/><title>${escapeAttr(c)}：${fmt(am)}（${pct.toFixed(1)}%）</title></rect>
+      <rect x="${baselineX}" y="${y-barH/2}" width="${bw.toFixed(1)}" height="${barH}" rx="5" fill="${CAT_COLORS[c]}" opacity=".9" data-tip="${escapeAttr(c)}\n金额：${fmt(am)}\n占比：${pct.toFixed(1)}%"/></rect>
       <text x="${W-10}" y="${y}" dy=".35em" text-anchor="end" font-size="11" fill="#6b7280">${fmt(am)} · ${pct.toFixed(1)}%</text>
     </g>`;
   });
