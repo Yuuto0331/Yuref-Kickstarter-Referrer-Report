@@ -78,7 +78,7 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue);bo
 .chart-wrap svg g:hover path{opacity:.82}
 .rpt-toolbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin:0 0 16px;padding:12px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:10px}
 .rpt-dates{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.rpt-dates label,.rpt-right label.lbl{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.rpt-dates label,.rpt-right label.lbl,.cur-sel{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
 .rpt-dates select,.rpt-right select{padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:13px;background:#fff}
 .rpt-right{display:flex;gap:10px;align-items:center}
 .cmp-controls{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}
@@ -306,6 +306,8 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:12px;top:50%;t
     </div>
     <div class="rpt-right">
       <span class="proj-chip" id="projChip">default</span>
+      <label class="cur-sel">原币<select id="curSel"><option value="USD">USD $</option><option value="HKD">HKD HK$</option></select></label>
+      <button class="btn ghost sm" id="btnCurToggle" title="在美元 / 原币种之间切换显示">显示:USD</button>
       <button class="btn ghost sm" id="btnDl">下载报表 HTML</button>
     </div>
   </div>
@@ -436,10 +438,15 @@ function loadOverrides(proj){ try{ return JSON.parse(localStorage.getItem(lsKey(
 function saveOverrides(proj){ try{ localStorage.setItem(lsKey(proj), JSON.stringify(STATE.override)); }catch(e){} }
 // 原始 CSV 也按项目名存一份，刷新后自动恢复报表（仍仅存于本机浏览器）
 function lsDataKey(proj){ return 'ks_ref_data_v1_'+(proj||'default'); }
-function saveData(){ try{ if(STATE.rawCsv) localStorage.setItem(lsDataKey(STATE.proj), JSON.stringify({proj:STATE.proj, csv:STATE.rawCsv, D:STATE.D, P:STATE.P, launch:STATE.launch, firstWeek:STATE.firstWeek, lastSource:STATE.lastSource})); }catch(e){} }
+function saveData(){ try{ if(STATE.rawCsv) localStorage.setItem(lsDataKey(STATE.proj), JSON.stringify({proj:STATE.proj, csv:STATE.rawCsv, D:STATE.D, P:STATE.P, launch:STATE.launch, firstWeek:STATE.firstWeek, lastSource:STATE.lastSource, currency:STATE.cur||'USD'})); }catch(e){} }
 function loadSavedData(proj){ try{ return JSON.parse(localStorage.getItem(lsDataKey(proj))||'null'); }catch(e){ return null; } }
 function getProj(){ return STATE.proj||'default'; }
-function fmt(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+// 币种：众筹项目一般为 USD / HKD；HKD 为联系汇率（7.75–7.85 钉住 USD），固定用 7.8 近似换算
+const CURRENCIES=['USD','HKD'];
+const FX_TO_USD={ USD:1, HKD:1/7.8 };
+const CUR_SYMBOL={ USD:'$', HKD:'HK$' };
+function curFactor(){ const from=STATE.cur||'USD', to=STATE.displayCur||'USD'; if(from===to) return 1; const f=FX_TO_USD[from], t=FX_TO_USD[to]; if(f==null||t==null) return 1; return f/t; }
+function fmt(n){ const v=n*curFactor(); return (CUR_SYMBOL[STATE.displayCur||'USD']||'$')+Math.round(v).toLocaleString('en-US'); }
 
 // ---------- 自定义日期范围选择器 ----------
 const rangePicker={el:null,target:null,onChange:null,viewYear:null,viewMonth:null,minD:null,maxD:null,start:null,end:null};
@@ -597,7 +604,7 @@ function aggregate(rows, classifyFn){
 // ==CORE_END==
 
 // ---------- 以下为界面/渲染逻辑（依赖 DOM） ----------
-let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, lastSource:'' };
+let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, lastSource:'', cur:'USD', displayCur:'USD' };
 
 function finalClassify(ref, typ){
   if(STATE.override[ref]!==undefined) return STATE.override[ref];
@@ -676,7 +683,7 @@ function niceMax(v){
   if(n<=1)m=1; else if(n<=2)m=2; else if(n<=2.5)m=2.5; else if(n<=5)m=5; else m=10;
   return m*pow;
 }
-function fmtTick(tv){ return tv>=1e6 ? '$'+(tv/1e6).toFixed(tv%1e6?1:0)+'M' : '$'+(tv/1000).toFixed(0)+'k'; }
+function fmtTick(tv){ const v=tv*curFactor(); return (CUR_SYMBOL[STATE.displayCur||'USD']||'$')+(v>=1e6 ? (v/1e6).toFixed(v%1e6?1:0)+'M' : (v/1000).toFixed(0)+'k'); }
 
 function svgStacked(weekly, labels){
   const n=weekly.length; if(!n) return '<div class="insight note">暂无周数据。</div>';
@@ -931,7 +938,7 @@ function renderReport(){
   let cmpRows='';
   for(const c of CAT_ORDER){ const [cpl,cam]=cur[c]||[0,0], [ppl,pam]=prev[c]||[0,0]; const diff=cam-pam;
     const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
-    cmpRows+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${ppl}</td><td class="num">${cpl}</td><td class="num">${fmt(pam)}</td><td class="num">${fmt(cam)}</td><td class="num">${sign}${diff?fmt(diff):'$0'}</td></tr>`;
+    cmpRows+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${ppl}</td><td class="num">${cpl}</td><td class="num">${fmt(pam)}</td><td class="num">${fmt(cam)}</td><td class="num">${sign}${diff?fmt(diff):fmt(0)}</td></tr>`;
   }
   cmpRows+=`<tr class="total"><td>合计</td><td class="num">${prevPl}</td><td class="num">${curPl}</td><td class="num">${fmt(prevAm)}</td><td class="num">${fmt(curAm)}</td><td class="num">${(curAm-prevAm>0?'+':'')+fmt(curAm-prevAm)}</td></tr>`;
   // 区间对比已整合进 rangeCmpHtml
@@ -1072,7 +1079,7 @@ function updateDataInfo(sourceLabel){
   if(!STATE.rows||!STATE.rows.length){ di.classList.add('hide'); return; }
   const dates=Array.from(new Set(STATE.rows.map(r=>r.date))).filter(Boolean).sort();
   const src=sourceLabel || STATE.lastSource || '已缓存数据';
-  di.innerHTML='<div><b>当前数据</b>：'+escapeHtml(src)+'</div><div class="meta"><span>'+STATE.rows.length.toLocaleString('en-US')+' 行</span><span>·</span><span>'+(dates[0]||'-').slice(5)+' ~ '+(dates[dates.length-1]||'-').slice(5)+'</span><span>·</span><span>项目：'+escapeHtml(STATE.proj||'default')+'</span></div>';
+  di.innerHTML='<div><b>当前数据</b>：'+escapeHtml(src)+'</div><div class="meta"><span>'+STATE.rows.length.toLocaleString('en-US')+' 行</span><span>·</span><span>'+(dates[0]||'-').slice(5)+' ~ '+(dates[dates.length-1]||'-').slice(5)+'</span><span>·</span><span>项目：'+escapeHtml(STATE.proj||'default')+'</span><span>·</span><span>原币：'+(STATE.cur||'USD')+'</span><span>·</span><span>显示：'+(STATE.displayCur||'USD')+'</span></div>';
   di.classList.remove('hide');
 }
 function loadFile(file){
@@ -1089,6 +1096,9 @@ function loadFile(file){
     STATE.firstWeek=firstWeekDays(STATE.launch);
     STATE.proj=getProj();
     try{ localStorage.setItem(LS_LAST, STATE.proj); }catch(e){}
+    const savedLC=loadSavedData(STATE.proj);
+    STATE.cur=(savedLC&&savedLC.currency&&CURRENCIES.indexOf(savedLC.currency)>=0)?savedLC.currency:'USD';
+    STATE.displayCur='USD';
     STATE.override=loadOverrides(STATE.proj)||{};
     STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
     saveData();
@@ -1099,7 +1109,7 @@ function loadFile(file){
   reader.readAsText(file);
 }
 function safeRender(){
-  try{ renderMapping(); renderReport(); wrapTables(); }
+  try{ syncCurrencyUI(); renderMapping(); renderReport(); wrapTables(); }
   catch(e){ document.getElementById('reportBody').innerHTML='<div class="insight danger">渲染出错：'+(e&&e.message||e)+'</div>'; console.error(e); }
 }
 // 窄屏下把报表内的表格包一层横向滚动容器
@@ -1128,6 +1138,9 @@ function loadText(text){
   STATE.firstWeek=firstWeekDays(STATE.launch);
   STATE.proj=getProj();
   try{ localStorage.setItem(LS_LAST, STATE.proj); }catch(e){}
+  const savedLT=loadSavedData(STATE.proj);
+  STATE.cur=(savedLT&&savedLT.currency&&CURRENCIES.indexOf(savedLT.currency)>=0)?savedLT.currency:'USD';
+  STATE.displayCur='USD';
   STATE.override=loadOverrides(STATE.proj)||{};
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
   saveData();
@@ -1160,6 +1173,26 @@ document.getElementById('selD').addEventListener('change',e=>{
   applyAndRender();
 });
 document.getElementById('selP').addEventListener('change',e=>{ STATE.P=e.target.value; applyAndRender(); });
+// 币种：原币种选择（按项目记忆）+ 显示切换（美元 / 原币）
+function updateCurToggle(){
+  const btn=document.getElementById('btnCurToggle'); if(!btn) return;
+  if(STATE.cur==='USD'){ btn.textContent='显示:USD'; btn.disabled=true; }
+  else { btn.textContent=(STATE.displayCur==='USD'?'显示:USD':'显示:'+STATE.cur+' 原币'); btn.disabled=false; }
+}
+function syncCurrencyUI(){
+  const cs=document.getElementById('curSel'); if(cs){ cs.value=STATE.cur||'USD'; }
+  updateCurToggle();
+}
+document.getElementById('curSel').addEventListener('change',e=>{
+  STATE.cur=e.target.value;
+  STATE.displayCur='USD';
+  syncCurrencyUI(); saveData(); applyAndRender();
+});
+document.getElementById('btnCurToggle').addEventListener('click',()=>{
+  if(STATE.cur==='USD') return;
+  STATE.displayCur=(STATE.displayCur==='USD')?STATE.cur:'USD';
+  syncCurrencyUI(); applyAndRender();
+});
 // 汇总/明细合并表：点击渠道行展开/收起其下 referrer 明细；日期范围字段点击打开日历
 const reportBodyEl=document.getElementById('reportBody');
 reportBodyEl.addEventListener('click', e=>{
@@ -1200,6 +1233,7 @@ function setProject(val){
   if(saved&&saved.csv){ restoreFrom(saved); showToast('已切换到项目「'+val+'」','success',3000); }
   else{
     STATE.override=loadOverrides(val)||{};
+    STATE.cur='USD'; STATE.displayCur='USD';
     if(!STATE.rawCsv){
       document.getElementById('mapPanel').classList.add('hide');
       document.getElementById('reportPanel').classList.add('hide');
@@ -1216,6 +1250,7 @@ function newProject(nm){
   const hadData=!!STATE.rawCsv;
   STATE.proj=nm;
   try{ localStorage.setItem(LS_LAST, nm); }catch(e){}
+  STATE.cur='USD'; STATE.displayCur='USD';
   STATE.override=loadOverrides(nm)||{};
   if(hadData){
     saveData(); updateDataInfo();
@@ -1319,6 +1354,8 @@ function restoreFrom(saved){
   STATE.firstWeek=saved.firstWeek||firstWeekDays(STATE.launch);
   STATE.proj=saved.proj||getProj();
   STATE.override=loadOverrides(STATE.proj)||{};
+  STATE.cur=(saved.currency&&CURRENCIES.indexOf(saved.currency)>=0)?saved.currency:'USD';
+  STATE.displayCur='USD';
   STATE.rawCsv=saved.csv;
   STATE.lastSource=saved.lastSource||'已缓存数据';
   STATE.D=(saved.D&&dates.includes(saved.D))?saved.D:dates[dates.length-1];
