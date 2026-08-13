@@ -198,10 +198,6 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:12px;top:50%;t
 .insight-banner li b.up{color:var(--green)}.insight-banner li b.down{color:var(--red)}
 .insight-banner.cmp{background:#f8fafc;border-color:var(--line);margin:10px 0 0;border-radius:12px}
 .insight-banner.cmp .ib-title{color:var(--muted);font-weight:600}
-.report-actions{display:flex;justify-content:flex-end;margin:2px 0 14px}
-.copy-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1px solid var(--line);border-radius:9px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;transition:.15s;box-shadow:0 1px 3px rgba(0,0,0,.05)}
-.copy-btn:hover{border-color:var(--blue);color:var(--blue);box-shadow:0 2px 8px rgba(37,99,235,.14)}
-.copy-btn:active{transform:translateY(1px)}
 @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.map-row{grid-template-columns:1fr 140px}.map-row.warn{grid-template-columns:1fr 110px 76px}}
 @media(max-width:560px){.kpis{grid-template-columns:1fr}.panel{padding:16px}.module{padding:16px}.rpt-toolbar{gap:10px}.module h3{font-size:16px}}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0}
@@ -945,7 +941,6 @@ function renderReport(){
   const activeCats=CAT_ORDER.filter(c=>cur[c]&&cur[c][1]>0).sort((a,b)=>cur[b][1]-cur[a][1]);
   const hbar=activeCats.length?svgHBar(activeCats, activeCats.map(c=>cur[c][1])):'';
   const html=`
-  <div class="report-actions"><button class="copy-btn" data-copy="insights">📋 复制周报文案</button></div>
   <div class="kpis">
     <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.orders}</div><div class="label">${Dlbl} 当日单量</div><div class="val">${curPl}</div><div class="sub">较 ${Plbl}：<span class="${dCls(curPl-prevPl)}">${curPl-prevPl>=0?'+':''}${curPl-prevPl} 单</span></div></div>
     <div class="kpi blue"><div class="kpi-ic">${KPI_ICONS.money}</div><div class="label">${Dlbl} 当日金额</div><div class="val">${fmt(curAm)}</div><div class="sub">较 ${Plbl}：<span class="${dCls(curAm-prevAm)}">${curAm-prevAm>=0?'+':''}${dTxt(curAm-prevAm)}</span></div></div>
@@ -1167,35 +1162,7 @@ document.getElementById('selD').addEventListener('change',e=>{
 document.getElementById('selP').addEventListener('change',e=>{ STATE.P=e.target.value; applyAndRender(); });
 // 汇总/明细合并表：点击渠道行展开/收起其下 referrer 明细；日期范围字段点击打开日历
 const reportBodyEl=document.getElementById('reportBody');
-function fallbackCopy(t){
-  const ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.top='-1000px'; ta.style.opacity='0';
-  document.body.appendChild(ta); ta.select();
-  try{ document.execCommand('copy'); showToast('已复制周报文案到剪贴板','success',2500); }
-  catch(e){ showToast('复制失败，请手动选择文本','error',3000); }
-  document.body.removeChild(ta);
-}
-function copyInsights(){
-  const rb=document.getElementById('reportBody'); if(!rb) return;
-  const banners=rb.querySelectorAll('.insight-banner');
-  if(!banners.length){ showToast('当前没有可复制的洞察','info',2000); return; }
-  const proj=STATE.proj||'default';
-  const dates=STATE.agg?STATE.agg.dates:[];
-  const range=dates.length?dates[0].slice(5)+'-'+dates[dates.length-1].slice(5):'';
-  const lines=['【'+proj+' Referrer 复盘】 数据区间 '+range];
-  banners.forEach(b=>{
-    let ctx=b.querySelector('.ib-title')?b.querySelector('.ib-title').textContent.trim():'';
-    const mod=b.closest('.module');
-    if(mod){ const h=mod.querySelector('h3'); if(h){ const t=h.textContent.trim().replace(/\s+/g,' '); if(!t.includes('洞察')) ctx=t+(ctx?' · '+ctx:''); } }
-    if(ctx) lines.push('',ctx);
-    b.querySelectorAll('li').forEach(li=>lines.push('• '+li.textContent.replace(/\s+/g,' ').trim()));
-  });
-  const text=lines.join('\n');
-  if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(()=>showToast('已复制周报文案到剪贴板','success',2500)).catch(()=>fallbackCopy(text)); }
-  else fallbackCopy(text);
-}
 reportBodyEl.addEventListener('click', e=>{
-  const cbtn=e.target.closest('[data-copy="insights"]');
-  if(cbtn){ copyInsights(); return; }
   const chip=e.target.closest('.chip');
   if(chip){
     const q=chip.dataset.q;
