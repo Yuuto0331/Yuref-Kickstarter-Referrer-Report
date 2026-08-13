@@ -816,22 +816,15 @@ function cmpInsightHtml(items, lblA, lblB){
   } else if(neg[0]){
     out.push(`<li>整体下滑主要受「<b>${neg[0].c}</b>」拖累（-${fmt(-neg[0].d)}）。</li>`);
   }
-  // 3) 结构：占比最高渠道 + 显著份额变动渠道（>=3 个百分点）
+  // 3) 结构：只说占比最高的渠道及其份额变化（用 % 表示百分点）
   const shares=items.map(o=>({c:o.c, sb:tB>0?o.b/tB:0, sa:tA>0?o.a/tA:0}));
   const top=shares.slice().sort((x,y)=>y.sb-x.sb)[0];
   if(top){
-    const sd=shares.map(o=>({c:o.c,d:o.sb-o.sa})).sort((x,y)=>y.d-x.d);
-    const topDelta=(sd.find(o=>o.c===top.c)||{d:0}).d;
-    let line=`「<b>${top.c}</b>」以 ${Math.round(top.sb*100)}% 居首`;
-    if(topDelta>0) line+=`，份额较 ${lblA} 扩大 ${Math.round(topDelta*100)} 个百分点`;
-    else if(topDelta<0) line+=`，份额较 ${lblA} 收窄 ${Math.round(-topDelta*100)} 个百分点`;
-    const movers=sd.filter(o=>o.c!==top.c && Math.abs(o.d)>=0.03).slice(0,2);
-    if(movers.length){
-      line+='；'+movers.map(m=>{
-        const sb=(shares.find(s=>s.c===m.c)||{sb:0}).sb;
-        return `「<b>${m.c}</b>」${m.d>0?'升至':'降至'} ${Math.round(sb*100)}%（${m.d>0?'+':''}${Math.round(m.d*100)} 个百分点）`;
-      }).join('、');
-    }
+    const topA=Math.round(top.sa*100), topB=Math.round(top.sb*100);
+    const delta=topB-topA;
+    let line=`「<b>${top.c}</b>」仍是最大来源，占 <b>${topB}%</b>`;
+    if(delta>0) line+=`（较 ${lblA} ${topA}% → ${topB}%，+${delta}%）`;
+    else if(delta<0) line+=`（较 ${lblA} ${topA}% → ${topB}%，${delta}%）`;
     out.push(`<li>${line}。</li>`);
   }
   if(!out.length) return '';
