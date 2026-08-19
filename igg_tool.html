@@ -236,7 +236,6 @@ const LS_PREFIX='igg_ref_';
 const LS_HIST=LS_PREFIX+'hist_v1_';
 const LS_OVR=LS_PREFIX+'override_v1_';
 const LS_CUR=LS_PREFIX+'currency_v1_';
-const LS_BOARD=LS_PREFIX+'board_v1_';
 const LS_BOARD_WEEK=LS_PREFIX+'board_week_v1_';
 const LS_BOARD_ONLY=LS_PREFIX+'board_only_v1_';
 const LS_PROJS=LS_PREFIX+'projs_v1';
@@ -245,7 +244,7 @@ const LS_CMP=LS_PREFIX+'compare_v1_';
 const CURRENCIES=['USD','HKD'];
 const FX_TO_USD={ USD:1, HKD:1/7.8 };
 const CUR_SYMBOL={ USD:'$', HKD:'HK$' };
-let STATE={ proj:'default', cur:'USD', displayCur:'USD', history:null, override:{}, detailCollapsed:{}, compareN:3, boardView:'daily', boardWeek:'all', boardOnlyActive:true };
+let STATE={ proj:'default', cur:'USD', displayCur:'USD', history:null, override:{}, detailCollapsed:{}, compareN:3, boardWeek:'all', boardOnlyActive:true };
 
 /* ---------- 工具函数 ---------- */
 function $(id){ return document.getElementById(id); }
@@ -406,8 +405,6 @@ function loadOverride(proj){
 function saveOverride(proj,o){ try{ localStorage.setItem(LS_OVR+proj, JSON.stringify(o||{})); }catch(e){} }
 function loadCurrency(proj){ const c=localStorage.getItem(LS_CUR+proj); return (c&&CURRENCIES.indexOf(c)>=0)?c:'USD'; }
 function saveCurrency(proj,c){ try{ localStorage.setItem(LS_CUR+proj, c); }catch(e){} }
-function loadBoard(proj){ const v=localStorage.getItem(LS_BOARD+proj); return (v==='weekly'||v==='daily')?v:'daily'; }
-function saveBoard(proj,v){ try{ localStorage.setItem(LS_BOARD+proj, v); }catch(e){} }
 function loadBoardWeek(proj){ const v=localStorage.getItem(LS_BOARD_WEEK+proj); return (v==='all'||/^\d+$/.test(v))?v:'all'; }
 function saveBoardWeek(proj,v){ try{ localStorage.setItem(LS_BOARD_WEEK+proj, v); }catch(e){} }
 function loadBoardOnly(proj){ try{ return localStorage.getItem(LS_BOARD_ONLY+proj)!=='0'; }catch(e){ return true; } }
@@ -481,7 +478,6 @@ function setProject(p){
   STATE.override=loadOverride(p);
   STATE.cur=loadCurrency(p);
   STATE.compareN=loadCompareN(p);
-  STATE.boardView=loadBoard(p);
   STATE.boardWeek=loadBoardWeek(p);
   STATE.boardOnlyActive=loadBoardOnly(p);
   STATE.displayCur='USD';
@@ -490,7 +486,7 @@ function setProject(p){
 }
 function deleteProject(p){
   const projs=loadProjs().filter(x=>x!==p); saveProjs(projs);
-  try{ localStorage.removeItem(LS_HIST+p); localStorage.removeItem(LS_OVR+p); localStorage.removeItem(LS_CUR+p); localStorage.removeItem(LS_BOARD+p); localStorage.removeItem(LS_BOARD_WEEK+p); localStorage.removeItem(LS_BOARD_ONLY+p); }catch(e){}
+  try{ localStorage.removeItem(LS_HIST+p); localStorage.removeItem(LS_OVR+p); localStorage.removeItem(LS_CUR+p); localStorage.removeItem(LS_BOARD_WEEK+p); localStorage.removeItem(LS_BOARD_ONLY+p); }catch(e){}
   const next=projs[0]||'default'; if(projs.indexOf('default')<0){ projs.unshift('default'); saveProjs(projs); }
   setProject(next); renderProjMenu(); showToast('已删除项目：'+p,'info');
 }
@@ -527,6 +523,17 @@ function renderReport(){
   html+=kpiCard(activeN,'活跃 link 数', (links.length-activeN)+' 个非活跃', '', KPI_ICONS.bolt);
   html+='</div>';
   const insights=genInsightsIGG(links);
+  // 快照间隔异常：周末/缺粘贴导致本次 dTotal 跨多日累计
+  const snapAll=h.snapshots;
+  if(snapAll.length>=2){
+    const last=snapAll[snapAll.length-1], prev=snapAll[snapAll.length-2];
+    const dayMs=86400000;
+    const gap=Math.round((new Date(last.date+'T00:00:00Z').getTime()-new Date(prev.date+'T00:00:00Z').getTime())/dayMs);
+    if(gap>=2){
+      const tip=gap>=4?'（建议每天粘贴 1 次，避免一次汇总多天）':'（建议每天粘贴 1 次，颗粒更细）';
+      insights.unshift('⚠️ <b>快照间隔 '+gap+' 天</b>：本次新增实际是上次粘贴到现在的累计'+tip+'。');
+    }
+  }
   if(insights.length) html+='<div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>'+insights.map(s=>'<li>'+s+'</li>').join('')+'</ul></div>';
   html+=renderChannelModule(h, snap, links, totalAll);
   html+=renderWeekModule(h);
@@ -760,19 +767,15 @@ function renderWeekModule(h){
 
 function renderBoardModule(h){
   const snaps=h.snapshots;
-  const view=STATE.boardView||'daily';
   const weeks=buildNaturalWeeks(snaps);
   const drillWeek = (STATE.boardWeek && STATE.boardWeek!=='all') ? weeks.find(w=>w.k===parseInt(STATE.boardWeek,10)) : null;
   const isDrill=!!drillWeek;
 
-  // 列定义
+  // 列定义（看板默认每日视图，独立的"自然周汇总"已在②板块呈现）
   let cols, rowHdr, headCells;
   if(isDrill){
     cols=drillWeek.wkSnaps; rowHdr='Link / 日期';
     headCells=cols.map(s=>'<th class="date">'+s.date.slice(5)+'</th>').join('');
-  }else if(view==='weekly'){
-    cols=weeks; rowHdr='Link / 周';
-    headCells=weeks.map(wk=>'<th class="date week">'+wk.label+'</th>').join('');
   }else{
     cols=snaps; rowHdr='Link / 日期';
     headCells=snaps.map(s=>'<th class="date">'+s.date.slice(5)+'</th>').join('');
@@ -783,18 +786,12 @@ function renderBoardModule(h){
   snaps.forEach(s=>{ for(const n in s.links){ nameTotals[n]=Math.max(nameTotals[n]||0, s.links[n].total||0); } });
   const names=Object.keys(nameTotals).sort((a,b)=>nameTotals[b]-nameTotals[a]);
 
-  // 计算可见窗口内每个 (name,col) 的增量 dv
+  // 计算可见窗口内每个 (name,col) 的增量 dv（每日视图直接读 dTotal）
   const cellMatrix={}; const anyNew={}; let globalMax=1;
   names.forEach(n=>{
     cellMatrix[n]=[];
     cols.forEach((col)=>{
-      let dv;
-      if(view==='weekly' && !isDrill){
-        const after=col.lastSnapInWeek.links[n]; if(!after){ dv=0; }
-        else { const before=col.baseSnap?col.baseSnap.links[n]:null; dv=(after.total||0)-(before?(before.total||0):0); }
-      }else{
-        const l=col.links[n]; dv=l?(l.dTotal||0):0;
-      }
+      const l=col.links[n]; const dv=l?(l.dTotal||0):0;
       cellMatrix[n].push(dv);
       if(dv>globalMax) globalMax=dv;
       if(dv>0) anyNew[n]=true;
@@ -802,7 +799,7 @@ function renderBoardModule(h){
   });
 
   // cell 配色：dV 与 globalMax 比例画绿深；负值用红
-  function cellHtml(dv, max, posLabel, negLabel, dateLabel){
+  function cellHtml(dv, max, posLabel, negLabel){
     if(dv===0) return '<td class="cell dot-zero" title="'+posLabel+'">·</td>';
     if(dv>0){ const intensity=Math.min(1, dv/max); const bg='rgba(26,127,55,'+(0.06+0.34*intensity).toFixed(3)+')'; return '<td class="cell dot-on" title="'+posLabel+'" style="background:'+bg+'">'+deltaText(dv)+'</td>'; }
     return '<td class="cell dot-on" title="'+negLabel+'" style="background:rgba(192,57,43,0.12)">'+deltaText(dv)+'</td>';
@@ -813,30 +810,23 @@ function renderBoardModule(h){
     let r='<tr data-hasany="'+hasAny+'"><td class="rowhdr" title="'+escapeHtml(n)+'">'+escapeHtml(n)+'</td>';
     cellMatrix[n].forEach((dv,ci)=>{
       const col=cols[ci];
-      const dlabel = isDrill ? col.date : (view==='weekly' ? (col.sDate+'~'+col.eDate) : col.date);
-      r+=cellHtml(dv, globalMax, dlabel+'：'+fmt(dv), dlabel+'：'+fmt(dv), col.date||col.sDate);
+      r+=cellHtml(dv, globalMax, col.date+'：'+fmt(dv), col.date+'：'+fmt(dv));
     });
     return r+'</tr>';
   }).join('');
 
   const activeCount=Object.keys(anyNew).length;
-  const dis=isDrill?' disabled':'';
-  const viewSwitch='<span class="board-toggle" style="margin-right:auto"><b>视图：</b>'+
-    '<label><input type="radio" name="boardView" value="daily"'+((view==='daily'&&!isDrill)?' checked':'')+dis+'> 每日</label>'+
-    '<label><input type="radio" name="boardView" value="weekly"'+((view==='weekly'&&!isDrill)?' checked':'')+dis+'> 按周聚合（自然周，第 N 周一列）</label></span>';
-  let weekOpts='<option value="all"'+(isDrill?'':' selected')+'>全部自然周（按当前视图）</option>';
+  let weekOpts='<option value="all"'+(isDrill?'':' selected')+'>全部日期</option>';
   weeks.forEach(wk=>{ weekOpts+='<option value="'+wk.k+'"'+(drillWeek&&drillWeek.k===wk.k?' selected':'')+'>第'+wk.k+'周 '+wk.sDate.slice(5)+'~'+wk.eDate.slice(5)+'（'+wk.dayCount+'天）</option>'; });
   const weekSel='<label class="board-toggle">筛选自然周：<select id="boardWeekSel">'+weekOpts+'</select></label>';
   const onlyActive=activeCount?'<label class="board-toggle"><input type="checkbox" id="boardOnlyActive"'+(STATE.boardOnlyActive?' checked':'')+'> 仅显示有出单的 link（'+activeCount+'）</label>':'';
-  const drillNote=isDrill?' <span class="board-drill">· 正在查看「第'+drillWeek.k+'周」逐日下钻，视图切换已锁定</span>':'';
+  const drillNote=isDrill?' <span class="board-drill">· 正在查看「第'+drillWeek.k+'周」逐日下钻</span>':'';
   const tip=isDrill
-    ? '行 = link，列 = 第'+drillWeek.k+'周内各快照日，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。'
-    : (view==='weekly'
-      ? '行 = link，列 = 自然周（以首个快照日为上线日，第 1 周 = 上线日→当周周日，后续整周），单元格 = 该周累计出单增量；背景绿色越深表示该周累计越多。「·」表示该周无新增。'
-      : '行 = link，列 = 快照日期，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。横向纵向可滚动。');
+    ? '行 = link，列 = 第'+drillWeek.k+'周内各快照日，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。周汇总可在「② 自然周汇总」板块查看。'
+    : '行 = link，列 = 快照日期，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。横向纵向可滚动。按周汇总请在「② 自然周汇总」板块查看。';
   const title=isDrill?'③ 每日新增看板（第'+drillWeek.k+'周逐日下钻）':'③ 每日新增看板';
   return '<div class="module"><h3>'+title+'</h3><div class="desc">'+tip+drillNote+'</div>'+
-    '<div class="board-toolbar">'+viewSwitch+weekSel+onlyActive+'</div>'+
+    '<div class="board-toolbar">'+weekSel+onlyActive+'</div>'+
     '<div class="board-wrap"><table class="board" id="boardTbl"><thead><tr><th class="rowhdr">'+rowHdr+'</th>'+headCells+'</tr></thead><tbody>'+bodyRows+'</tbody></table></div></div>';
 }
 
@@ -949,12 +939,6 @@ function bindCompareEvents(){
   if(sel){ sel.addEventListener('change',e=>{ const n=parseInt(e.target.value,10); STATE.compareN=n; saveCompareN(STATE.proj, n); renderReport(); }); }
 }
 function bindBoardEvents(){
-  // 视图切换：每日 / 按周聚合
-  document.querySelectorAll('input[name="boardView"]').forEach(r=>{
-    r.addEventListener('change',e=>{
-      STATE.boardView=e.target.value; saveBoard(STATE.proj, STATE.boardView); renderReport();
-    });
-  });
   // 筛选自然周：下钻到该周逐日数据
   const wsel=$('boardWeekSel');
   if(wsel){
