@@ -183,6 +183,19 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 .map-legend{font-size:12px;color:var(--muted);margin-top:8px}
 .map-legend .swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 3px 0 8px;vertical-align:middle}
 @media(max-width:900px){.rpt-toolbar{flex-direction:column;align-items:stretch}.rpt-right{justify-content:space-between}}
+/* 自定义图表 tooltip */
+#chartTip{position:fixed;pointer-events:none;z-index:1000;background:rgba(15,23,42,.92);color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;line-height:1.5;box-shadow:0 6px 24px rgba(0,0,0,.2);opacity:0;transition:opacity .08s;max-width:280px;white-space:pre-line}
+#chartTip b{display:block;margin-bottom:3px;font-size:13px}
+/* 引导面板 */
+.guide{background:linear-gradient(135deg,#fafbfc,#fff5fa);border:1px solid var(--line);border-radius:16px;padding:30px 32px;box-shadow:var(--shadow)}
+.guide h3{margin:0 0 4px;font-size:18px;padding-left:0}.guide h3::before{display:none}
+.guide p.lead{margin:0 0 18px;color:var(--muted);font-size:13px}
+.guide ol{list-style:none;counter-reset:step;margin:0;padding:0;display:grid;gap:12px}
+.guide ol li{counter-increment:step;display:flex;gap:14px;align-items:flex-start;font-size:14px;line-height:1.5}
+.guide ol li::before{content:counter(step);flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.guide ol li b{color:var(--ink)}
+.guide .g-note{margin-top:18px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+@media(max-width:560px){.guide{padding:22px 18px}}
 </style>
 </head>
 <body>
@@ -233,6 +246,7 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
     <div class="rpt-right">
       <label class="cur-sel" title="CSV 中金额的原始币种，按项目记忆">数据币种<select id="origCurSel"><option value="USD">USD $</option><option value="HKD">HKD HK$</option></select></label>
       <label class="cur-sel" title="报表以哪种币种呈现，可随时切换">显示为<select id="displayCurSel"><option value="USD">美元 $</option><option value="HKD">港币 HK$</option></select></label>
+      <button class="btn ghost sm" id="btnExportCSV" title="导出各 link 每日新增金额矩阵（CSV），可在 Excel 中查看哪个渠道哪天有增长">📥 导出 CSV</button>
       <button class="btn ghost sm" id="btnResetCat" title="清空所有手动分类覆盖，重新按自动规则归类">🔄 重置分类</button>
     </div>
   </div>
@@ -253,6 +267,7 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 </div>
 
 <div class="toast" id="toast"></div>
+<div id="chartTip"></div>
 
 <script>
 'use strict';
@@ -533,7 +548,7 @@ function syncCurrencyUI(){
 }
 function renderReport(){
   const body=$('reportBody'); const h=STATE.history;
-  if(!h||!h.snapshots.length){ body.innerHTML='<div class="module"><h3>暂无数据</h3><div class="desc">粘贴并保存首次快照后，这里会显示累计 KPI、出单明细与每日新增看板。</div></div>'; return; }
+  if(!h||!h.snapshots.length){ body.innerHTML='<div class="guide"><h3>开始追踪你的 IGG 推荐链接出单</h3><p class="lead">三步即可：粘贴数据 →（可选）调整分类 → 查看渠道汇总与每日新增看板。</p><ol><li><div><b>粘贴 Referral Links</b>：从 IGG 后台 <code>Project · Referral links</code> 页面全选复制，粘贴到上方文本框，点「解析并保存今日快照」。</div></li><li><div><b>（可选）调整分类口径</b>：关注标 ⚠️ 的「待确认」项，按需指定渠道；其余默认已自动归类。</div></li><li><div><b>每日粘贴一次</b>：连续粘贴后，看板会显示「哪天哪个 link 有出单」，自然周汇总展示每周趋势。</div></li></ol><div class="g-note">🔒 数据仅存于本机浏览器，不会上传服务器。可访问 <code>?demo</code> 预览演示效果。</div></div>'; return; }
   const snap=h.snapshots[h.snapshots.length-1];
   const links=Object.keys(snap.links).map(n=>({name:n, ...snap.links[n]}));
   const totalAll=links.reduce((s,l)=>s+(l.total||0),0);
@@ -1154,6 +1169,103 @@ function makeSortable(root){
 }
 function cssEscape(s){ return String(s).replace(/["\\]/g,'\\$&'); }
 
+/* ---------- CSV 导出（渠道×日期增长矩阵） ---------- */
+function exportCSV(){
+  const h=STATE.history;
+  if(!h||!h.snapshots.length){ showToast('暂无数据可导出','error'); return; }
+  const snaps=h.snapshots;
+  const dates=snaps.map(s=>s.date);
+  const f=curFactor();
+  // 收集所有 link 名，按累计总额降序
+  const nameSet=new Set();
+  snaps.forEach(s=>{ for(const n in s.links) nameSet.add(n); });
+  const names=[...nameSet].sort((a,b)=>{
+    const ta=Math.max(0,...snaps.map(s=>(s.links[a]?s.links[a].total:0)||0));
+    const tb=Math.max(0,...snaps.map(s=>(s.links[b]?s.links[b].total:0)||0));
+    return tb-ta;
+  });
+  const csvEsc=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const fmtCSV=v=>(v*f).toFixed(2);
+  // --- 第 1 部分：link × 日期 明细矩阵 ---
+  const header=['Link','类别','状态',...dates.map(d=>d.slice(5)),'累计总额','总新增'];
+  const rows=[header.map(csvEsc)];
+  names.forEach(n=>{
+    const cat=catOf(n);
+    let maxTotal=0, sumGrowth=0;
+    const cells=dates.map(d=>{
+      const snap=snaps.find(s=>s.date===d);
+      const l=snap?snap.links[n]:null;
+      if(!l) return '0.00';
+      maxTotal=Math.max(maxTotal, l.total||0);
+      sumGrowth+=(l.dTotal||0);
+      return fmtCSV(l.dTotal||0);
+    });
+    const lastSnap=snaps[snaps.length-1];
+    const lastLink=lastSnap.links[n];
+    const status=lastLink?(lastLink.status||''):'removed';
+    rows.push([csvEsc(n),csvEsc(cat),csvEsc(status),...cells,csvEsc(fmtCSV(maxTotal)),csvEsc(fmtCSV(sumGrowth))]);
+  });
+  // --- 第 2 部分：类别 × 日期 汇总矩阵 ---
+  rows.push([]);
+  rows.push(['=== 类别×日期汇总 ==='].map(csvEsc));
+  rows.push(['类别',...dates.map(d=>d.slice(5)),'总新增'].map(csvEsc));
+  CAT_ORDER.forEach(c=>{
+    const cats=names.filter(n=>catOf(n)===c);
+    if(!cats.length) return;
+    let catTotal=0;
+    const catCells=dates.map(d=>{
+      const snap=snaps.find(s=>s.date===d);
+      let sum=0;
+      for(const n of cats){ const l=snap?snap.links[n]:null; if(l) sum+=(l.dTotal||0); }
+      catTotal+=sum;
+      return fmtCSV(sum);
+    });
+    rows.push([csvEsc(c),...catCells,csvEsc(fmtCSV(catTotal))]);
+  });
+  // --- 第 3 部分：每日合计行 ---
+  rows.push([]);
+  let grandGrowth=0;
+  const dailyTotals=dates.map(d=>{
+    const snap=snaps.find(s=>s.date===d);
+    let sum=0;
+    for(const n of names){ const l=snap?snap.links[n]:null; if(l) sum+=(l.dTotal||0); }
+    grandGrowth+=sum;
+    return fmtCSV(sum);
+  });
+  rows.push(['每日合计',...dailyTotals,csvEsc(fmtCSV(grandGrowth))].map(csvEsc));
+  // 生成并下载
+  const csv=rows.join(',');
+  const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='igg_referral_'+STATE.proj+'_'+todayStr()+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('已导出 '+names.length+' 个 link × '+dates.length+' 天 的 CSV','success');
+}
+
+/* ---------- 自定义图表 tooltip（比 SVG <title> 更稳定、即时） ---------- */
+const chartTip=document.getElementById('chartTip');
+document.addEventListener('mouseover',e=>{
+  const r=e.target.closest('[data-tip]'); if(!r) return;
+  const raw=r.getAttribute('data-tip'); if(!raw) return;
+  const lines=raw.split('\n');
+  chartTip.innerHTML='<b>'+escapeHtml(lines[0])+'</b>'+(lines.length>1?'<br>'+lines.slice(1).map(escapeHtml).join('<br>'):'');
+  chartTip.style.opacity='1';
+});
+document.addEventListener('mousemove',e=>{
+  if(chartTip.style.opacity!=='1') return;
+  const pad=12;
+  let x=e.clientX+pad, y=e.clientY+pad;
+  if(x+chartTip.offsetWidth>innerWidth) x=e.clientX-chartTip.offsetWidth-pad;
+  if(y+chartTip.offsetHeight>innerHeight) y=e.clientY-chartTip.offsetHeight-pad;
+  chartTip.style.left=x+'px'; chartTip.style.top=y+'px';
+});
+document.addEventListener('mouseout',e=>{
+  if(e.target.closest('[data-tip]')) chartTip.style.opacity='0';
+});
+
 /* ---------- 事件绑定 ---------- */
 $('projTrigger').addEventListener('click',e=>{ e.stopPropagation(); const m=$('projMenu'); if(m.classList.contains('open')) closeProjMenu(); else openProjMenu(); });
 document.addEventListener('click',e=>{ if(!e.target.closest('.proj-switcher')) closeProjMenu(); });
@@ -1198,6 +1310,7 @@ $('btnResetCat').addEventListener('click',()=>{
   renderReport();
   showToast('已重置分类，共清除 '+n+' 条手动覆盖','success');
 });
+$('btnExportCSV').addEventListener('click',exportCSV);
 $('origCurSel').addEventListener('change',e=>{ STATE.cur=e.target.value; saveCurrency(STATE.proj, STATE.cur); syncCurrencyUI(); updateDataInfo(); renderReport(); });
 $('displayCurSel').addEventListener('change',e=>{ STATE.displayCur=e.target.value; syncCurrencyUI(); renderReport(); });
 
