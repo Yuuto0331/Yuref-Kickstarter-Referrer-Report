@@ -240,6 +240,19 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
     <div class="hint">说明：IGG 不提供按日明细，所有数字均为累计值。工具靠「每天粘贴一次、与上次快照对比差值」来算出当日新增。建议每天固定时间（如上午）粘贴一次，连续粘贴即可在看板里看到「哪一天哪个 link 有出单」。</div>
   </div>
 
+  <div class="panel hide" id="mapPanel">
+    <h2>② 分类口径调整（可选）</h2>
+    <div class="desc" style="color:var(--muted);font-size:13px">默认规则已自动归类，只需关注标 ⚠️ 的「待确认」项；其余按类别折叠，点标题展开。改完自动保存并刷新报表。</div>
+    <div class="map-tools">
+      <input type="text" id="mapSearch" placeholder="搜索 referrer…">
+      <label class="chk"><input type="checkbox" id="mapOnlyPending"> 仅看待确认（<span id="mapPendingCnt">0</span>）</label>
+      <button class="btn ghost sm" id="mapExpandAll">全部展开</button>
+      <button class="btn ghost sm" id="mapCollapseAll">全部折叠</button>
+    </div>
+    <div id="mapList"></div>
+    <div class="map-legend" style="margin-top:14px">⚠️ 待确认 = 自动归类落入「其他」，需人工指定渠道；💾 已手动调整 = 已记住的手动归类（存于本机浏览器）。改完自动保存并刷新报表。</div>
+  </div>
+
   <div id="dataInfo" class="data-info hide"></div>
 
   <div class="rpt-toolbar hide" id="rptToolbar">
@@ -547,8 +560,9 @@ function syncCurrencyUI(){
   const dcs=$('displayCurSel'); if(dcs) dcs.value=STATE.displayCur||'USD';
 }
 function renderReport(){
-  const body=$('reportBody'); const h=STATE.history;
-  if(!h||!h.snapshots.length){ body.innerHTML='<div class="guide"><h3>开始追踪你的 IGG 推荐链接出单</h3><p class="lead">三步即可：粘贴数据 →（可选）调整分类 → 查看渠道汇总与每日新增看板。</p><ol><li><div><b>粘贴 Referral Links</b>：从 IGG 后台 <code>Project · Referral links</code> 页面全选复制，粘贴到上方文本框，点「解析并保存今日快照」。</div></li><li><div><b>（可选）调整分类口径</b>：关注标 ⚠️ 的「待确认」项，按需指定渠道；其余默认已自动归类。</div></li><li><div><b>每日粘贴一次</b>：连续粘贴后，看板会显示「哪天哪个 link 有出单」，自然周汇总展示每周趋势。</div></li></ol><div class="g-note">🔒 数据仅存于本机浏览器，不会上传服务器。可访问 <code>?demo</code> 预览演示效果。</div></div>'; return; }
+  const body=$('reportBody'); const mp=$('mapPanel'); const h=STATE.history;
+  if(!h||!h.snapshots.length){ body.innerHTML='<div class="guide"><h3>开始追踪你的 IGG 推荐链接出单</h3><p class="lead">三步即可：粘贴数据 →（可选）调整分类 → 查看渠道汇总与每日新增看板。</p><ol><li><div><b>粘贴 Referral Links</b>：从 IGG 后台 <code>Project · Referral links</code> 页面全选复制，粘贴到上方文本框，点「解析并保存今日快照」。</div></li><li><div><b>（可选）调整分类口径</b>：关注标 ⚠️ 的「待确认」项，按需指定渠道；其余默认已自动归类。</div></li><li><div><b>每日粘贴一次</b>：连续粘贴后，看板会显示「哪天哪个 link 有出单」，自然周汇总展示每周趋势。</div></li></ol><div class="g-note">🔒 数据仅存于本机浏览器，不会上传服务器。可访问 <code>?demo</code> 预览演示效果。</div></div>'; if(mp) mp.classList.add('hide'); return; }
+  if(mp) mp.classList.remove('hide');
   const snap=h.snapshots[h.snapshots.length-1];
   const links=Object.keys(snap.links).map(n=>({name:n, ...snap.links[n]}));
   const totalAll=links.reduce((s,l)=>s+(l.total||0),0);
@@ -574,7 +588,6 @@ function renderReport(){
     }
   }
   if(insights.length) html+='<div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>'+insights.map(s=>'<li>'+s+'</li>').join('')+'</ul></div>';
-  html+=renderClassifyModule(h, snap, links);
   html+=renderChannelModule(h, snap, links, totalAll);
   html+=renderWeekModule(h);
   html+=renderBoardModule(h);
@@ -583,8 +596,8 @@ function renderReport(){
   bindTableEvents();
   bindBoardEvents();
   bindCompareEvents();
-  bindClassifyEvents();
   makeSortable(body);
+  renderMapPanel();  // 渲染独立 mapPanel 的 #mapList
 }
 function kpiCard(v,l,sub,cls,ic){
   return '<div class="kpi '+(cls||'')+'"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="sub">'+sub+'</div>'+(ic?'<div class="kpi-ic">'+ic+'</div>':'')+'</div>';
@@ -974,13 +987,20 @@ function renderCompareModule(h){
     insight+'</div>';
 }
 
-/* ---------- ② 分类口径调整（独立模块，对齐 KS） ---------- */
-function renderClassifyModule(h, snap, links){
-  // 待确认 = 自动归类落到「其他」且未手动覆盖（与 KS 一致：需人工确认）
+/* ---------- ② 分类口径调整（独立 panel，对齐 KS） ---------- */
+function renderMapPanel(){
+  const ml=$('mapList'); if(!ml) return;
+  const h=STATE.history;
+  if(!h||!h.snapshots.length){
+    ml.innerHTML='<div style="color:var(--muted);padding:14px 0">还没有数据；先在 ① 粘贴 Referral Links 数据。</div>';
+    return;
+  }
+  const snap=h.snapshots[h.snapshots.length-1];
+  const links=Object.keys(snap.links).map(n=>({name:n, ...snap.links[n]}));
+  // 待确认 = 自动归类落入「其他」且未手动覆盖
   const isPending=l=> !STATE.override[l.name] && catOf(l.name)==='其他';
   const pendingSet=new Set(links.filter(l=>l.status!=='removed' && isPending(l)).map(l=>l.name));
   const ovSet=new Set(Object.keys(STATE.override||{}));
-
   // 按当前 catOf 分组
   const byCat={}; const order=[];
   links.forEach(l=>{
@@ -989,20 +1009,16 @@ function renderClassifyModule(h, snap, links){
     if(!byCat[c]) { byCat[c]=[]; order.push(c); }
     byCat[c].push(l);
   });
-  // 排序：累计金额降序
   order.sort((a,b)=>{
     const sa=byCat[a].reduce((s,l)=>s+(l.total||0),0), sb=byCat[b].reduce((s,l)=>s+(l.total||0),0);
     return sb-sa;
   });
   const q=(STATE.mapQuery||'').trim().toLowerCase();
   const onlyPending=!!STATE.mapOnlyPending;
-
-  const toolbar='<div class="map-toolbar">'+
-    '<input type="text" id="mapSearch" placeholder="搜索 referrer..." value="'+escapeHtml(STATE.mapQuery||'')+'">'+
-    '<label class="chk"><input type="checkbox" id="mapOnlyPending"'+(onlyPending?' checked':'')+'> 仅看待确认（'+pendingSet.size+'）</label>'+
-    '<button class="btn ghost sm" id="mapExpandAll">全部展开</button>'+
-    '<button class="btn ghost sm" id="mapCollapseAll">全部折叠</button>'+
-  '</div>';
+  // 同步工具栏（仅在差异时更新，避免丢焦点）
+  const ms=$('mapSearch'); if(ms && ms.value!==(STATE.mapQuery||'')) ms.value=STATE.mapQuery||'';
+  const mo=$('mapOnlyPending'); if(mo && mo.checked!==onlyPending) mo.checked=onlyPending;
+  const cnt=$('mapPendingCnt'); if(cnt) cnt.textContent=pendingSet.size;
 
   let cards=''; let totalShown=0;
   order.forEach(c=>{
@@ -1024,49 +1040,60 @@ function renderClassifyModule(h, snap, links){
       return '<div class="map-row"><div class="map-ref" title="'+escapeHtml(l.name)+'">'+escapeHtml(l.name)+tag+'</div>'+sel+'</div>';
     }).join('');
     cards+='<div class="map-section'+(collapsed?' collapsed':'')+'" data-cat-id="'+id+'">'+
-      '<div class="map-head" data-toggle="'+id+'"><span class="caret">▾</span><span class="dot" style="background:'+color+'"></span><span class="catname">'+escapeHtml(c)+'</span>'+badge+'<span class="cnt">'+rows.length+' 个 link</span></div>'+
+      '<div class="map-head" data-toggle="'+id+'"><span class="caret">'+(collapsed?'▸':'▾')+'</span><span class="dot" style="background:'+color+'"></span><span class="catname">'+escapeHtml(c)+'</span>'+badge+'<span class="cnt">'+rows.length+' 个 link</span></div>'+
       '<div class="map-body">'+body+'</div></div>';
   });
   if(!totalShown) cards='<div style="color:var(--muted);padding:14px 0">没有匹配的 referrer。</div>';
-  const legend='<div class="map-legend">⚠️ 待确认 = 自动归类落入「其他」，需人工指定渠道；💾 已手动调整 = 已记住的手动归类（存于本机浏览器）。改完自动保存并刷新报表。</div>';
-  const desc='默认规则已自动归类，只需关注标 ⚠️ 的「待确认」项；其余按类别折叠，点标题展开。改完自动保存并刷新报表。';
-  return '<div class="module"><h3>① 分类口径调整（可选）</h3><div class="desc">'+desc+'</div>'+
-    toolbar+cards+legend+'</div>';
-}
-
-/* ---------- 表格事件 ---------- */
-function bindCompareEvents(){
-  const sel=$('compareNSel');
-  if(sel){ sel.addEventListener('change',e=>{ const n=parseInt(e.target.value,10); STATE.compareN=n; saveCompareN(STATE.proj, n); renderReport(); }); }
-}
-function bindClassifyEvents(){
-  // 折叠/展开
-  document.querySelectorAll('.map-section .map-head').forEach(h=>{
+  ml.innerHTML=cards;
+  // 折叠 + select 变化事件
+  ml.querySelectorAll('.map-head').forEach(h=>{
     h.addEventListener('click',e=>{
       if(e.target.tagName==='SELECT') return;
       const id=h.getAttribute('data-toggle');
       const sec=h.closest('.map-section');
       const wasCollapsed=sec.classList.contains('collapsed');
       sec.classList.toggle('collapsed');
+      h.querySelector('.caret').textContent=wasCollapsed?'▾':'▸';
       STATE.mapCollapsed[id]=!wasCollapsed;
     });
   });
-  // 全部展开
-  const ex=$('mapExpandAll'); if(ex) ex.addEventListener('click',()=>{
-    document.querySelectorAll('.map-section').forEach(s=>{ s.classList.remove('collapsed'); STATE.mapCollapsed[s.getAttribute('data-cat-id')]=false; });
+  ml.querySelectorAll('.cat-select').forEach(s=>{
+    s.addEventListener('change',e=>{
+      const link=e.target.getAttribute('data-link');
+      const cat=e.target.value;
+      if(cat===classify(link)) delete STATE.override[link]; // 与自动归类一致，清掉 override
+      else STATE.override[link]=cat;
+      saveOverride(STATE.proj, STATE.override);
+      renderMapPanel();   // mapList 自身刷新
+      renderReport();     // KPI/渠道汇总按新分类刷新
+    });
   });
-  // 全部折叠
-  const cl=$('mapCollapseAll'); if(cl) cl.addEventListener('click',()=>{
-    document.querySelectorAll('.map-section').forEach(s=>{ s.classList.add('collapsed'); STATE.mapCollapsed[s.getAttribute('data-cat-id')]=true; });
-  });
+}
+
+
+/* ---------- 表格事件 ---------- */
+function bindCompareEvents(){
+  const sel=$('compareNSel');
+  if(sel){ sel.addEventListener('change',e=>{ const n=parseInt(e.target.value,10); STATE.compareN=n; saveCompareN(STATE.proj, n); renderReport(); }); }
+}
+function bindMapPanelTools(){
+  // 工具栏元素都是静态的，只在 init 时绑定一次
   // 搜索
   const q=$('mapSearch'); if(q){
-    q.addEventListener('input',e=>{ STATE.mapQuery=e.target.value; renderReport(); });
+    q.addEventListener('input',e=>{ STATE.mapQuery=e.target.value; renderMapPanel(); });
   }
   // 仅看待确认
   const oc=$('mapOnlyPending'); if(oc){
-    oc.addEventListener('change',e=>{ STATE.mapOnlyPending=e.target.checked; renderReport(); });
+    oc.addEventListener('change',e=>{ STATE.mapOnlyPending=e.target.checked; renderMapPanel(); });
   }
+  // 全部展开
+  const ex=$('mapExpandAll'); if(ex) ex.addEventListener('click',()=>{
+    document.querySelectorAll('#mapList .map-section').forEach(s=>{ s.classList.remove('collapsed'); const caret=s.querySelector('.caret'); if(caret) caret.textContent='▾'; STATE.mapCollapsed[s.getAttribute('data-cat-id')]=false; });
+  });
+  // 全部折叠
+  const cl=$('mapCollapseAll'); if(cl) cl.addEventListener('click',()=>{
+    document.querySelectorAll('#mapList .map-section').forEach(s=>{ s.classList.add('collapsed'); const caret=s.querySelector('.caret'); if(caret) caret.textContent='▸'; STATE.mapCollapsed[s.getAttribute('data-cat-id')]=true; });
+  });
 }
 function bindBoardEvents(){
   // 筛选自然周：下钻到该周逐日数据
@@ -1718,11 +1745,12 @@ function buildDemoTomorrow(base){
     STATE.proj='DEMO预览';
     if(!loadHistory('DEMO预览').snapshots.length){
       const base=parseIGG(DEMO_PASTE);
-      addSnapshot('DEMO预览', base, DEMO_DATE1);
-      addSnapshot('DEMO预览', buildDemoTomorrow(base), DEMO_DATE2);
-      saveCurrency('DEMO预览','HKD');
-    }
-    setProject('DEMO预览');
+addSnapshot('DEMO预览', base, DEMO_DATE1);
+    addSnapshot('DEMO预览', buildDemoTomorrow(base), DEMO_DATE2);
+    saveCurrency('DEMO预览','HKD');
+  }
+  bindMapPanelTools();  // 工具栏静态元素，init 一次性绑定
+  setProject('DEMO预览');
     document.body.insertAdjacentHTML('afterbegin','<div class="demo-banner">🧪 <b>演示模式</b>：已加载「今天('+DEMO_DATE1.slice(5)+') + 明天('+DEMO_DATE2.slice(5)+')」模拟快照，可直观看到次日粘贴后的报表与每日看板呈现。数据存于独立的「DEMO预览」项目，<b>不影响</b>你的真实项目。去掉网址后的 ?demo 即回到正常模式。<button class="x" onclick="location.search=\'\'">退出演示</button></div>');
     showToast('演示模式：模拟次日粘贴效果（今天+明天两份快照）','info',5000);
     return;
@@ -1731,6 +1759,7 @@ function buildDemoTomorrow(base){
   try{ last=localStorage.getItem(LS_LAST)||'default'; }catch(e){}
   const projs=loadProjs();
   if(projs.indexOf(last)<0){ projs.push(last); saveProjs(projs); }
+  bindMapPanelTools();  // 工具栏静态元素，init 一次性绑定
   setProject(last);
 })();
 </script>
