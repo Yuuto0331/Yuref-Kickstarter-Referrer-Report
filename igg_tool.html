@@ -91,9 +91,21 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 .rcnt{display:inline-block;margin-left:8px;font-size:11px;color:var(--muted);font-weight:400}
 .link-cell{font-family:Menlo,Consolas,monospace;font-size:12px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cat-select{padding:3px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:#fff;font-family:inherit}
-.cat-bar{background:#f1f5f9;border-radius:6px;height:10px;width:100%;overflow:hidden}
-.cat-bar-fill{height:100%;border-radius:6px;min-width:2px}
 .cmp-chart{margin:6px 0 16px;background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:8px 6px}
+.insight-banner{background:linear-gradient(135deg,#fdeef5,#fff1f7);border:1px solid #f7c6dd;border-radius:14px;padding:16px 20px;margin:6px 0 18px}
+.insight-banner .ib-title{font-size:13px;font-weight:700;color:#c2185b;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.insight-banner ul{margin:0;padding-left:18px;font-size:13px;line-height:1.8;color:#374151}
+.insight-banner li{margin:2px 0}
+.insight-banner li b{color:var(--ink);font-weight:600}
+.insight-banner li b.up{color:var(--green)}.insight-banner li b.down{color:var(--red)}
+.insight-banner.cmp{background:#f8fafc;border-color:var(--line);margin:10px 0 0}
+.insight-banner.cmp .ib-title{color:var(--muted);font-weight:600}
+.donut-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin:4px 0 16px}
+.donut-leg-box{display:flex;flex-direction:column;gap:7px;flex:1;min-width:200px}
+.donut-leg{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151}
+.donut-leg b{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums}
+.board-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-bottom:10px;cursor:pointer;user-select:none}
+.board-toggle input{accent-color:var(--accent)}
 .delta-up{color:var(--green);font-weight:600}
 .delta-down{color:var(--red);font-weight:600}
 .delta-zero{color:#9ca3af}
@@ -459,23 +471,25 @@ function renderReport(){
   const newOrd=links.reduce((s,l)=>s+(l.dOrders||0),0);
   let html='';
   html+='<div class="kpis">';
-  html+=kpiCard(fmt(totalAll),'累计总额', links.length+' 个 link', '');
-  html+=kpiCard(activeN,'活跃 link 数', (links.length-activeN)+' 个非活跃', '');
+  html+=kpiCard(fmt(totalAll),'累计总额', links.length+' 个 link · '+snap.date, '');
   html+=kpiCard((newAmt>0?'+':'')+fmt(newAmt),'本次新增金额', '较上次快照', newAmt<0?'bad':'good');
   html+=kpiCard((newOrd>0?'+':'')+newOrd,'本次新增订单', '较上次快照', newOrd<0?'bad':'good');
+  html+=kpiCard(activeN,'活跃 link 数', (links.length-activeN)+' 个非活跃', '');
   html+='</div>';
-  html+=renderTableModule(h, snap, links, totalAll);
-  html+=renderCatSummaryModule(h, snap, links);
+  const insights=genInsightsIGG(links);
+  if(insights.length) html+='<div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>'+insights.map(s=>'<li>'+s+'</li>').join('')+'</ul></div>';
+  html+=renderChannelModule(h, snap, links, totalAll);
   html+=renderBoardModule(h);
   html+=renderCompareModule(h);
   body.innerHTML=html;
   bindTableEvents();
+  bindBoardEvents();
   bindCompareEvents();
   makeSortable(body);
 }
 function kpiCard(v,l,sub,cls){ return '<div class="kpi '+(cls||'')+'"><div class="v">'+v+'</div><div class="l">'+l+'</div><div class="sub">'+sub+'</div></div>'; }
 
-function renderTableModule(h, snap, links, totalAll){
+function renderChannelModule(h, snap, links, totalAll){
   links.sort((a,b)=>(b.total||0)-(a.total||0));
   // 按类别分组
   const byCat={};
@@ -499,7 +513,10 @@ function renderTableModule(h, snap, links, totalAll){
   const tNew=links.reduce((s,l)=>s+(l.dTotal||0),0);
   const tOrd=links.reduce((s,l)=>s+(l.orders||0),0);
   rows+='<tr class="total"><td>合计</td><td></td><td></td><td class="num">'+tOrd+'</td><td class="num">'+fmt(tAll)+'</td><td class="num delta-'+(tNew>0?'up':(tNew<0?'down':'zero'))+'">'+deltaText(tNew)+'</td></tr>';
-  return '<div class="module"><h3>② 出单明细（按类别）</h3><div class="desc">点击类别行可展开/收起该类别下的 link；点击表头可按该列排序。「本次新增」= 当前累计 − 上一次快照累计，负值表示订单被取消/扣减。类别可下拉手动调整，改完自动保存。</div>'+
+  const donutCats=CAT_ORDER.map(c=>({cat:c, amt:links.filter(l=>l.status!=='removed'&&catOf(l.name)===c).reduce((s,l)=>s+(l.total||0),0)})).filter(x=>x.amt>0).sort((a,b)=>b.amt-a.amt);
+  const donut=svgDonut(donutCats);
+  return '<div class="module"><h3>① 渠道汇总与明细</h3><div class="desc">截止最新快照各渠道累计金额占比（环形图）；下方按类别汇总并可展开/收起该类别下的 link。点击表头可排序，「本次新增」= 当前累计 − 上一次快照。类别可下拉手动调整，改完自动保存。</div>'+
+    donut+
     '<div class="tbl-card"><table><thead><tr><th>Link</th><th>类别</th><th>状态</th><th class="num">累计订单</th><th class="num">Total</th><th class="num">本次新增</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
 function linkRow(l, hidden){
@@ -519,59 +536,100 @@ function linkRow(l, hidden){
 }
 function deltaText(v){ if(v===0) return '—'; const s=v>0?'+':''; return s+fmt(v); }
 
+/* ---------- 环形图（类别金额占比） ---------- */
+function svgDonut(items){
+  const total=items.reduce((s,i)=>s+i.amt,0);
+  if(total<=0) return '';
+  const cx=104, cy=96, r=72, sw=26, C=2*Math.PI*r;
+  let off=0, segs='';
+  items.forEach(it=>{
+    const frac=it.amt/total, len=frac*C, color=CAT_COLORS[it.cat]||'#7f7f7f';
+    segs+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="'+sw+'" stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
+    off+=len;
+  });
+  const legend=items.map(it=>'<div class="donut-leg"><span class="dot" style="background:'+(CAT_COLORS[it.cat]||'#7f7f7f')+'"></span>'+escapeHtml(it.cat)+'<b>'+(it.amt/total*100).toFixed(0)+'%</b></div>').join('');
+  return '<div class="donut-wrap"><svg viewBox="0 0 208 192" style="width:208px;height:192px;flex:none">'+segs+
+    '<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-size="12" fill="#6b7280">累计</text>'+
+    '<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-size="17" font-weight="700" fill="#1f2933">'+fmt(total)+'</text></svg>'+
+    '<div class="donut-leg-box">'+legend+'</div></div>';
+}
+
+/* ---------- 自动洞察（对齐 KS genInsights） ---------- */
+function genInsightsIGG(links){
+  const out=[];
+  const total=links.reduce((s,l)=>s+(l.total||0),0);
+  if(total>0){
+    const byCat={};
+    links.forEach(l=>{ if(l.status==='removed') return; const c=catOf(l.name); byCat[c]=(byCat[c]||0)+(l.total||0); });
+    const sorted=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+    const [topC,topV]=sorted[0]||[null,0];
+    if(topC) out.push('占比最高的渠道是 <b>'+topC+'</b>，占累计金额 <b>'+(topV/total*100).toFixed(0)+'%</b>。');
+    if(sorted.length>=3){ const top3=sorted.slice(0,3).reduce((s,e)=>s+e[1],0); out.push('Top 3 渠道（'+sorted.slice(0,3).map(e=>e[0]).join('、')+'）合计占 <b>'+(top3/total*100).toFixed(0)+'%</b>，集中度'+(top3/total>0.7?'偏高':'适中')+'。'); }
+  }
+  const movers=links.filter(l=>l.dTotal>0).sort((a,b)=>(b.dTotal||0)-(a.dTotal||0));
+  if(movers.length){ const m=movers[0]; out.push('本次新增主要来自 <b>'+catOf(m.name)+'</b>（'+escapeHtml(m.name)+'），新增 <b class="up">+'+fmt(m.dTotal)+'</b>。'); }
+  else { out.push('本次快照较上次无新增出单（所有 link 累计未变化）。'); }
+  const newAmt=links.reduce((s,l)=>s+(l.dTotal||0),0), newOrd=links.reduce((s,l)=>s+(l.dOrders||0),0);
+  if(newAmt>0) out.push('较上次快照，全渠道合计新增 <b>'+fmt(newAmt)+'</b> / <b>'+newOrd+'</b> 单。');
+  return out;
+}
+function cmpInsightIGG(items, lblA, lblB){
+  const out=[];
+  let tA=0,tB=0; items.forEach(o=>{ tA+=o.a; tB+=o.b; });
+  if(tA>0){
+    const diff=tB-tA, pct=Math.round(diff/tA*100), word=diff>0?'增加':diff<0?'减少':'持平';
+    out.push('<li>'+lblB+' 较 '+lblA+' '+word+' <b class="'+(diff>0?'up':(diff<0?'down':''))+'">'+(diff>0?'+':'')+fmt(Math.abs(diff))+'</b>（<b class="'+(diff>0?'up':(diff<0?'down':''))+'">'+(diff>0?'+':'')+pct+'%</b>），合计金额 <b>'+fmt(tB)+'</b>。</li>');
+  } else if(tB>0){ out.push('<li>'+lblB+' 金额 <b>'+fmt(tB)+'</b>（'+lblA+' 无可比数据）。</li>'); }
+  const diffs=items.map(o=>({c:o.c,d:o.b-o.a}));
+  const pos=diffs.filter(o=>o.d>0).sort((x,y)=>y.d-x.d), neg=diffs.filter(o=>o.d<0).sort((x,y)=>x.d-y.d);
+  if(pos.length||neg.length){
+    const fmtList=arr=>arr.slice(0,3).map(o=>'「<b>'+o.c+'</b>」'+(o.d>0?'+':'-')+fmt(Math.abs(o.d))).join('、');
+    if(pos.length) out.push('<li>增长渠道：'+fmtList(pos)+(pos.length>3?' 等':'')+'。</li>');
+    if(neg.length) out.push('<li>下滑渠道：'+fmtList(neg)+(neg.length>3?' 等':'')+'。</li>');
+  }
+  const shares=items.map(o=>({c:o.c, sb:tB>0?o.b/tB:0, sa:tA>0?o.a/tA:0}));
+  const top=shares.slice().sort((x,y)=>y.sb-x.sb)[0];
+  if(top){ const a=Math.round(top.sa*100), b=Math.round(top.sb*100), d=b-a;
+    let line='「<b>'+top.c+'</b>」仍是最大来源，占 <b>'+b+'%</b>';
+    if(d>0) line+='（较前期 '+a+'% → '+b+'%，+'+d+'%）'; else if(d<0) line+='（较前期 '+a+'% → '+b+'%，'+d+'%）';
+    out.push('<li>'+line+'。</li>'); }
+  if(!out.length) return '';
+  return '<div class="insight-banner cmp"><div class="ib-title">📊 洞察</div><ul>'+out.join('')+'</ul></div>';
+}
+
 function renderBoardModule(h){
   const snaps=h.snapshots;
   const dates=snaps.map(s=>s.date);
   const nameTotals={};
   snaps.forEach(s=>{ for(const n in s.links){ nameTotals[n]=Math.max(nameTotals[n]||0, s.links[n].total||0); } });
+  // 标记每个 link 是否在任一日期有新增，供"仅显示有出单"过滤
+  const anyNew={}; let maxDv=1;
+  snaps.forEach(s=>{ for(const n in s.links){ const dv=s.links[n].dTotal||0; if(dv>0){ anyNew[n]=true; if(dv>maxDv) maxDv=dv; } } });
   const names=Object.keys(nameTotals).sort((a,b)=>nameTotals[b]-nameTotals[a]);
   let head='<th class="rowhdr">Link / 日期</th>';
   dates.forEach(d=>{ head+='<th class="date">'+d.slice(5)+'</th>'; });
   let bodyRows='';
+  const activeCount=Object.keys(anyNew).length;
   names.forEach(n=>{
-    let r='<td class="rowhdr" title="'+escapeHtml(n)+'">'+escapeHtml(n)+'</td>';
+    const hasAny=anyNew[n]?1:0;
+    let r='<tr data-hasany="'+hasAny+'"><td class="rowhdr" title="'+escapeHtml(n)+'">'+escapeHtml(n)+'</td>';
     dates.forEach(d=>{
       const snap=snaps.find(s=>s.date===d);
       const l=snap?snap.links[n]:null;
       const dv=l?(l.dTotal||0):0;
       if(dv===0){ r+='<td class="cell dot-zero" title="'+d+' 无新增">·</td>'; }
-      else { r+='<td class="cell dot-on" title="'+d+'：'+(dv>0?'+':'')+fmt(dv)+'">'+deltaText(dv)+'</td>'; }
+      else if(dv>0){ const intensity=Math.min(1, dv/maxDv); const bg='rgba(26,127,55,'+(0.06+0.34*intensity).toFixed(3)+')'; r+='<td class="cell dot-on" title="'+d+'：+'+fmt(dv)+'" style="background:'+bg+'">'+deltaText(dv)+'</td>'; }
+      else { r+='<td class="cell dot-on" title="'+d+'：'+fmt(dv)+'" style="background:rgba(192,57,43,0.12)">'+deltaText(dv)+'</td>'; }
     });
     bodyRows+=r+'</tr>';
   });
-  return '<div class="module"><h3>③ 每日新增看板</h3><div class="desc">行 = link，列 = 快照日期，单元格 = 当日新增金额（当前累计 − 上一次快照），「·」表示该日无新增。横向纵向可滚动。</div>'+
-    '<div class="board-wrap"><table class="board"><thead><tr>'+head+'</tr></thead><tbody>'+bodyRows+'</tbody></table></div></div>';
+  const toggle=activeCount?'<label class="board-toggle"><input type="checkbox" id="boardOnlyActive"> 仅显示有出单的 link（'+activeCount+'）</label>':'';
+  return '<div class="module"><h3>② 每日新增看板</h3><div class="desc">行 = link，列 = 快照日期，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。横向纵向可滚动。</div>'+
+    toggle+
+    '<div class="board-wrap"><table class="board" id="boardTbl"><thead><tr>'+head+'</tr></thead><tbody>'+bodyRows+'</tbody></table></div></div>';
 }
 
-/* ---------- ④ 类别金额分布（截止最新快照） ---------- */
-function renderCatSummaryModule(h, snap, links){
-  const byCat={};
-  for(const l of links){
-    if(l.status==='removed') continue;
-    const c=catOf(l.name);
-    byCat[c]=(byCat[c]||0)+(l.total||0);
-  }
-  const total=Object.values(byCat).reduce((a,b)=>a+b,0);
-  const sorted=CAT_ORDER.filter(c=>(byCat[c]||0)>0).map(c=>({cat:c, amt:byCat[c]}))
-    .sort((a,b)=>b.amt-a.amt);
-  if(!sorted.length) return '';
-  const max=Math.max(1, ...sorted.map(s=>s.amt));
-  let rows='';
-  sorted.forEach(r=>{
-    const pct=total>0?(r.amt/total*100):0;
-    const w=(r.amt/max*100).toFixed(1);
-    const color=CAT_COLORS[r.cat]||'#7F7F7F';
-    rows+='<tr><td><span class="dot" style="background:'+color+'"></span>'+escapeHtml(r.cat)+'</td>'+
-      '<td class="num">'+fmt(r.amt)+'</td>'+
-      '<td class="num">'+pct.toFixed(1)+'%</td>'+
-      '<td><div class="cat-bar"><div class="cat-bar-fill" style="width:'+w+'%;background:'+color+'"></div></div></td></tr>';
-  });
-  rows+='<tr class="total"><td>合计</td><td class="num">'+fmt(total)+'</td><td class="num">100.0%</td><td></td></tr>';
-  return '<div class="module"><h3>④ 类别金额分布</h3><div class="desc">截止 '+snap.date+'，各渠道累计出单金额及占比。点击表头可排序。</div>'+
-    '<div class="tbl-card"><table><thead><tr><th>类别</th><th class="num">累计金额</th><th class="num">占比</th><th>分布</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
-}
-
-/* ---------- ⑤ 类别对比（前 N 天 vs 近 N 天） ---------- */
+/* ---------- ③ 类别对比（前 N 天 vs 近 N 天） ---------- */
 function windowByCat(snaps, startIdx, endIdx){
   // 窗口内新增 = end.links.total - (startIdx-1).links.total；startIdx=0 时无前一刻基准，按 0 算
   const base=startIdx>0?snaps[startIdx-1].links:{};
@@ -661,20 +719,34 @@ function renderCompareModule(h){
       '<td class="num '+dCls+'">'+(hasPrev?(pct===0?'—':(diff>0?'+':'')+pct.toFixed(0)+'%'):'—')+'</td></tr>';
   });
 
-  return '<div class="module"><h3>⑤ 类别对比</h3><div class="desc">对比前 '+N+' 天 vs 近 '+N+' 天各渠道新增金额（基于快照累计差值）。切换窗口查看不同时间段对比。</div>'+
+  const insightItems=cats.map(c=>({c, a:hasPrev?(prevByCat[c]||0):0, b:recentByCat[c]||0}));
+  const insight=cmpInsightIGG(insightItems, hasPrev?('前'+N+'天'):'前期', '近'+N+'天');
+  return '<div class="module"><h3>③ 类别对比</h3><div class="desc">对比前 '+N+' 天 vs 近 '+N+' 天各渠道新增金额（基于快照累计差值）。切换窗口查看不同时间段对比。</div>'+
     '<div class="filters"><span>对比窗口：</span><select id="compareNSel">'+
       '<option value="1"'+(N===1?' selected':'')+'>1 天</option>'+
       '<option value="3"'+(N===3?' selected':'')+'>3 天</option>'+
       '<option value="7"'+(N===7?' selected':'')+'>7 天</option>'+
     '</select></div>'+
     '<div class="cmp-chart">'+svg+'</div>'+
-    '<div class="tbl-card"><table><thead><tr><th>渠道</th><th class="num">前 '+N+' 天</th><th class="num">近 '+N+' 天</th><th class="num">金额变化</th><th class="num">变化%</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    '<div class="tbl-card"><table><thead><tr><th>渠道</th><th class="num">前 '+N+' 天</th><th class="num">近 '+N+' 天</th><th class="num">金额变化</th><th class="num">变化%</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    insight+'</div>';
 }
 
 /* ---------- 表格事件 ---------- */
 function bindCompareEvents(){
   const sel=$('compareNSel');
   if(sel){ sel.addEventListener('change',e=>{ const n=parseInt(e.target.value,10); STATE.compareN=n; saveCompareN(STATE.proj, n); renderReport(); }); }
+}
+function bindBoardEvents(){
+  const cb=$('boardOnlyActive');
+  if(!cb) return;
+  cb.addEventListener('change',e=>{
+    const showOnly=e.target.checked;
+    document.querySelectorAll('#boardTbl tbody tr').forEach(tr=>{
+      const has=tr.getAttribute('data-hasany')==='1';
+      tr.style.display=(showOnly && !has)?'none':'';
+    });
+  });
 }
 
 /* ---------- 表格事件 ---------- */
