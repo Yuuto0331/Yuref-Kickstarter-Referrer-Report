@@ -107,6 +107,9 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 .toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);background:#1f2933;color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:3000;opacity:0;transition:.25s;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.success{background:#1a7f37}.toast.error{background:#b91c1c}.toast.info{background:var(--accent)}
 .hide{display:none!important}
+.demo-banner{margin:0 0 18px;padding:11px 16px;border-radius:10px;background:linear-gradient(135deg,#fff7ed,#fef3c7);border:1px solid #fcd34d;color:#92400e;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.demo-banner b{color:#b45309}
+.demo-banner .x{margin-left:auto;color:#b45309;border:none;background:transparent;font-size:13px;cursor:pointer;text-decoration:underline}
 @media(max-width:900px){.rpt-toolbar{flex-direction:column;align-items:stretch}.rpt-right{justify-content:space-between}}
 </style>
 </head>
@@ -348,9 +351,9 @@ function loadCurrency(proj){ const c=localStorage.getItem(LS_CUR+proj); return (
 function saveCurrency(proj,c){ try{ localStorage.setItem(LS_CUR+proj, c); }catch(e){} }
 function loadProjs(){ try{ const s=localStorage.getItem(LS_PROJS); if(s){ const a=JSON.parse(s); if(Array.isArray(a)&&a.length) return a; } }catch(e){} return ['default']; }
 function saveProjs(a){ try{ localStorage.setItem(LS_PROJS, JSON.stringify(a)); }catch(e){} }
-function addSnapshot(proj, rows){
+function addSnapshot(proj, rows, dateOverride){
   const hist=loadHistory(proj);
-  const date=todayStr();
+  const date=dateOverride||todayStr();
   const lastSnap=hist.snapshots.length?hist.snapshots[hist.snapshots.length-1]:null;
   const prevLinks=lastSnap?lastSnap.links:{};
   const links={};
@@ -653,8 +656,419 @@ $('btnResetCat').addEventListener('click',()=>{
 $('origCurSel').addEventListener('change',e=>{ STATE.cur=e.target.value; saveCurrency(STATE.proj, STATE.cur); syncCurrencyUI(); updateDataInfo(); renderReport(); });
 $('displayCurSel').addEventListener('change',e=>{ STATE.displayCur=e.target.value; syncCurrencyUI(); renderReport(); });
 
+/* ---------- 演示模式（?demo=1）：注入「今天+明天」模拟快照，预览次日粘贴效果 ---------- */
+const DEMO_DATE1='2026-08-19';
+const DEMO_DATE2='2026-08-20';
+const DEMO_PASTE=`Display name
+Status
+New orders
+1 day
+7 days
+Income
+Total
+BackerMany
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+HOVERAir TikTok
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+hoverair.com
+active
+17
+HK$100,300.00
+HK$100,300.00
+HK$100,300.00
+HK$100,300.00
+
+Copy linkDeactivate
+igg_newsletter_dedicated_260818
+active
+14
+HK$85,092.00
+HK$85,092.00
+HK$85,092.00
+HK$85,092.00
+
+Copy linkDeactivate
+EDM-DTC
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+Update-HOVERAir 130+141 Backer
+active
+8
+HK$49,541.00
+HK$49,541.00
+HK$49,541.00
+HK$49,541.00
+
+Copy linkDeactivate
+IFA
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+igg_newsletter_dedicated_260815
+active
+14
+HK$5,099.00
+HK$80,880.00
+HK$80,880.00
+HK$80,880.00
+
+Copy linkDeactivate
+GG_Ads_demandgen_US
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Ads_pmax_CA/AU/AS
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Ads_pmax_EU
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Ads_pmax_US
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Ads_Competitor_CA/AU/AS
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Ads_Competitor_EU
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Ads_Competitor_US
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Ads_Generic_CA/AU/AS
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Ads_Generic_EU
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Ads_Generic_US
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Plat_CA/AU/AS
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Plat_EU
+active
+1
+HK$5,027.00
+HK$5,027.00
+HK$5,027.00
+HK$5,027.00
+
+Copy linkDeactivate
+GG_Plat_US
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+GG_Ads_brand
+active
+9
+HK$51,517.00
+HK$51,517.00
+HK$51,517.00
+HK$51,517.00
+
+Copy linkDeactivate
+Meta_ads_RT
+active
+7
+HK$41,167.00
+HK$41,167.00
+HK$41,167.00
+HK$41,167.00
+
+Copy linkDeactivate
+Meta_ads_Click
+active
+3
+HK$19,095.00
+HK$19,095.00
+HK$19,095.00
+HK$19,095.00
+
+Copy linkDeactivate
+Meta_ads_EU
+active
+1
+HK$5,399.00
+HK$5,399.00
+HK$5,399.00
+HK$5,399.00
+
+Copy linkDeactivate
+Meta_ads
+active
+9
+HK$54,089.00
+HK$54,089.00
+HK$54,089.00
+HK$54,089.00
+
+Copy linkDeactivate
+Meta_post
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivateDelete
+EDM-VERSA新客
+active
+24
+HK$143,825.00
+HK$143,825.00
+HK$143,825.00
+HK$143,825.00
+
+Copy linkDeactivate
+EDM-V-Copter老客
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+EDM-HOVERAir老客
+active
+52
+HK$321,233.00
+HK$321,233.00
+HK$321,233.00
+HK$321,233.00
+
+Copy linkDeactivate
+FB Group-162
+active
+2
+HK$12,778.00
+HK$12,778.00
+HK$12,778.00
+HK$12,778.00
+
+Copy linkDeactivate
+FB Group-141
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+FB Group-130
+active
+1
+HK$5,027.00
+HK$5,027.00
+HK$5,027.00
+HK$5,027.00
+
+Copy linkDeactivate
+HOVERAir Social Media
+active
+7
+HK$39,733.00
+HK$39,733.00
+HK$39,733.00
+HK$39,733.00
+
+Copy linkDeactivate
+PR
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+PR-BackerPlan
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+PR-BackerShares
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+PR-BackerCrew
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate
+PR-BackerFeed
+active
+2
+HK$13,308.00
+HK$13,308.00
+HK$13,308.00
+HK$13,308.00
+
+Copy linkDeactivate
+PR-BackerMany
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivateDelete
+PR-BackerSpaces
+active
+0
+HK$0.00
+HK$0.00
+HK$0.00
+HK$0.00
+
+Copy linkDeactivate`;
+// 在「今天」基础上微调若干 link，模拟次日累计增长；新增 1 个 link、移除 1 个 link，呈现 NEW / 已移除标签
+function buildDemoTomorrow(base){
+  const out={};
+  for(const name in base){
+    const r=Object.assign({}, base[name]);
+    if(name==='hoverair.com'){ r.orders+=2; r.total+=12000; r.d1+=12000; r.d7+=12000; r.income+=12000; }
+    else if(name==='EDM-DTC'){ r.orders+=5; r.total+=30000; }
+    else if(name==='Meta_ads'){ r.orders+=3; r.total+=18000; }
+    else if(name==='GG_Ads_brand'){ r.orders+=1; r.total+=6000; }
+    else if(name==='Meta_ads_RT'){ r.orders+=2; r.total+=9000; }
+    else if(name==='HOVERAir Social Media'){ r.orders+=1; r.total+=4500; }
+    out[name]=r;
+  }
+  out['TikTok_Ads_new']={ status:'active', orders:4, d1:25000, d7:25000, income:25000, total:25000 };
+  delete out['PR-BackerSpaces']; // 模拟该 link 次日已移除
+  return out;
+}
+
 /* ---------- 初始化 ---------- */
 (function init(){
+  const params=new URLSearchParams(location.search);
+  if(params.has('demo')){
+    STATE.proj='DEMO预览';
+    if(!loadHistory('DEMO预览').snapshots.length){
+      const base=parseIGG(DEMO_PASTE);
+      addSnapshot('DEMO预览', base, DEMO_DATE1);
+      addSnapshot('DEMO预览', buildDemoTomorrow(base), DEMO_DATE2);
+      saveCurrency('DEMO预览','HKD');
+    }
+    setProject('DEMO预览');
+    document.body.insertAdjacentHTML('afterbegin','<div class="demo-banner">🧪 <b>演示模式</b>：已加载「今天('+DEMO_DATE1.slice(5)+') + 明天('+DEMO_DATE2.slice(5)+')」模拟快照，可直观看到次日粘贴后的报表与每日看板呈现。数据存于独立的「DEMO预览」项目，<b>不影响</b>你的真实项目。去掉网址后的 ?demo 即回到正常模式。<button class="x" onclick="location.search=\'\'">退出演示</button></div>');
+    showToast('演示模式：模拟次日粘贴效果（今天+明天两份快照）','info',5000);
+    return;
+  }
   let last='default';
   try{ last=localStorage.getItem(LS_LAST)||'default'; }catch(e){}
   const projs=loadProjs();
