@@ -158,6 +158,7 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
     <div class="rpt-right">
       <label class="cur-sel" title="CSV 中金额的原始币种，按项目记忆">数据币种<select id="origCurSel"><option value="USD">USD $</option><option value="HKD">HKD HK$</option></select></label>
       <label class="cur-sel" title="报表以哪种币种呈现，可随时切换">显示为<select id="displayCurSel"><option value="USD">美元 $</option><option value="HKD">港币 HK$</option></select></label>
+      <button class="btn ghost sm" id="btnResetCat" title="清空所有手动分类覆盖，重新按自动规则归类">🔄 重置分类</button>
     </div>
   </div>
 
@@ -640,6 +641,14 @@ $('btnClear').addEventListener('click',()=>{
   $('rptToolbar').classList.add('hide');
   updateDataInfo(); renderReport();
   showToast('已清空历史快照','info');
+});
+$('btnResetCat').addEventListener('click',()=>{
+  const n=Object.keys(STATE.override||{}).length;
+  if(!n){ showToast('当前没有手动分类覆盖，无需重置','info'); return; }
+  if(!confirm('将清空「'+STATE.proj+'」的 '+n+' 条手动分类覆盖，所有 link 重新按自动规则归类。继续？')) return;
+  STATE.override={}; saveOverride(STATE.proj, STATE.override);
+  renderReport();
+  showToast('已重置分类，共清除 '+n+' 条手动覆盖','success');
 });
 $('origCurSel').addEventListener('change',e=>{ STATE.cur=e.target.value; saveCurrency(STATE.proj, STATE.cur); syncCurrencyUI(); updateDataInfo(); renderReport(); });
 $('displayCurSel').addEventListener('change',e=>{ STATE.displayCur=e.target.value; syncCurrencyUI(); renderReport(); });
