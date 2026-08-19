@@ -252,12 +252,14 @@ const CAT_COLORS = {
 const NONKICK_RE = /3dpi|all3dp|makezine|3dnatives|hackaday/i;
 function classify(name){
   const raw=String(name||''); const n=raw.toLowerCase();
-  // 付费广告：Meta_ads / Google_ads / GG_Ads_* / *_ads / ads_*
-  if(/^meta_ads|^google_ads|^gg_ads/i.test(raw)) return '付费广告';
+  // 付费广告：Meta_ads / Google_ads / GG_Ads_* / GG_Plat_* / Meta_post / *_ads / ads_*
+  if(/^meta_ads|^google_ads|^gg_ads|^gg_plat/i.test(raw)) return '付费广告';
+  if(/^meta[_-]?post/i.test(raw)) return '付费广告';
   if(/[-_]ads[-_]/i.test(n) || /[-_]ads$/i.test(n) || /^ads[-_]/i.test(n)) return '付费广告';
   // 平台资源：IGG 平台自带（官方 newsletter 等），igg* 开头
   if(/^igg[\W_]/i.test(raw) || /^igg$/i.test(raw)) return '平台资源';
-  // 独立站
+  // 独立站：纯域名形态（xxx.com / xxx.io / xxx.net）或 store 开头
+  if(/^[a-z0-9-]+\.(com|net|io)$/i.test(raw)) return '独立站';
   if(/^store[\W_]|独立站/i.test(raw)) return '独立站';
   // Kickbooster
   if(/-kb$/.test(n) || /^gdu/i.test(n) || /kickbooster/i.test(raw)) return 'Kickbooster';
@@ -268,8 +270,11 @@ function classify(name){
   if(NONKICK_RE.test(raw)) return '非众筹 PR';
   // KOL
   if(/^kol|kol[-_]/i.test(raw) || /youtuber|influencer/i.test(raw)) return 'KOL';
-  // 社媒运营
-  if(/^social/i.test(raw) || /^fb|^ig$|^x$/i.test(n) || /facebook|instagram|twitter|tiktok|reddit|^\s*yt\b|^\s*youtube/i.test(raw)) return '社媒运营';
+  // 社媒运营：social media / Update 类社媒帖 / updatr / 主流社交平台
+  if(/^social/i.test(raw) || /social\s*media/i.test(raw)) return '社媒运营';
+  if(/^update[-_]?/i.test(raw)) return '社媒运营';
+  if(/updatr/i.test(raw)) return '社媒运营';
+  if(/^fb|^ig$|^x$/i.test(n) || /facebook|instagram|twitter|tiktok|reddit|^\s*yt\b|^\s*youtube/i.test(raw)) return '社媒运营';
   // EDM（含 PM-Launch-EDM-*）
   if(/^edm|[-_]edm[-_]/i.test(raw)) return 'EDM';
   if(/^pm-/i.test(n)) return 'EDM';
