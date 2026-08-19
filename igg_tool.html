@@ -157,6 +157,30 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 .demo-banner{margin:0 0 18px;padding:11px 16px;border-radius:10px;background:linear-gradient(135deg,#fff7ed,#fef3c7);border:1px solid #fcd34d;color:#92400e;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .demo-banner b{color:#b45309}
 .demo-banner .x{margin-left:auto;color:#b45309;border:none;background:transparent;font-size:13px;cursor:pointer;text-decoration:underline}
+/* 分类口径调整（独立模块，对齐 KS） */
+.map-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+.map-toolbar input[type=text]{flex:1;min-width:160px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;background:#fff}
+.map-toolbar .chk{font-size:13px;color:var(--ink);display:flex;align-items:center;gap:6px}
+.map-section{border:1px solid var(--line);border-radius:10px;margin:10px 0;overflow:hidden;background:#fff}
+.map-section .map-head{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;background:#fff5fa;transition:background .12s}
+.map-section .map-head:hover{background:#ffe6f1}
+.map-section .map-head .caret{display:inline-block;color:var(--accent);font-size:12px;transition:transform .15s}
+.map-section.collapsed .map-head .caret{transform:rotate(-90deg)}
+.map-section .map-head .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.map-section .map-head .catname{font-size:14px;font-weight:600;color:var(--ink)}
+.map-section .map-head .cnt{margin-left:auto;color:var(--muted);font-size:13px}
+.map-section .map-head .badge{display:inline-block;background:#fdeef5;color:var(--accent);font-size:11px;padding:1px 7px;border-radius:999px;margin-left:6px;font-weight:600}
+.map-section.collapsed .map-body{display:none}
+.map-section .map-body{padding:4px 14px 12px}
+.map-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f3f4f6}
+.map-row:last-child{border-bottom:none}
+.map-row .map-ref{flex:1;min-width:0;font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.map-row .map-ref .tag{font-size:11px;margin-left:6px;padding:1px 6px;border-radius:999px;font-weight:600;vertical-align:middle}
+.map-row .map-ref .tag.warn{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+.map-row .map-ref .tag.saved{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+.map-row .cat-select{padding:3px 8px;border:1px solid var(--line);border-radius:6px;font:inherit;font-size:12.5px;background:#fff;min-width:110px}
+.map-legend{font-size:12px;color:var(--muted);margin-top:8px}
+.map-legend .swatch{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 3px 0 8px;vertical-align:middle}
 @media(max-width:900px){.rpt-toolbar{flex-direction:column;align-items:stretch}.rpt-right{justify-content:space-between}}
 </style>
 </head>
@@ -244,7 +268,7 @@ const LS_CMP=LS_PREFIX+'compare_v1_';
 const CURRENCIES=['USD','HKD'];
 const FX_TO_USD={ USD:1, HKD:1/7.8 };
 const CUR_SYMBOL={ USD:'$', HKD:'HK$' };
-let STATE={ proj:'default', cur:'USD', displayCur:'USD', history:null, override:{}, detailCollapsed:{}, compareN:3, boardWeek:'all', boardOnlyActive:true };
+let STATE={ proj:'default', cur:'USD', displayCur:'USD', history:null, override:{}, detailCollapsed:{}, compareN:3, boardWeek:'all', boardOnlyActive:true, mapCollapsed:{}, mapOnlySaved:false, mapQuery:'' };
 
 /* ---------- 工具函数 ---------- */
 function $(id){ return document.getElementById(id); }
@@ -538,10 +562,12 @@ function renderReport(){
   html+=renderWeekModule(h);
   html+=renderBoardModule(h);
   html+=renderCompareModule(h);
+  html+=renderClassifyModule(h, snap, links);
   body.innerHTML=html;
   bindTableEvents();
   bindBoardEvents();
   bindCompareEvents();
+  bindClassifyEvents();
   makeSortable(body);
 }
 function kpiCard(v,l,sub,cls,ic){
@@ -932,10 +958,96 @@ function renderCompareModule(h){
     insight+'</div>';
 }
 
+/* ---------- ⑤ 分类口径调整（独立模块，对齐 KS 风格） ---------- */
+function renderClassifyModule(h, snap, links){
+  // 按当前 catOf 分组
+  const byCat={}; const order=[];
+  links.forEach(l=>{
+    if(l.status==='removed') return;
+    const c=catOf(l.name);
+    if(!byCat[c]) { byCat[c]=[]; order.push(c); }
+    byCat[c].push(l);
+  });
+  // 排序：累计金额降序
+  order.sort((a,b)=>{
+    const sa=byCat[a].reduce((s,l)=>s+(l.total||0),0), sb=byCat[b].reduce((s,l)=>s+(l.total||0),0);
+    return sb-sa;
+  });
+  const q=(STATE.mapQuery||'').trim().toLowerCase();
+  const onlySaved=!!STATE.mapOnlySaved;
+  const onlyOv=Object.keys(STATE.override||{});
+  const onlySavedSet=new Set(onlyOv);
+
+  const ovCount=onlyOv.length;
+  const toolbar='<div class="map-toolbar">'+
+    '<input type="text" id="mapSearch" placeholder="搜索 referrer..." value="'+escapeHtml(STATE.mapQuery||'')+'">'+
+    '<label class="chk"><input type="checkbox" id="mapOnlySaved"'+(onlySaved?' checked':'')+'> 仅显示已手动调整（'+ovCount+'）</label>'+
+    '<button class="btn ghost sm" id="mapExpandAll">全部展开</button>'+
+    '<button class="btn ghost sm" id="mapCollapseAll">全部折叠</button>'+
+  '</div>';
+
+  let cards=''; let totalShown=0;
+  order.forEach(c=>{
+    let rows=byCat[c].slice();
+    if(onlySaved) rows=rows.filter(l=>onlySavedSet.has(l.name));
+    if(q) rows=rows.filter(l=>l.name.toLowerCase().indexOf(q)>=0);
+    if(!rows.length) return;
+    totalShown+=rows.length;
+    const id='cat_'+(c.replace(/[^a-z0-9_]/gi,'_'));
+    const collapsed = STATE.mapCollapsed[id]!==undefined ? STATE.mapCollapsed[id] : true;
+    const color=CAT_COLORS[c]||'#7f7f7f';
+    const ovN=rows.filter(l=>onlySavedSet.has(l.name)).length;
+    const badge=ovN ? '<span class="badge">'+ovN+' 已调整</span>' : '';
+    const body=rows.map(l=>{
+      const cur=catOf(l.name);
+      const sel='<select class="cat-select" data-link="'+escapeHtml(l.name)+'">'+CAT_ORDER.map(cc=>'<option value="'+cc+'"'+(cc===cur?' selected':'')+'>'+cc+'</option>').join('')+'</select>';
+      const tag = onlySavedSet.has(l.name) ? ' <span class="tag saved">💾 已手动调整</span>' : '';
+      return '<div class="map-row"><div class="map-ref" title="'+escapeHtml(l.name)+'">'+escapeHtml(l.name)+tag+'</div>'+sel+'</div>';
+    }).join('');
+    cards+='<div class="map-section'+(collapsed?' collapsed':'')+'" data-cat-id="'+id+'">'+
+      '<div class="map-head" data-toggle="'+id+'"><span class="caret">▾</span><span class="dot" style="background:'+color+'"></span><span class="catname">'+escapeHtml(c)+'</span>'+badge+'<span class="cnt">'+rows.length+' 个 link</span></div>'+
+      '<div class="map-body">'+body+'</div></div>';
+  });
+  if(!totalShown) cards='<div style="color:var(--muted);padding:14px 0">没有匹配的 referrer。</div>';
+  const legend='<div class="map-legend">💾 = 已记住的手动归类（存于本机浏览器，下次上传自动套用）；默认规则已自动归类，无需任何操作。</div>';
+  const desc='默认规则已自动归类。如需修改某 link 的渠道口径，在下方按类折叠的卡片里调整下拉即可，切换后自动保存并刷新报表。';
+  return '<div class="module"><h3>⑤ 分类口径调整（可选）</h3><div class="desc">'+desc+'</div>'+
+    toolbar+cards+legend+'</div>';
+}
+
 /* ---------- 表格事件 ---------- */
 function bindCompareEvents(){
   const sel=$('compareNSel');
   if(sel){ sel.addEventListener('change',e=>{ const n=parseInt(e.target.value,10); STATE.compareN=n; saveCompareN(STATE.proj, n); renderReport(); }); }
+}
+function bindClassifyEvents(){
+  // 折叠/展开
+  document.querySelectorAll('.map-section .map-head').forEach(h=>{
+    h.addEventListener('click',e=>{
+      if(e.target.tagName==='SELECT') return;
+      const id=h.getAttribute('data-toggle');
+      const sec=h.closest('.map-section');
+      const wasCollapsed=sec.classList.contains('collapsed');
+      sec.classList.toggle('collapsed');
+      STATE.mapCollapsed[id]=!wasCollapsed;
+    });
+  });
+  // 全部展开
+  const ex=$('mapExpandAll'); if(ex) ex.addEventListener('click',()=>{
+    document.querySelectorAll('.map-section').forEach(s=>{ s.classList.remove('collapsed'); STATE.mapCollapsed[s.getAttribute('data-cat-id')]=false; });
+  });
+  // 全部折叠
+  const cl=$('mapCollapseAll'); if(cl) cl.addEventListener('click',()=>{
+    document.querySelectorAll('.map-section').forEach(s=>{ s.classList.add('collapsed'); STATE.mapCollapsed[s.getAttribute('data-cat-id')]=true; });
+  });
+  // 搜索
+  const q=$('mapSearch'); if(q){
+    q.addEventListener('input',e=>{ STATE.mapQuery=e.target.value; renderReport(); });
+  }
+  // 仅显示手动调整
+  const oc=$('mapOnlySaved'); if(oc){
+    oc.addEventListener('change',e=>{ STATE.mapOnlySaved=e.target.checked; renderReport(); });
+  }
 }
 function bindBoardEvents(){
   // 筛选自然周：下钻到该周逐日数据
