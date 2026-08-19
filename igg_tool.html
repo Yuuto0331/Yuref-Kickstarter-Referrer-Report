@@ -205,18 +205,41 @@ function fmt(n){ const v=n*curFactor(); return (CUR_SYMBOL[STATE.displayCur||'US
 function fmtTick(tv){ const v=tv*curFactor(); return (CUR_SYMBOL[STATE.displayCur||'USD']||'$')+(Math.abs(v)>=1e6?(v/1e6).toFixed(v%1e6?1:0)+'M':(v/1000).toFixed(0)+'k'); }
 function showToast(msg,type,duration){ type=type||'info'; duration=duration||2600; const t=$('toast'); t.textContent=msg; t.className='toast show '+type; clearTimeout(t._t); t._t=setTimeout(()=>{ t.className='toast '+type; },duration); }
 
-/* ---------- 分类预设 ---------- */
-const CAT_PRESETS=['Newsletter','Kickbooster','Private Message','EDM','Resurrecting','Other'];
+/* ---------- 分类预设（与 KS 对齐，去掉 KS 站内自然，新增 Newsletter） ---------- */
+const CAT_ORDER = ['付费广告','独立站','Kickbooster','众筹 PR','非众筹 PR','KOL','社媒运营','EDM','Newsletter','其他'];
+const CAT_COLORS = {
+  '付费广告':'#4C72B0','独立站':'#C44E52','Kickbooster':'#8172B3',
+  '众筹 PR':'#CCB974','非众筹 PR':'#DD8452','KOL':'#8C564B','社媒运营':'#17BECF',
+  'EDM':'#E377C2','Newsletter':'#55A868','其他':'#7F7F7F'
+};
+const NONKICK_RE = /3dpi|all3dp|makezine|3dnatives|hackaday/i;
 function classify(name){
-  const n=String(name||'').toLowerCase();
-  if(/newsletter/.test(n)) return 'Newsletter';
-  if(/kickbooster/.test(n) || /-kb$/.test(n) || /^gdu/.test(n)) return 'Kickbooster';
-  if(/^pm-/.test(n)) return 'Private Message';
-  if(/edm/.test(n)) return 'EDM';
-  if(/resurrecting/.test(n)) return 'Resurrecting';
-  return 'Other';
+  const raw=String(name||''); const n=raw.toLowerCase();
+  // 付费广告：Meta_ads / Google_ads / GG_Ads_* / *_ads / ads_*
+  if(/^meta_ads|^google_ads|^gg_ads/i.test(raw)) return '付费广告';
+  if(/[-_]ads[-_]/i.test(n) || /[-_]ads$/i.test(n) || /^ads[-_]/i.test(n)) return '付费广告';
+  // 独立站
+  if(/^store[\W_]|独立站/i.test(raw)) return '独立站';
+  // Kickbooster
+  if(/-kb$/.test(n) || /^gdu/i.test(n) || /kickbooster/i.test(raw)) return 'Kickbooster';
+  // 众筹 PR
+  if(/^pr[-_]/i.test(n) || /backerfriendnotification/i.test(n) || /backerkit|backerplan/i.test(n) || /^backer/i.test(n)) return '众筹 PR';
+  if(/gadget[_-]?trend/i.test(n)) return '众筹 PR';
+  // 非众筹 PR
+  if(NONKICK_RE.test(raw)) return '非众筹 PR';
+  // KOL
+  if(/^kol|kol[-_]/i.test(raw) || /youtuber|influencer/i.test(raw)) return 'KOL';
+  // 社媒运营
+  if(/^social/i.test(raw) || /^fb|^ig$|^x$/i.test(n) || /facebook|instagram|twitter|tiktok|reddit|^\s*yt\b|^\s*youtube/i.test(raw)) return '社媒运营';
+  // EDM（含 PM-Launch-EDM-*）
+  if(/^edm|[-_]edm[-_]/i.test(raw)) return 'EDM';
+  if(/^pm-/i.test(n)) return 'EDM';
+  // Newsletter
+  if(/newsletter/i.test(raw)) return 'Newsletter';
+  return '其他';
 }
-function catOf(name){ return STATE.override[name] || classify(name); }
+const CAT_MIGRATE = { 'Private Message':'EDM', 'Resurrecting':'其他' };
+function catOf(name){ const ov=STATE.override[name]; if(ov && CAT_ORDER.indexOf(ov)>=0) return ov; return classify(name); }
 
 /* ---------- 解析 IGG 粘贴文本 ---------- */
 function parseIGG(text){
@@ -264,7 +287,15 @@ function loadHistory(proj){
   return { snapshots:[] };
 }
 function saveHistory(proj,h){ try{ localStorage.setItem(LS_HIST+proj, JSON.stringify(h)); }catch(e){} }
-function loadOverride(proj){ try{ const s=localStorage.getItem(LS_OVR+proj); if(s) return JSON.parse(s)||{}; }catch(e){} return {}; }
+function loadOverride(proj){
+  let o={};
+  try{ const s=localStorage.getItem(LS_OVR+proj); if(s) o=JSON.parse(s)||{}; }catch(e){}
+  // 旧 6 类别 → 新 10 类别自动迁移（首次使用兼容）
+  let dirty=false;
+  for(const k in o){ const m=CAT_MIGRATE[o[k]]; if(m){ o[k]=m; dirty=true; } }
+  if(dirty) saveOverride(proj, o);
+  return o;
+}
 function saveOverride(proj,o){ try{ localStorage.setItem(LS_OVR+proj, JSON.stringify(o||{})); }catch(e){} }
 function loadCurrency(proj){ const c=localStorage.getItem(LS_CUR+proj); return (c&&CURRENCIES.indexOf(c)>=0)?c:'USD'; }
 function saveCurrency(proj,c){ try{ localStorage.setItem(LS_CUR+proj, c); }catch(e){} }
@@ -388,21 +419,23 @@ function renderTableModule(h, snap, links, totalAll){
   // 按类别分组
   const byCat={};
   links.forEach(l=>{ const c=catOf(l.name); (byCat[c]=byCat[c]||[]).push(l); });
-  const catOrder=CAT_PRESETS.filter(c=>byCat[c]&&byCat[c].length);
+  const catOrder=CAT_ORDER.filter(c=>byCat[c]&&byCat[c].length);
   let rows='';
   catOrder.forEach(c=>{
     const arr=byCat[c]; const cTotal=arr.reduce((s,l)=>s+(l.total||0),0); const cNew=arr.reduce((s,l)=>s+(l.dTotal||0),0);
-    rows+='<tr class="cat"><td>'+escapeHtml(c)+'</td><td></td><td></td><td class="num">'+arr.length+'</td><td class="num">'+fmt(cTotal)+'</td><td class="num delta-'+(cNew>0?'up':(cNew<0?'down':'zero'))+'">'+deltaText(cNew)+'</td></tr>';
+    const dot=CAT_COLORS[c]?'<span class="dot" style="background:'+CAT_COLORS[c]+'"></span>':'';
+    rows+='<tr class="cat"><td>'+dot+escapeHtml(c)+'</td><td></td><td></td><td class="num">'+arr.length+'</td><td class="num">'+fmt(cTotal)+'</td><td class="num delta-'+(cNew>0?'up':(cNew<0?'down':'zero'))+'">'+deltaText(cNew)+'</td></tr>';
     arr.forEach(l=>{ rows+=linkRow(l, totalAll); });
   });
-  return '<div class="module"><h3>② 出单明细（按类别）</h3><div class="desc">「本次新增」= 该 link 当前累计值 − 上一次快照累计值。负值表示订单被取消/扣减。类别可下拉手动调整。</div>'+
+  return '<div class="module"><h3>② 出单明细（按类别）</h3><div class="desc">「本次新增」= 该 link 当前累计值 − 上一次快照累计值。负值表示订单被取消/扣减。类别可下拉手动调整，改完自动保存。</div>'+
     '<div class="tbl-card"><table><thead><tr><th>Link</th><th>类别</th><th>状态</th><th class="num">累计订单</th><th class="num">Total</th><th class="num">本次新增</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
 function linkRow(l, totalAll){
   const isNew=l.status!=='removed' && (l.dTotal>0) && (l.total===l.dTotal && l.orders===l.dOrders);
   let dcls='delta-zero'; if(l.dTotal>0) dcls='delta-up'; else if(l.dTotal<0) dcls='delta-down';
   const statusTag = l.status==='removed' ? '<span class="tag-off">已移除</span>' : (l.status==='active'?'<span style="color:var(--green)">active</span>':'<span style="color:var(--muted)">inactive</span>');
-  const catOpts=CAT_PRESETS.map(c=>'<option value="'+c+'"'+(catOf(l.name)===c?' selected':'')+'>'+c+'</option>').join('');
+  const current=catOf(l.name);
+  const catOpts=CAT_ORDER.map(c=>'<option value="'+c+'"'+(current===c?' selected':'')+'>'+c+'</option>').join('');
   return '<tr'+(isNew?' style="background:#eff6ff"':'')+'><td class="link-cell" title="'+escapeHtml(l.name)+'">'+escapeHtml(l.name)+(isNew?'<span class="tag-new">NEW</span>':'')+'</td>'+
     '<td><select class="cat-select" data-link="'+escapeHtml(l.name)+'">'+catOpts+'</select></td>'+
     '<td>'+statusTag+'</td>'+
