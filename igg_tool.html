@@ -190,6 +190,8 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 .map-row .map-ref .tag{font-size:11px;margin-left:6px;padding:1px 6px;border-radius:999px;font-weight:600;vertical-align:middle}
 .map-row .map-ref .tag.warn{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
 .map-row .map-ref .tag.saved{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+.map-row .map-ref .tag-btn{cursor:pointer;font-family:inherit;transition:all .15s}
+.map-row .map-ref .tag-btn:hover{background:#fee2e2;border-color:#fca5a5;color:#b91c1c}
 .map-row .cat-select{padding:7px 30px 7px 10px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:13px;background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 10px center;appearance:none;-webkit-appearance:none;cursor:pointer;color:var(--ink);transition:.15s;width:100%}
 .map-row .cat-select:hover{border-color:var(--accent)}
 .map-legend{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.7}
@@ -254,7 +256,7 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 
   <div class="panel hide" id="mapPanel">
     <h2>② 分类口径调整（可选）</h2>
-    <div class="desc" style="color:var(--muted);font-size:13px">默认规则已自动归类，只需关注标 ⚠️ 的「待确认」项；其余按类别折叠，点标题展开。改完自动保存并刷新报表。</div>
+    <div class="desc" style="color:var(--muted);font-size:13px">默认规则已自动归类，其余按类别折叠，点标题展开。自动归入「其他」的标 ⚠️ 待确认：<b>点「⚠️ 待确认 · 点此确认」</b>可维持「其他」不再提示，或用下拉改到其他分类。改完自动保存并刷新报表。</div>
     <div class="map-tools">
       <input type="text" id="mapSearch" placeholder="搜索 referrer…">
       <label class="chk"><input type="checkbox" id="mapOnlyPending"> 仅看待确认（<span id="mapPendingCnt">0</span>）</label>
@@ -1058,7 +1060,8 @@ function renderMapPanel(){
     const body=rows.map(l=>{
       const cur=catOf(l.name);
       const sel='<select class="cat-select" data-link="'+escapeHtml(l.name)+'">'+CAT_ORDER.map(cc=>'<option value="'+cc+'"'+(cc===cur?' selected':'')+'>'+cc+'</option>').join('')+'</select>';
-      const tag = ovSet.has(l.name) ? ' <span class="tag saved">💾 已手动调整</span>' : (pendingSet.has(l.name) ? ' <span class="tag warn">⚠️ 待确认</span>' : '');
+      // ⚠️ 待确认可点击：点击即确认为当前分类（不再提示）。改用 button 因为 select 值不变时 change 不触发
+      const tag = ovSet.has(l.name) ? ' <span class="tag saved">💾 已手动调整</span>' : (pendingSet.has(l.name) ? ' <button class="tag warn tag-btn" data-confirm="'+escapeHtml(l.name)+'" title="确认为「其他」，不再提示">⚠️ 待确认 · 点此确认</button>' : '');
       const rowCls = ovSet.has(l.name) ? ' saved' : (pendingSet.has(l.name) ? ' warn' : '');
       return '<div class="map-row'+rowCls+'"><div class="map-ref" title="'+escapeHtml(l.name)+'">'+escapeHtml(l.name)+tag+'</div>'+sel+'</div>';
     }).join('');
@@ -1079,6 +1082,19 @@ function renderMapPanel(){
       sec.classList.toggle('collapsed');
       h.querySelector('.caret').textContent=wasCollapsed?'▾':'▸';
       STATE.mapCollapsed[id]=!wasCollapsed;
+    });
+  });
+  // 点「⚠️ 待确认 · 点此确认」直接确认（解决 select 值不变时 change 不触发的问题）
+  ml.querySelectorAll('.tag-btn[data-confirm]').forEach(b=>{
+    b.addEventListener('click',e=>{
+      e.stopPropagation();
+      const link=b.getAttribute('data-confirm');
+      if(!STATE.confirmed) STATE.confirmed={};
+      STATE.confirmed[link]=true;
+      saveConfirmed(STATE.proj, STATE.confirmed);
+      renderMapPanel();
+      renderReport();
+      showToast('已确认「'+link+'」为「其他」','success');
     });
   });
   ml.querySelectorAll('.cat-select').forEach(s=>{
