@@ -530,8 +530,7 @@ function renderReport(){
     const dayMs=86400000;
     const gap=Math.round((new Date(last.date+'T00:00:00Z').getTime()-new Date(prev.date+'T00:00:00Z').getTime())/dayMs);
     if(gap>=2){
-      const tip=gap>=4?'（建议每天粘贴 1 次，避免一次汇总多天）':'（建议每天粘贴 1 次，颗粒更细）';
-      insights.unshift('⚠️ <b>快照间隔 '+gap+' 天</b>：本次新增实际是上次粘贴到现在的累计'+tip+'。');
+      insights.unshift('⚠️ 距上次上传已间隔 <b>'+gap+' 天</b>，本次新增数据可能偏大（含多日累计）。');
     }
   }
   if(insights.length) html+='<div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>'+insights.map(s=>'<li>'+s+'</li>').join('')+'</ul></div>';
