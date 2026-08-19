@@ -68,22 +68,29 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;
 .module{background:var(--panel);border-radius:14px;padding:22px 26px;box-shadow:var(--shadow);margin:18px 0}
 .module h3{position:relative;margin:0 0 6px;font-size:18px;padding-left:14px}.module h3::before{content:'';position:absolute;left:0;top:8px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
 .module .desc{color:var(--muted);font-size:13px;margin-bottom:14px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:0 0 18px}
-.kpi{background:var(--panel);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow);border:1px solid var(--line)}
-.kpi .v{font-size:24px;font-weight:700;letter-spacing:-.02em}
-.kpi .l{font-size:12px;color:var(--muted);margin-top:4px}
-.kpi .sub{font-size:11px;color:var(--muted);margin-top:6px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 18px}
+.kpi{position:relative;background:linear-gradient(135deg,#fdeef5,#fff5fa);border:1px solid #fbd0e3;border-radius:14px;padding:14px 16px 14px 18px;box-shadow:var(--shadow);border-left:4px solid var(--accent);transition:transform .18s ease,box-shadow .18s ease;overflow:hidden}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(235,20,120,.14)}
+.kpi .l{font-size:12px;color:#c2185b;margin-bottom:4px;letter-spacing:.02em}
+.kpi .v{font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.kpi .sub{font-size:11px;color:var(--muted);margin-top:4px}
 .kpi.good .v{color:var(--green)}.kpi.bad .v{color:var(--red)}
+.kpi .kpi-ic{position:absolute;top:14px;right:14px;width:28px;height:28px;opacity:.8;background:rgba(255,255,255,.7);border-radius:8px;padding:5px}
+.kpi .kpi-ic svg{width:100%;height:100%;display:block}
 .tbl-card{margin:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}
-th{background:#f8fafc;font-weight:600;color:var(--muted);font-size:12px;user-select:none;border-bottom:1px solid #e2e8f0}
+th{background:#f8fafc;font-weight:600;color:var(--muted);font-size:12px;cursor:pointer;user-select:none;border-bottom:1px solid #e2e8f0;transition:color .12s}
+th:hover{color:var(--accent)}
+th.sorted-asc::after{content:' ↑';color:var(--accent)}
+th.sorted-desc::after{content:' ↓';color:var(--accent)}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
 tr.total td{font-weight:700;background:#f1f5f9}
 tr.total td:first-child{background:#f1f5f9}
 tr.cat td{font-weight:600;background:#f8fafc}
 tr.cat{cursor:pointer}
 tr.cat:hover td{background:#fdeef5}
+tr.sub:hover td{background:#fff7fb}
 th:first-child,td:first-child{position:sticky;left:0;z-index:1;background:inherit}
 tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
@@ -100,10 +107,17 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 .insight-banner li b.up{color:var(--green)}.insight-banner li b.down{color:var(--red)}
 .insight-banner.cmp{background:#f8fafc;border-color:var(--line);margin:10px 0 0}
 .insight-banner.cmp .ib-title{color:var(--muted);font-weight:600}
-.donut-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap;margin:4px 0 16px}
-.donut-leg-box{display:flex;flex-direction:column;gap:7px;flex:1;min-width:200px}
-.donut-leg{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151}
-.donut-leg b{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums}
+.donut-wrap{display:flex;align-items:center;gap:28px;flex-wrap:wrap;margin:6px 0 18px;padding:14px;background:linear-gradient(135deg,#fafbfc,#fff5fa);border:1px solid var(--line);border-radius:12px}
+.donut-svg{flex:none}
+.hbar-list{flex:1;min-width:240px;display:flex;flex-direction:column;gap:9px}
+.hbar-row{display:grid;grid-template-columns:14px 92px 1fr 140px;align-items:center;gap:10px;font-size:12.5px}
+.hbar-dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.hbar-name{color:#374151;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbar-track{height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden}
+.hbar-fill{height:100%;border-radius:4px;transition:width .35s ease;min-width:2px}
+.hbar-val{display:flex;justify-content:space-between;gap:8px;font-variant-numeric:tabular-nums;color:var(--muted)}
+.hbar-val b{color:var(--ink);font-weight:600}
+.hbar-val i{color:var(--accent);font-style:normal;font-weight:600}
 .board-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-bottom:10px;cursor:pointer;user-select:none}
 .board-toggle input{accent-color:var(--accent)}
 .delta-up{color:var(--green);font-weight:600}
@@ -471,10 +485,10 @@ function renderReport(){
   const newOrd=links.reduce((s,l)=>s+(l.dOrders||0),0);
   let html='';
   html+='<div class="kpis">';
-  html+=kpiCard(fmt(totalAll),'累计总额', links.length+' 个 link · '+snap.date, '');
-  html+=kpiCard((newAmt>0?'+':'')+fmt(newAmt),'本次新增金额', '较上次快照', newAmt<0?'bad':'good');
-  html+=kpiCard((newOrd>0?'+':'')+newOrd,'本次新增订单', '较上次快照', newOrd<0?'bad':'good');
-  html+=kpiCard(activeN,'活跃 link 数', (links.length-activeN)+' 个非活跃', '');
+  html+=kpiCard(fmt(totalAll),'累计总额', links.length+' 个 link · '+snap.date, '', KPI_ICONS.total);
+  html+=kpiCard((newAmt>0?'+':'')+fmt(newAmt),'本次新增金额', '较上次快照', newAmt<0?'bad':'good', newAmt<0?KPI_ICONS.down:KPI_ICONS.up);
+  html+=kpiCard((newOrd>0?'+':'')+newOrd,'本次新增订单', '较上次快照', newOrd<0?'bad':'good', KPI_ICONS.cart);
+  html+=kpiCard(activeN,'活跃 link 数', (links.length-activeN)+' 个非活跃', '', KPI_ICONS.bolt);
   html+='</div>';
   const insights=genInsightsIGG(links);
   if(insights.length) html+='<div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>'+insights.map(s=>'<li>'+s+'</li>').join('')+'</ul></div>';
@@ -487,7 +501,16 @@ function renderReport(){
   bindCompareEvents();
   makeSortable(body);
 }
-function kpiCard(v,l,sub,cls){ return '<div class="kpi '+(cls||'')+'"><div class="v">'+v+'</div><div class="l">'+l+'</div><div class="sub">'+sub+'</div></div>'; }
+function kpiCard(v,l,sub,cls,ic){
+  return '<div class="kpi '+(cls||'')+'"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="sub">'+sub+'</div>'+(ic?'<div class="kpi-ic">'+ic+'</div>':'')+'</div>';
+}
+const KPI_ICONS={
+  total:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#c2185b"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--green)"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--red)"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>',
+  cart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#c2185b"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/></svg>',
+  bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#c2185b"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'
+};
 
 function renderChannelModule(h, snap, links, totalAll){
   links.sort((a,b)=>(b.total||0)-(a.total||0));
@@ -536,22 +559,35 @@ function linkRow(l, hidden){
 }
 function deltaText(v){ if(v===0) return '—'; const s=v>0?'+':''; return s+fmt(v); }
 
-/* ---------- 环形图（类别金额占比） ---------- */
+/* ---------- 环形图 + 横向条占比列表 ---------- */
 function svgDonut(items){
   const total=items.reduce((s,i)=>s+i.amt,0);
   if(total<=0) return '';
-  const cx=104, cy=96, r=72, sw=26, C=2*Math.PI*r;
+  const cx=100, cy=100, r=70, sw=24, C=2*Math.PI*r;
   let off=0, segs='';
-  items.forEach(it=>{
+  items.forEach((it,i)=>{
     const frac=it.amt/total, len=frac*C, color=CAT_COLORS[it.cat]||'#7f7f7f';
     segs+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="'+sw+'" stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
     off+=len;
   });
-  const legend=items.map(it=>'<div class="donut-leg"><span class="dot" style="background:'+(CAT_COLORS[it.cat]||'#7f7f7f')+'"></span>'+escapeHtml(it.cat)+'<b>'+(it.amt/total*100).toFixed(0)+'%</b></div>').join('');
-  return '<div class="donut-wrap"><svg viewBox="0 0 208 192" style="width:208px;height:192px;flex:none">'+segs+
-    '<text x="'+cx+'" y="'+(cy-6)+'" text-anchor="middle" font-size="12" fill="#6b7280">累计</text>'+
-    '<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" font-size="17" font-weight="700" fill="#1f2933">'+fmt(total)+'</text></svg>'+
-    '<div class="donut-leg-box">'+legend+'</div></div>';
+  // 中心三行：累计 / Top1 类别 · 占比 / CR3 集中度
+  const top1=items[0], top3=items.slice(0,3).reduce((s,i)=>s+i.amt,0);
+  const cr3=total>0?(top3/total*100):0;
+  const center=`<text x="${cx}" y="${cy-22}" text-anchor="middle" font-size="11" fill="#6b7280">累计</text>
+    <text x="${cx}" y="${cy-2}" text-anchor="middle" font-size="18" font-weight="700" fill="#1f2933">${fmt(total)}</text>
+    <text x="${cx}" y="${cy+15}" text-anchor="middle" font-size="10" fill="#c2185b">${escapeHtml(top1.cat)} · ${(top1.amt/total*100).toFixed(0)}%</text>
+    <text x="${cx}" y="${cy+32}" text-anchor="middle" font-size="9" fill="#9ca3af">Top3 集中度 CR3: ${cr3.toFixed(0)}%</text>`;
+  // 右侧横向条列表：左小圆点 + 类别名 + 中色bar + 右 金额·占比
+  const max=Math.max(1,...items.map(i=>i.amt));
+  const hbarList=items.map((it,i)=>{
+    const pct=it.amt/total*100, w=(it.amt/max*100).toFixed(1);
+    const color=CAT_COLORS[it.cat]||'#7f7f7f';
+    return `<div class="hbar-row"><span class="hbar-dot" style="background:${color}"></span><span class="hbar-name">${escapeHtml(it.cat)}</span><div class="hbar-track"><div class="hbar-fill" style="width:${w}%;background:${color}"></div></div><span class="hbar-val"><b>${fmt(it.amt)}</b><i>${pct.toFixed(1)}%</i></span></div>`;
+  }).join('');
+  return `<div class="donut-wrap">
+    <svg viewBox="0 0 200 200" class="donut-svg" style="width:200px;height:200px;flex:none">${segs}${center}</svg>
+    <div class="hbar-list">${hbarList}</div>
+  </div>`;
 }
 
 /* ---------- 自动洞察（对齐 KS genInsights） ---------- */
