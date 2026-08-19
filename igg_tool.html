@@ -1028,7 +1028,9 @@ function renderMapPanel(){
     if(!rows.length) return;
     totalShown+=rows.length;
     const id='cat_'+(c.replace(/[^a-z0-9_]/gi,'_'));
-    const collapsed = STATE.mapCollapsed[id]!==undefined ? STATE.mapCollapsed[id] : true;
+    // 搜索/筛选时强制展开匹配的类别，否则按用户记忆的折叠状态（与 KS 一致）
+    const forceExpand=q || onlyPending;
+    const collapsed = forceExpand ? false : (STATE.mapCollapsed[id]!==undefined ? STATE.mapCollapsed[id] : true);
     const color=CAT_COLORS[c]||'#7f7f7f';
     const pN=rows.filter(l=>pendingSet.has(l.name)).length;
     const ovN=rows.filter(l=>ovSet.has(l.name)).length;
