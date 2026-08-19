@@ -574,8 +574,8 @@ function renderReport(){
     }
   }
   if(insights.length) html+='<div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>'+insights.map(s=>'<li>'+s+'</li>').join('')+'</ul></div>';
-  html+=renderChannelModule(h, snap, links, totalAll);
   html+=renderClassifyModule(h, snap, links);
+  html+=renderChannelModule(h, snap, links, totalAll);
   html+=renderWeekModule(h);
   html+=renderBoardModule(h);
   html+=renderCompareModule(h);
@@ -623,7 +623,7 @@ function renderChannelModule(h, snap, links, totalAll){
   rows+='<tr class="total"><td>合计</td><td></td><td></td><td class="num">'+tOrd+'</td><td class="num">'+fmt(tAll)+'</td><td class="num delta-'+(tNew>0?'up':(tNew<0?'down':'zero'))+'">'+deltaText(tNew)+'</td></tr>';
   const donutCats=CAT_ORDER.map(c=>({cat:c, amt:links.filter(l=>l.status!=='removed'&&catOf(l.name)===c).reduce((s,l)=>s+(l.total||0),0)})).filter(x=>x.amt>0).sort((a,b)=>b.amt-a.amt);
   const donut=svgDonut(donutCats);
-  return '<div class="module"><h3>① 渠道汇总与明细</h3><div class="desc">截止最新快照各渠道累计金额占比（环形图）；下方按类别汇总并可展开/收起该类别下的 link。点击表头可排序，「本次新增」= 当前累计 − 上一次快照。类别可下拉手动调整，改完自动保存。</div>'+
+  return '<div class="module"><h3>② 渠道汇总与明细</h3><div class="desc">截止最新快照各渠道累计金额占比（环形图）；下方按类别汇总并可展开/收起该类别下的 link。点击表头可排序，「本次新增」= 当前累计 − 上一次快照。类别可下拉手动调整，改完自动保存。</div>'+
     donut+
     '<div class="tbl-card"><table><thead><tr><th>Link</th><th>类别</th><th>状态</th><th class="num">累计订单</th><th class="num">Total</th><th class="num">本次新增</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
@@ -812,7 +812,7 @@ function renderBoardModule(h){
   const drillWeek = (STATE.boardWeek && STATE.boardWeek!=='all') ? weeks.find(w=>w.k===parseInt(STATE.boardWeek,10)) : null;
   const isDrill=!!drillWeek;
 
-  // 列定义（看板默认每日视图，独立的"自然周汇总"已在②板块呈现）
+  // 列定义（看板默认每日视图，独立的"自然周汇总"已在③板块呈现）
   let cols, rowHdr, headCells;
   if(isDrill){
     cols=drillWeek.wkSnaps; rowHdr='Link / 日期';
@@ -1030,7 +1030,7 @@ function renderClassifyModule(h, snap, links){
   if(!totalShown) cards='<div style="color:var(--muted);padding:14px 0">没有匹配的 referrer。</div>';
   const legend='<div class="map-legend">⚠️ 待确认 = 自动归类落入「其他」，需人工指定渠道；💾 已手动调整 = 已记住的手动归类（存于本机浏览器）。改完自动保存并刷新报表。</div>';
   const desc='默认规则已自动归类，只需关注标 ⚠️ 的「待确认」项；其余按类别折叠，点标题展开。改完自动保存并刷新报表。';
-  return '<div class="module"><h3>② 分类口径调整（可选）</h3><div class="desc">'+desc+'</div>'+
+  return '<div class="module"><h3>① 分类口径调整（可选）</h3><div class="desc">'+desc+'</div>'+
     toolbar+cards+legend+'</div>';
 }
 
@@ -1234,7 +1234,7 @@ function exportCSV(){
   });
   rows.push(['每日合计',...dailyTotals,csvEsc(fmtCSV(grandGrowth))].map(csvEsc));
   // 生成并下载
-  const csv=rows.join(',');
+  const csv=rows.join('\r\n');
   const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
