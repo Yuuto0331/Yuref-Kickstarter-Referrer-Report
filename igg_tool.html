@@ -120,6 +120,12 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 .hbar-val i{color:var(--accent);font-style:normal;font-weight:600}
 .board-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);margin-bottom:10px;cursor:pointer;user-select:none}
 .board-toggle input{accent-color:var(--accent)}
+.board-toggle label{display:inline-flex;align-items:center;gap:5px;margin-right:14px;cursor:pointer}
+.board-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;margin-bottom:12px;padding:9px 12px;background:#fafbfc;border:1px solid var(--line);border-radius:10px}
+.board-toolbar b{font-size:13px;color:var(--ink);margin-right:2px}
+.board th.date.week{text-align:center;line-height:1.3;font-size:11px;color:var(--ink);min-width:74px}
+.board th.date.week .weekrange{display:block;font-size:10px;color:var(--muted);margin-top:1px}
+.board th.date.week i{display:block;font-style:normal;font-size:9px;color:#94a3b8;margin-top:1px}
 .delta-up{color:var(--green);font-weight:600}
 .delta-down{color:var(--red);font-weight:600}
 .delta-zero{color:#9ca3af}
@@ -218,13 +224,14 @@ const LS_PREFIX='igg_ref_';
 const LS_HIST=LS_PREFIX+'hist_v1_';
 const LS_OVR=LS_PREFIX+'override_v1_';
 const LS_CUR=LS_PREFIX+'currency_v1_';
+const LS_BOARD=LS_PREFIX+'board_v1_';
 const LS_PROJS=LS_PREFIX+'projs_v1';
 const LS_LAST=LS_PREFIX+'last_proj_v1';
 const LS_CMP=LS_PREFIX+'compare_v1_';
 const CURRENCIES=['USD','HKD'];
 const FX_TO_USD={ USD:1, HKD:1/7.8 };
 const CUR_SYMBOL={ USD:'$', HKD:'HK$' };
-let STATE={ proj:'default', cur:'USD', displayCur:'USD', history:null, override:{}, detailCollapsed:{}, compareN:3 };
+let STATE={ proj:'default', cur:'USD', displayCur:'USD', history:null, override:{}, detailCollapsed:{}, compareN:3, boardView:'daily' };
 
 /* ---------- 工具函数 ---------- */
 function $(id){ return document.getElementById(id); }
@@ -379,6 +386,8 @@ function loadOverride(proj){
 function saveOverride(proj,o){ try{ localStorage.setItem(LS_OVR+proj, JSON.stringify(o||{})); }catch(e){} }
 function loadCurrency(proj){ const c=localStorage.getItem(LS_CUR+proj); return (c&&CURRENCIES.indexOf(c)>=0)?c:'USD'; }
 function saveCurrency(proj,c){ try{ localStorage.setItem(LS_CUR+proj, c); }catch(e){} }
+function loadBoard(proj){ const v=localStorage.getItem(LS_BOARD+proj); return (v==='weekly'||v==='daily')?v:'daily'; }
+function saveBoard(proj,v){ try{ localStorage.setItem(LS_BOARD+proj, v); }catch(e){} }
 function loadCompareN(proj){ const v=parseInt(localStorage.getItem(LS_CMP+proj),10); return [1,3,7].indexOf(v)>=0?v:3; }
 function saveCompareN(proj,n){ try{ localStorage.setItem(LS_CMP+proj, n); }catch(e){} }
 function loadProjs(){ try{ const s=localStorage.getItem(LS_PROJS); if(s){ const a=JSON.parse(s); if(Array.isArray(a)&&a.length) return a; } }catch(e){} return ['default']; }
@@ -448,13 +457,14 @@ function setProject(p){
   STATE.override=loadOverride(p);
   STATE.cur=loadCurrency(p);
   STATE.compareN=loadCompareN(p);
+  STATE.boardView=loadBoard(p);
   STATE.displayCur='USD';
   $('rptToolbar').classList.toggle('hide', !(STATE.history&&STATE.history.snapshots.length));
   updateDataInfo(); renderReport(); syncCurrencyUI();
 }
 function deleteProject(p){
   const projs=loadProjs().filter(x=>x!==p); saveProjs(projs);
-  try{ localStorage.removeItem(LS_HIST+p); localStorage.removeItem(LS_OVR+p); localStorage.removeItem(LS_CUR+p); }catch(e){}
+  try{ localStorage.removeItem(LS_HIST+p); localStorage.removeItem(LS_OVR+p); localStorage.removeItem(LS_CUR+p); localStorage.removeItem(LS_BOARD+p); }catch(e){}
   const next=projs[0]||'default'; if(projs.indexOf('default')<0){ projs.unshift('default'); saveProjs(projs); }
   setProject(next); renderProjMenu(); showToast('已删除项目：'+p,'info');
 }
@@ -636,32 +646,109 @@ function cmpInsightIGG(items, lblA, lblB){
 function renderBoardModule(h){
   const snaps=h.snapshots;
   const dates=snaps.map(s=>s.date);
+  const view=STATE.boardView||'daily';
+  // link 累计最大（用于排序 + 周视图取 max）
   const nameTotals={};
   snaps.forEach(s=>{ for(const n in s.links){ nameTotals[n]=Math.max(nameTotals[n]||0, s.links[n].total||0); } });
-  // 标记每个 link 是否在任一日期有新增，供"仅显示有出单"过滤
   const anyNew={}; let maxDv=1;
   snaps.forEach(s=>{ for(const n in s.links){ const dv=s.links[n].dTotal||0; if(dv>0){ anyNew[n]=true; if(dv>maxDv) maxDv=dv; } } });
   const names=Object.keys(nameTotals).sort((a,b)=>nameTotals[b]-nameTotals[a]);
-  let head='<th class="rowhdr">Link / 日期</th>';
-  dates.forEach(d=>{ head+='<th class="date">'+d.slice(5)+'</th>'; });
-  let bodyRows='';
-  const activeCount=Object.keys(anyNew).length;
-  names.forEach(n=>{
-    const hasAny=anyNew[n]?1:0;
-    let r='<tr data-hasany="'+hasAny+'"><td class="rowhdr" title="'+escapeHtml(n)+'">'+escapeHtml(n)+'</td>';
-    dates.forEach(d=>{
-      const snap=snaps.find(s=>s.date===d);
-      const l=snap?snap.links[n]:null;
-      const dv=l?(l.dTotal||0):0;
-      if(dv===0){ r+='<td class="cell dot-zero" title="'+d+' 无新增">·</td>'; }
-      else if(dv>0){ const intensity=Math.min(1, dv/maxDv); const bg='rgba(26,127,55,'+(0.06+0.34*intensity).toFixed(3)+')'; r+='<td class="cell dot-on" title="'+d+'：+'+fmt(dv)+'" style="background:'+bg+'">'+deltaText(dv)+'</td>'; }
-      else { r+='<td class="cell dot-on" title="'+d+'：'+fmt(dv)+'" style="background:rgba(192,57,43,0.12)">'+deltaText(dv)+'</td>'; }
+
+  // 把 snaps 切成 7 天桶（首日为 W1 第 1 天），返回 [{start, end, snapStartIdx, snapEndIdx, label}, ...]
+  function buildWeeks(){
+    const startDate=snaps[0].date;
+    const lastDate=snaps[snaps.length-1].date;
+    const dayMs=86400000;
+    const startMs=new Date(startDate+'T00:00:00Z').getTime();
+    const lastMs=new Date(lastDate+'T00:00:00Z').getTime();
+    const totalDays=Math.max(0,Math.round((lastMs-startMs)/dayMs));
+    const lastWeek=Math.floor(totalDays/7);
+    const weeks=[];
+    for(let w=0;w<=lastWeek;w++){
+      const sMs=startMs+w*7*dayMs, eMs=Math.min(startMs+(w+1)*7*dayMs-dayMs, lastMs);
+      const sDate=new Date(sMs+12*3600000).toISOString().slice(0,10);
+      const eDate=new Date(eMs+12*3600000).toISOString().slice(0,10);
+      // snapStartIdx = 该周首日（含）的最早索引；snapEndIdx = 该周末日（含）的最晚索引
+      let snapStartIdx=-1, snapEndIdx=-1;
+      for(let i=0;i<snaps.length;i++){ const d=snaps[i].date; if(d>=sDate && snapStartIdx<0) snapStartIdx=i; if(d<=eDate) snapEndIdx=i; }
+      const dayCount=(w===lastWeek)?(totalDays-w*7+1):7;
+      weeks.push({w, sDate, eDate, snapStartIdx, snapEndIdx, label:'W'+(w+1)+'<br><span class="weekrange">'+sDate.slice(5)+'~'+eDate.slice(5)+'</span><i>'+dayCount+'天</i>'});
+    }
+    return weeks;
+  }
+
+  // cell 配色：dV 与 maxW 比例画绿深；负值用红
+  function cellHtml(dv, max, posLabel, negLabel, dateLabel){
+    if(dv===0) return '<td class="cell dot-zero" title="'+posLabel+'">·</td>';
+    if(dv>0){ const intensity=Math.min(1, dv/max); const bg='rgba(26,127,55,'+(0.06+0.34*intensity).toFixed(3)+')'; return '<td class="cell dot-on" title="'+posLabel+'" style="background:'+bg+'">'+deltaText(dv)+'</td>'; }
+    return '<td class="cell dot-on" title="'+negLabel+'" style="background:rgba(192,57,43,0.12)">'+deltaText(dv)+'</td>';
+  }
+
+  let head, bodyRows='';
+  if(view==='weekly'){
+    const weeks=buildWeeks();
+    let weekMax=1;
+    names.forEach(n=>{
+      weeks.forEach(wk=>{
+        if(wk.snapEndIdx<0) return;
+        const after=snaps[wk.snapEndIdx].links[n];
+        if(!after) return;
+        const before=wk.snapStartIdx>0?snaps[wk.snapStartIdx-1].links[n]:null;
+        const dv=(after.total||0)-(before?(before.total||0):0);
+        if(dv>weekMax) weekMax=dv;
+      });
     });
-    bodyRows+=r+'</tr>';
-  });
-  const toggle=activeCount?'<label class="board-toggle"><input type="checkbox" id="boardOnlyActive"> 仅显示有出单的 link（'+activeCount+'）</label>':'';
-  return '<div class="module"><h3>② 每日新增看板</h3><div class="desc">行 = link，列 = 快照日期，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。横向纵向可滚动。</div>'+
-    toggle+
+    head='<th class="rowhdr">Link / 周</th>';
+    weeks.forEach(wk=>{ head+='<th class="date week">'+wk.label+'</th>'; });
+    const anyNewWeek={}; // link 是否在任一周有 >0
+    weeks.forEach(wk=>{
+      if(wk.snapEndIdx<0) return;
+      names.forEach(n=>{
+        const after=snaps[wk.snapEndIdx].links[n]; if(!after) return;
+        const before=wk.snapStartIdx>0?snaps[wk.snapStartIdx-1].links[n]:null;
+        const dv=(after.total||0)-(before?(before.total||0):0);
+        if(dv>0) anyNewWeek[n]=true;
+      });
+    });
+    names.forEach(n=>{
+      const hasAny=anyNewWeek[n]?1:0;
+      let r='<tr data-hasany="'+hasAny+'"><td class="rowhdr" title="'+escapeHtml(n)+'">'+escapeHtml(n)+'</td>';
+      weeks.forEach(wk=>{
+        if(wk.snapEndIdx<0){ r+='<td class="cell dot-zero">·</td>'; return; }
+        const after=snaps[wk.snapEndIdx].links[n];
+        if(!after){ r+='<td class="cell dot-zero">·</td>'; return; }
+        const before=wk.snapStartIdx>0?snaps[wk.snapStartIdx-1].links[n]:null;
+        const dv=(after.total||0)-(before?(before.total||0):0);
+        r+=cellHtml(dv, weekMax, wk.sDate+'~'+wk.eDate+'：'+fmt(dv), wk.sDate+'~'+wk.eDate+'：'+fmt(dv), wk.sDate);
+      });
+      bodyRows+=r+'</tr>';
+    });
+  }else{
+    head='<th class="rowhdr">Link / 日期</th>';
+    dates.forEach(d=>{ head+='<th class="date">'+d.slice(5)+'</th>'; });
+    names.forEach(n=>{
+      const hasAny=anyNew[n]?1:0;
+      let r='<tr data-hasany="'+hasAny+'"><td class="rowhdr" title="'+escapeHtml(n)+'">'+escapeHtml(n)+'</td>';
+      dates.forEach(d=>{
+        const snap=snaps.find(s=>s.date===d);
+        const l=snap?snap.links[n]:null;
+        const dv=l?(l.dTotal||0):0;
+        if(dv===0){ r+='<td class="cell dot-zero" title="'+d+' 无新增">·</td>'; }
+        else if(dv>0){ const intensity=Math.min(1, dv/maxDv); const bg='rgba(26,127,55,'+(0.06+0.34*intensity).toFixed(3)+')'; r+='<td class="cell dot-on" title="'+d+'：+'+fmt(dv)+'" style="background:'+bg+'">'+deltaText(dv)+'</td>'; }
+        else { r+='<td class="cell dot-on" title="'+d+'：'+fmt(dv)+'" style="background:rgba(192,57,43,0.12)">'+deltaText(dv)+'</td>'; }
+      });
+      bodyRows+=r+'</tr>';
+    });
+  }
+
+  const activeCount=Object.keys(anyNew).length;
+  const viewSwitch='<span class="board-toggle" style="margin-right:auto"><b>视图：</b>'+
+    '<label><input type="radio" name="boardView" value="daily"'+(view==='daily'?' checked':'')+'> 每日</label>'+
+    '<label><input type="radio" name="boardView" value="weekly"'+(view==='weekly'?' checked':'')+'> 按周聚合（每 7 天一列，30 天 ≈ 5 列）</label></span>';
+  const onlyActive=activeCount?'<label class="board-toggle"><input type="checkbox" id="boardOnlyActive"> 仅显示有出单的 link（'+activeCount+'）</label>':'';
+  const tip=view==='weekly'?'行 = link，列 = 自项目首日起每 7 天一桶（最后一周可能不足 7 天），单元格 = 该周累计出单增量；背景绿色越深表示该周累计越多。按项目记忆。「·」表示该周无新增。':'行 = link，列 = 快照日期，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。横向纵向可滚动。';
+  return '<div class="module"><h3>② 每日新增看板</h3><div class="desc">'+tip+'</div>'+
+    '<div class="board-toolbar">'+viewSwitch+onlyActive+'</div>'+
     '<div class="board-wrap"><table class="board" id="boardTbl"><thead><tr>'+head+'</tr></thead><tbody>'+bodyRows+'</tbody></table></div></div>';
 }
 
@@ -774,15 +861,23 @@ function bindCompareEvents(){
   if(sel){ sel.addEventListener('change',e=>{ const n=parseInt(e.target.value,10); STATE.compareN=n; saveCompareN(STATE.proj, n); renderReport(); }); }
 }
 function bindBoardEvents(){
-  const cb=$('boardOnlyActive');
-  if(!cb) return;
-  cb.addEventListener('change',e=>{
-    const showOnly=e.target.checked;
-    document.querySelectorAll('#boardTbl tbody tr').forEach(tr=>{
-      const has=tr.getAttribute('data-hasany')==='1';
-      tr.style.display=(showOnly && !has)?'none':'';
+  // 视图切换：每日 / 按周聚合
+  document.querySelectorAll('input[name="boardView"]').forEach(r=>{
+    r.addEventListener('change',e=>{
+      STATE.boardView=e.target.value; saveBoard(STATE.proj, STATE.boardView); renderReport();
     });
   });
+  // 仅显示有出单
+  const cb=$('boardOnlyActive');
+  if(cb){
+    cb.addEventListener('change',e=>{
+      const showOnly=e.target.checked;
+      document.querySelectorAll('#boardTbl tbody tr').forEach(tr=>{
+        const has=tr.getAttribute('data-hasany')==='1';
+        tr.style.display=(showOnly && !has)?'none':'';
+      });
+    });
+  }
 }
 
 /* ---------- 表格事件 ---------- */
