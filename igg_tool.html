@@ -220,22 +220,42 @@ function catOf(name){ return STATE.override[name] || classify(name); }
 
 /* ---------- 解析 IGG 粘贴文本 ---------- */
 function parseIGG(text){
-  const lines=String(text||'').split(/\r?\n/);
-  const rows={};
-  for(const raw of lines){
-    const line=raw.trim();
-    if(!line) continue;
-    if(/^(copy link|deactivate|delete|activate)$/i.test(line)) continue;
-    const parts=line.split(/\t/);
-    if(parts.length<7) continue;
-    const name=parts[0].trim();
-    const status=(parts[1]||'').trim().toLowerCase();
-    if(status!=='active' && status!=='inactive') continue;
-    if(/display\s*name/i.test(name)) continue;
-    const orders=parseInt((parts[2]||'').replace(/[^\d-]/g,''),10)||0;
-    rows[name]={ status, orders, d1:parseMoney(parts[3]), d7:parseMoney(parts[4]), income:parseMoney(parts[5]), total:parseMoney(parts[6]) };
+  const raw=String(text||'');
+  const SKIP=/^(copy link|deactivate|delete|activate|)$/i;
+  const isHead=s=>/^(display\s*name|status|new orders|1 day|7 days|income|total)\s*$/i.test(String(s||'').trim());
+  const buildRow=(name,status,orders,d1,d7,income,total)=>{
+    name=name||''; name=String(name).trim();
+    if(!name || isHead(name)) return null;
+    status=String(status||'').trim().toLowerCase();
+    if(status!=='active' && status!=='inactive') return null;
+    const o=parseInt(String(orders||'').replace(/[^\d-]/g,''),10);
+    return { row:Object.assign({},{ status, orders:isNaN(o)?0:o, d1:parseMoney(d1), d7:parseMoney(d7), income:parseMoney(income), total:parseMoney(total) }), key:name };
+  };
+  const out={};
+  const takeRow=cols=>{
+    if(!cols || cols.length<7) return;
+    const c=[...cols,'','','','','','',''].slice(0,7);
+    const r=buildRow(c[0],c[1],c[2],c[3],c[4],c[5],c[6]);
+    if(r) out[r.key]=r.row;
+  };
+  // 路径 A：含 TAB — 一行一记录
+  if(/\t/.test(raw)){
+    const lines=raw.split(/\r?\n/);
+    for(const ln of lines){
+      const line=ln.trim();
+      if(!line || SKIP.test(line)) continue;
+      const parts=line.split(/\t/);
+      if(parts.length>=7) takeRow(parts);
+    }
+    return out;
   }
-  return rows;
+  // 路径 B：纯换行 — 每 7 行一条记录（IGG 表格粘贴常见）
+  const lines=raw.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  // 跳过表头（任何表头行）和操作按钮行
+  const cleaned=lines.filter(l=>!SKIP.test(l) && !isHead(l));
+  // 7 行一组：name / status / orders / 1d / 7d / income / total
+  for(let i=0;i+7<=cleaned.length;i+=7) takeRow(cleaned.slice(i,i+7));
+  return out;
 }
 
 /* ---------- 存储 ---------- */
