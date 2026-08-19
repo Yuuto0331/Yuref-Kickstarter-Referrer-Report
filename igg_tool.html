@@ -198,12 +198,41 @@ function todayStr(){ const d=new Date(); return d.getFullYear()+'-'+String(d.get
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function parseMoney(s){
   if(s==null) return 0;
-  let t=String(s).trim(); let neg=false;
-  if(t.charAt(0)==='-'){ neg=true; t=t.slice(1); }
-  t=t.replace(/[(),$\s]/g,'');
+  let t=String(s).trim();
+  if(!t) return 0;
+  let neg=t.charAt(0)==='-';
+  if(neg) t=t.slice(1);
+  // 剥离常见货币符号 / 引号 / 空白 / 括号 / unicode 货币
+  t=t.replace(/[\s"'`$€£¥₹₩¢￥()]/g,'');
+  if(!t) return 0;
+  // 千分位逗号：启发式判断小数点
+  // 同时含 . 和 , → 最后一个为小数分隔
+  const lastDot=t.lastIndexOf('.');
+  const lastCom=t.lastIndexOf(',');
+  let sep=-1;
+  if(lastDot>=0 && lastCom>=0){ sep=Math.max(lastDot,lastCom); }
+  else if(lastDot>=0 || lastCom>=0){
+    const pos=Math.max(lastDot,lastCom);
+    const after=t.slice(pos+1);
+    // 仅当后面 1-2 位才算小数，否则视为千分位
+    sep=/^\d{1,2}$/.test(after)?pos:-1;
+  }
+  if(sep>=0){
+    const intPart=t.slice(0,sep).replace(/[.,]/g,'');
+    const decPart=t.slice(sep+1).replace(/[^\d]/g,'');
+    t=intPart+(decPart?'.'+decPart:'');
+  } else {
+    t=t.replace(/[.,]/g,'');
+  }
   const v=parseFloat(t);
-  if(isNaN(v)) return 0;
-  return neg?-v:v;
+  return Number.isFinite(v) ? (neg?-v:v) : 0;
+}
+function parseOrders(s){
+  // 订单数：剥掉非数字字符后取整（容忍千分位逗号、引号等）
+  if(s==null) return 0;
+  const t=String(s||'').replace(/[^\d-]/g,'');
+  const v=parseInt(t,10);
+  return Number.isFinite(v)?v:0;
 }
 function curFactor(){ const from=STATE.cur||'USD', to=STATE.displayCur||'USD'; if(from===to) return 1; const f=FX_TO_USD[from], t=FX_TO_USD[to]; if(f==null||t==null) return 1; return f/t; }
 function fmt(n){ const v=n*curFactor(); return (CUR_SYMBOL[STATE.displayCur||'USD']||'$')+Math.round(v).toLocaleString('en-US'); }
@@ -258,8 +287,8 @@ function parseIGG(text){
     if(!name || isHead(name)) return null;
     status=String(status||'').trim().toLowerCase();
     if(status!=='active' && status!=='inactive') return null;
-    const o=parseInt(String(orders||'').replace(/[^\d-]/g,''),10);
-    return { row:Object.assign({},{ status, orders:isNaN(o)?0:o, d1:parseMoney(d1), d7:parseMoney(d7), income:parseMoney(income), total:parseMoney(total) }), key:name };
+    const o=parseOrders(orders);
+    return { row:Object.assign({},{ status, orders:o, d1:parseMoney(d1), d7:parseMoney(d7), income:parseMoney(income), total:parseMoney(total) }), key:name };
   };
   const out={};
   const takeRow=cols=>{
@@ -277,6 +306,7 @@ function parseIGG(text){
       const parts=line.split(/\t/);
       if(parts.length>=7) takeRow(parts);
     }
+    console.log('[IGG] 路径 A(TAB), raw lines:', lines.length, 'parsed:', Object.keys(out).length, 'links:', out);
     return out;
   }
   // 路径 B：纯换行 — 每 7 行一条记录（IGG 表格粘贴常见）
@@ -285,6 +315,7 @@ function parseIGG(text){
   const cleaned=lines.filter(l=>!SKIP.test(l) && !isHead(l));
   // 7 行一组：name / status / orders / 1d / 7d / income / total
   for(let i=0;i+7<=cleaned.length;i+=7) takeRow(cleaned.slice(i,i+7));
+  console.log('[IGG] 路径 B(换行), raw lines:', lines.length, 'cleaned:', cleaned.length, 'parsed:', Object.keys(out).length, 'links:', out);
   return out;
 }
 
