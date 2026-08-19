@@ -202,11 +202,10 @@ function parseMoney(s){
   if(!t) return 0;
   let neg=t.charAt(0)==='-';
   if(neg) t=t.slice(1);
-  // 剥离常见货币符号 / 引号 / 空白 / 括号 / unicode 货币
-  t=t.replace(/[\s"'`$€£¥₹₩¢￥()]/g,'');
+  // 白名单：只保留数字、小数点、千分位逗号、负号；剥掉 HK$/€/£/¥/空格/引号等任何前缀
+  t=t.replace(/[^0-9.,-]/g,'');
   if(!t) return 0;
-  // 千分位逗号：启发式判断小数点
-  // 同时含 . 和 , → 最后一个为小数分隔
+  // 千分位逗号/欧式小数：启发式判断小数点
   const lastDot=t.lastIndexOf('.');
   const lastCom=t.lastIndexOf(',');
   let sep=-1;
@@ -214,8 +213,7 @@ function parseMoney(s){
   else if(lastDot>=0 || lastCom>=0){
     const pos=Math.max(lastDot,lastCom);
     const after=t.slice(pos+1);
-    // 仅当后面 1-2 位才算小数，否则视为千分位
-    sep=/^\d{1,2}$/.test(after)?pos:-1;
+    sep=/^\d{1,2}$/.test(after)?pos:-1; // 仅当后面 1-2 位才算小数，否则视为千分位
   }
   if(sep>=0){
     const intPart=t.slice(0,sep).replace(/[.,]/g,'');
@@ -226,6 +224,11 @@ function parseMoney(s){
   }
   const v=parseFloat(t);
   return Number.isFinite(v) ? (neg?-v:v) : 0;
+}
+function detectCurrency(text){
+  const t=String(text||'');
+  if(/HK\$/i.test(t)) return 'HKD';
+  return 'USD';
 }
 function parseOrders(s){
   // 订单数：剥掉非数字字符后取整（容忍千分位逗号、引号等）
@@ -280,7 +283,7 @@ function catOf(name){ const ov=STATE.override[name]; if(ov && CAT_ORDER.indexOf(
 /* ---------- 解析 IGG 粘贴文本 ---------- */
 function parseIGG(text){
   const raw=String(text||'');
-  const SKIP=/^(copy link|deactivate|delete|activate|)$/i;
+  const SKIP=/(copy link|deactivate|delete|activate)/i;
   const isHead=s=>/^(display\s*name|status|new orders|1 day|7 days|income|total)\s*$/i.test(String(s||'').trim());
   const buildRow=(name,status,orders,d1,d7,income,total)=>{
     name=name||''; name=String(name).trim();
@@ -614,12 +617,17 @@ $('btnParse').addEventListener('click',()=>{
   const rows=parseIGG(txt);
   const names=Object.keys(rows);
   if(!names.length){ showToast('未解析到 link 数据，请检查粘贴内容','error',3500); return; }
+  // 自动识别原始币种（HK$ → HKD，否则 USD），覆盖手动设置，避免单位错乱
+  const detected=detectCurrency(txt);
+  const curChanged = detected!==STATE.cur;
+  STATE.cur=detected; saveCurrency(STATE.proj, STATE.cur);
   STATE.history=addSnapshot(STATE.proj, rows);
-  STATE.cur=(STATE.cur||'USD'); saveCurrency(STATE.proj, STATE.cur);
   $('rptToolbar').classList.remove('hide');
   updateDataInfo(); renderReport(); syncCurrencyUI();
   const prevN=STATE.history.snapshots.length-1;
-  showToast('已保存今日快照，共 '+names.length+' 个 link（历史第 '+STATE.history.snapshots.length+' 次）','success',3500);
+  let msg='已保存今日快照，共 '+names.length+' 个 link（历史第 '+STATE.history.snapshots.length+' 次）';
+  if(curChanged) msg+=' · 已自动识别币种 '+detected+'（右上角可切换显示为美元/港币）';
+  showToast(msg,'success',4200);
 });
 $('btnClear').addEventListener('click',()=>{
   if(!confirm('确认清空「'+STATE.proj+'」的全部历史快照？此操作不可恢复。')) return;
