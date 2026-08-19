@@ -91,6 +91,9 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 .rcnt{display:inline-block;margin-left:8px;font-size:11px;color:var(--muted);font-weight:400}
 .link-cell{font-family:Menlo,Consolas,monospace;font-size:12px;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cat-select{padding:3px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;background:#fff;font-family:inherit}
+.cat-bar{background:#f1f5f9;border-radius:6px;height:10px;width:100%;overflow:hidden}
+.cat-bar-fill{height:100%;border-radius:6px;min-width:2px}
+.cmp-chart{margin:6px 0 16px;background:#fafbfc;border:1px solid var(--line);border-radius:10px;padding:8px 6px}
 .delta-up{color:var(--green);font-weight:600}
 .delta-down{color:var(--red);font-weight:600}
 .delta-zero{color:#9ca3af}
@@ -191,10 +194,11 @@ const LS_OVR=LS_PREFIX+'override_v1_';
 const LS_CUR=LS_PREFIX+'currency_v1_';
 const LS_PROJS=LS_PREFIX+'projs_v1';
 const LS_LAST=LS_PREFIX+'last_proj_v1';
+const LS_CMP=LS_PREFIX+'compare_v1_';
 const CURRENCIES=['USD','HKD'];
 const FX_TO_USD={ USD:1, HKD:1/7.8 };
 const CUR_SYMBOL={ USD:'$', HKD:'HK$' };
-let STATE={ proj:'default', cur:'USD', displayCur:'USD', history:null, override:{}, detailCollapsed:{} };
+let STATE={ proj:'default', cur:'USD', displayCur:'USD', history:null, override:{}, detailCollapsed:{}, compareN:3 };
 
 /* ---------- 工具函数 ---------- */
 function $(id){ return document.getElementById(id); }
@@ -349,6 +353,8 @@ function loadOverride(proj){
 function saveOverride(proj,o){ try{ localStorage.setItem(LS_OVR+proj, JSON.stringify(o||{})); }catch(e){} }
 function loadCurrency(proj){ const c=localStorage.getItem(LS_CUR+proj); return (c&&CURRENCIES.indexOf(c)>=0)?c:'USD'; }
 function saveCurrency(proj,c){ try{ localStorage.setItem(LS_CUR+proj, c); }catch(e){} }
+function loadCompareN(proj){ const v=parseInt(localStorage.getItem(LS_CMP+proj),10); return [1,3,7].indexOf(v)>=0?v:3; }
+function saveCompareN(proj,n){ try{ localStorage.setItem(LS_CMP+proj, n); }catch(e){} }
 function loadProjs(){ try{ const s=localStorage.getItem(LS_PROJS); if(s){ const a=JSON.parse(s); if(Array.isArray(a)&&a.length) return a; } }catch(e){} return ['default']; }
 function saveProjs(a){ try{ localStorage.setItem(LS_PROJS, JSON.stringify(a)); }catch(e){} }
 function addSnapshot(proj, rows, dateOverride){
@@ -415,6 +421,7 @@ function setProject(p){
   STATE.history=loadHistory(p);
   STATE.override=loadOverride(p);
   STATE.cur=loadCurrency(p);
+  STATE.compareN=loadCompareN(p);
   STATE.displayCur='USD';
   $('rptToolbar').classList.toggle('hide', !(STATE.history&&STATE.history.snapshots.length));
   updateDataInfo(); renderReport(); syncCurrencyUI();
@@ -458,9 +465,12 @@ function renderReport(){
   html+=kpiCard((newOrd>0?'+':'')+newOrd,'本次新增订单', '较上次快照', newOrd<0?'bad':'good');
   html+='</div>';
   html+=renderTableModule(h, snap, links, totalAll);
+  html+=renderCatSummaryModule(h, snap, links);
   html+=renderBoardModule(h);
+  html+=renderCompareModule(h);
   body.innerHTML=html;
   bindTableEvents();
+  bindCompareEvents();
   makeSortable(body);
 }
 function kpiCard(v,l,sub,cls){ return '<div class="kpi '+(cls||'')+'"><div class="v">'+v+'</div><div class="l">'+l+'</div><div class="sub">'+sub+'</div></div>'; }
@@ -531,6 +541,140 @@ function renderBoardModule(h){
   });
   return '<div class="module"><h3>③ 每日新增看板</h3><div class="desc">行 = link，列 = 快照日期，单元格 = 当日新增金额（当前累计 − 上一次快照），「·」表示该日无新增。横向纵向可滚动。</div>'+
     '<div class="board-wrap"><table class="board"><thead><tr>'+head+'</tr></thead><tbody>'+bodyRows+'</tbody></table></div></div>';
+}
+
+/* ---------- ④ 类别金额分布（截止最新快照） ---------- */
+function renderCatSummaryModule(h, snap, links){
+  const byCat={};
+  for(const l of links){
+    if(l.status==='removed') continue;
+    const c=catOf(l.name);
+    byCat[c]=(byCat[c]||0)+(l.total||0);
+  }
+  const total=Object.values(byCat).reduce((a,b)=>a+b,0);
+  const sorted=CAT_ORDER.filter(c=>(byCat[c]||0)>0).map(c=>({cat:c, amt:byCat[c]}))
+    .sort((a,b)=>b.amt-a.amt);
+  if(!sorted.length) return '';
+  const max=Math.max(1, ...sorted.map(s=>s.amt));
+  let rows='';
+  sorted.forEach(r=>{
+    const pct=total>0?(r.amt/total*100):0;
+    const w=(r.amt/max*100).toFixed(1);
+    const color=CAT_COLORS[r.cat]||'#7F7F7F';
+    rows+='<tr><td><span class="dot" style="background:'+color+'"></span>'+escapeHtml(r.cat)+'</td>'+
+      '<td class="num">'+fmt(r.amt)+'</td>'+
+      '<td class="num">'+pct.toFixed(1)+'%</td>'+
+      '<td><div class="cat-bar"><div class="cat-bar-fill" style="width:'+w+'%;background:'+color+'"></div></div></td></tr>';
+  });
+  rows+='<tr class="total"><td>合计</td><td class="num">'+fmt(total)+'</td><td class="num">100.0%</td><td></td></tr>';
+  return '<div class="module"><h3>④ 类别金额分布</h3><div class="desc">截止 '+snap.date+'，各渠道累计出单金额及占比。点击表头可排序。</div>'+
+    '<div class="tbl-card"><table><thead><tr><th>类别</th><th class="num">累计金额</th><th class="num">占比</th><th>分布</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+
+/* ---------- ⑤ 类别对比（前 N 天 vs 近 N 天） ---------- */
+function windowByCat(snaps, startIdx, endIdx){
+  // 窗口内新增 = end.links.total - (startIdx-1).links.total；startIdx=0 时无前一刻基准，按 0 算
+  const base=startIdx>0?snaps[startIdx-1].links:{};
+  const end=snaps[endIdx].links;
+  const byCat={};
+  for(const name in end){
+    if(end[name].status==='removed') continue;
+    const cat=catOf(name);
+    const e=end[name].total||0;
+    const b=base[name]?base[name].total||0:0;
+    const inc=Math.max(0, e-b);
+    byCat[cat]=(byCat[cat]||0)+inc;
+  }
+  return byCat;
+}
+function renderCompareModule(h){
+  const snaps=h.snapshots;
+  const k=snaps.length;
+  if(k<1) return '';
+  const N=STATE.compareN||3;
+  // 两窗口：recent=[k-N,k-1]、prev=[k-2N,k-N-1]；不足 2N 时 prev 缩到剩余历史
+  let recentStart=Math.max(0,k-N), recentEnd=k-1;
+  let prevStart=0, prevEnd=recentStart-1, hasPrev=prevEnd>=prevStart;
+  if(k>=2*N){ prevStart=k-2*N; prevEnd=recentStart-1; hasPrev=true; }
+  const dates=snaps.map(s=>s.date);
+  const fmtRng=(a,b)=>a.slice(5)+'~'+b.slice(5);
+  const recentRange=fmtRng(dates[recentStart], dates[recentEnd]);
+  const prevRange=hasPrev?fmtRng(dates[prevStart], dates[prevEnd]):'';
+  const recentByCat=windowByCat(snaps, recentStart, recentEnd);
+  const prevByCat=hasPrev?windowByCat(snaps, prevStart, prevEnd):{};
+  const catSet=new Set([...Object.keys(recentByCat), ...Object.keys(prevByCat)]);
+  const cats=[...catSet].sort((a,b)=>(recentByCat[b]||0)+(prevByCat[b]||0)-((recentByCat[a]||0)+(prevByCat[a]||0)));
+  if(!cats.length) return '';
+
+  // SVG 柱状图
+  const max=Math.max(1, ...cats.flatMap(c=>[recentByCat[c]||0, prevByCat[c]||0]));
+  const W=760, H=280, padL=52, padR=20, padT=34, padB=70;
+  const innerW=W-padL-padR, innerH=H-padT-padB;
+  const groupW=innerW/cats.length;
+  const barW=Math.max(8, (groupW-10)/2);
+  const yScale=v=>padT+innerH-(v/max)*innerH;
+  const ACCENT=(getComputedStyle&&getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())||'#eb1478';
+  const MUTED='#9ca3af';
+  const ticks=5;
+  let svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;max-height:340px">';
+  for(let i=0;i<=ticks;i++){
+    const v=max*i/ticks, y=yScale(v);
+    svg+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#e5e7eb" stroke-dasharray="2 2"/>';
+    svg+='<text x="'+(padL-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="#6b7280">'+fmtTick(v)+'</text>';
+  }
+  // 图例
+  svg+='<rect x="'+padL+'" y="8" width="10" height="10" fill="'+MUTED+'"/><text x="'+(padL+14)+'" y="17" font-size="11" fill="#374151">前 '+N+' 天'+(hasPrev?' ('+prevRange+')':'')+'</text>';
+  svg+='<rect x="'+(padL+200)+'" y="8" width="10" height="10" fill="'+ACCENT+'"/><text x="'+(padL+214)+'" y="17" font-size="11" fill="#374151">近 '+N+' 天 ('+recentRange+')</text>';
+  // 柱
+  cats.forEach((c,i)=>{
+    const gx=padL+i*groupW+5;
+    if(hasPrev){
+      const prevV=prevByCat[c]||0;
+      const x=gx, y=yScale(prevV), h=innerH+padT-y;
+      svg+='<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h+'" fill="'+MUTED+'"/>';
+      if(prevV>0) svg+='<text x="'+(x+barW/2)+'" y="'+(y-4)+'" text-anchor="middle" font-size="10" fill="#6b7280">'+fmtTick(prevV)+'</text>';
+    }
+    const recV=recentByCat[c]||0;
+    const x=gx+(hasPrev?barW+2:groupW/2-barW/2), y=yScale(recV), h=innerH+padT-y;
+    svg+='<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+h+'" fill="'+ACCENT+'"/>';
+    if(recV>0) svg+='<text x="'+(x+barW/2)+'" y="'+(y-4)+'" text-anchor="middle" font-size="10" fill="#374151">'+fmtTick(recV)+'</text>';
+    // X 轴类别名（截断过长）
+    let label=c; if(label.length>8) label=label.slice(0,7)+'…';
+    svg+='<text x="'+(gx+groupW/2-2)+'" y="'+(H-padB+16)+'" text-anchor="middle" font-size="10" fill="#374151">'+escapeHtml(label)+'</text>';
+  });
+  svg+='</svg>';
+
+  // 表格
+  let rows='';
+  cats.forEach(c=>{
+    const prevV=hasPrev?(prevByCat[c]||0):0;
+    const recV=recentByCat[c]||0;
+    const diff=recV-prevV;
+    const pct=prevV>0?(diff/prevV*100):(recV>0?100:0);
+    const dCls=diff>0?'delta-up':(diff<0?'delta-down':'delta-zero');
+    const dSign=diff>0?'+':'';
+    const color=CAT_COLORS[c]||'#7F7F7F';
+    rows+='<tr><td><span class="dot" style="background:'+color+'"></span>'+escapeHtml(c)+'</td>'+
+      '<td class="num">'+(hasPrev?fmt(prevV):'—')+'</td>'+
+      '<td class="num">'+fmt(recV)+'</td>'+
+      '<td class="num '+dCls+'">'+(hasPrev?dSign+fmt(diff):'—')+'</td>'+
+      '<td class="num '+dCls+'">'+(hasPrev?(pct===0?'—':(diff>0?'+':'')+pct.toFixed(0)+'%'):'—')+'</td></tr>';
+  });
+
+  return '<div class="module"><h3>⑤ 类别对比</h3><div class="desc">对比前 '+N+' 天 vs 近 '+N+' 天各渠道新增金额（基于快照累计差值）。切换窗口查看不同时间段对比。</div>'+
+    '<div class="filters"><span>对比窗口：</span><select id="compareNSel">'+
+      '<option value="1"'+(N===1?' selected':'')+'>1 天</option>'+
+      '<option value="3"'+(N===3?' selected':'')+'>3 天</option>'+
+      '<option value="7"'+(N===7?' selected':'')+'>7 天</option>'+
+    '</select></div>'+
+    '<div class="cmp-chart">'+svg+'</div>'+
+    '<div class="tbl-card"><table><thead><tr><th>渠道</th><th class="num">前 '+N+' 天</th><th class="num">近 '+N+' 天</th><th class="num">金额变化</th><th class="num">变化%</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+
+/* ---------- 表格事件 ---------- */
+function bindCompareEvents(){
+  const sel=$('compareNSel');
+  if(sel){ sel.addEventListener('change',e=>{ const n=parseInt(e.target.value,10); STATE.compareN=n; saveCompareN(STATE.proj, n); renderReport(); }); }
 }
 
 /* ---------- 表格事件 ---------- */
