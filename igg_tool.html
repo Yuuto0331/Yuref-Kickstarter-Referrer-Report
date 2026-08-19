@@ -305,6 +305,7 @@ const LS_OVR=LS_PREFIX+'override_v1_';
 const LS_CUR=LS_PREFIX+'currency_v1_';
 const LS_BOARD_WEEK=LS_PREFIX+'board_week_v1_';
 const LS_BOARD_ONLY=LS_PREFIX+'board_only_v1_';
+const LS_CONF=LS_PREFIX+'confirmed_v1_';
 const LS_PROJS=LS_PREFIX+'projs_v1';
 const LS_LAST=LS_PREFIX+'last_proj_v1';
 const LS_CMP=LS_PREFIX+'compare_v1_';
@@ -470,6 +471,9 @@ function loadOverride(proj){
   return o;
 }
 function saveOverride(proj,o){ try{ localStorage.setItem(LS_OVR+proj, JSON.stringify(o||{})); }catch(e){} }
+// 用户手动确认过的 link（即便结果仍是「其他」也算已查看，不再骚扰）
+function loadConfirmed(proj){ try{ const s=localStorage.getItem(LS_CONF+proj); const o=s&&JSON.parse(s); return (o&&typeof o==='object')?o:{}; }catch(e){ return {}; } }
+function saveConfirmed(proj,o){ try{ localStorage.setItem(LS_CONF+proj, JSON.stringify(o||{})); }catch(e){} }
 function loadCurrency(proj){ const c=localStorage.getItem(LS_CUR+proj); return (c&&CURRENCIES.indexOf(c)>=0)?c:'USD'; }
 function saveCurrency(proj,c){ try{ localStorage.setItem(LS_CUR+proj, c); }catch(e){} }
 function loadBoardWeek(proj){ const v=localStorage.getItem(LS_BOARD_WEEK+proj); return (v==='all'||/^\d+$/.test(v))?v:'all'; }
@@ -533,6 +537,7 @@ function doModalOk(){
       try{ if(localStorage.getItem(LS_HIST+STATE.proj)){ localStorage.setItem(LS_HIST+v, localStorage.getItem(LS_HIST+STATE.proj)); localStorage.removeItem(LS_HIST+STATE.proj); } }catch(e){}
       try{ if(localStorage.getItem(LS_OVR+STATE.proj)){ localStorage.setItem(LS_OVR+v, localStorage.getItem(LS_OVR+STATE.proj)); localStorage.removeItem(LS_OVR+STATE.proj); } }catch(e){}
       try{ if(localStorage.getItem(LS_CUR+STATE.proj)){ localStorage.setItem(LS_CUR+v, localStorage.getItem(LS_CUR+STATE.proj)); localStorage.removeItem(LS_CUR+STATE.proj); } }catch(e){}
+      try{ if(localStorage.getItem(LS_CONF+STATE.proj)){ localStorage.setItem(LS_CONF+v, localStorage.getItem(LS_CONF+STATE.proj)); localStorage.removeItem(LS_CONF+STATE.proj); } }catch(e){}
       STATE.proj=v;
     }
   }
@@ -543,6 +548,7 @@ function setProject(p){
   try{ localStorage.setItem(LS_LAST,p); }catch(e){}
   STATE.history=loadHistory(p);
   STATE.override=loadOverride(p);
+  STATE.confirmed=loadConfirmed(p);
   STATE.cur=loadCurrency(p);
   STATE.compareN=loadCompareN(p);
   STATE.boardWeek=loadBoardWeek(p);
@@ -553,7 +559,7 @@ function setProject(p){
 }
 function deleteProject(p){
   const projs=loadProjs().filter(x=>x!==p); saveProjs(projs);
-  try{ localStorage.removeItem(LS_HIST+p); localStorage.removeItem(LS_OVR+p); localStorage.removeItem(LS_CUR+p); localStorage.removeItem(LS_BOARD_WEEK+p); localStorage.removeItem(LS_BOARD_ONLY+p); }catch(e){}
+  try{ localStorage.removeItem(LS_HIST+p); localStorage.removeItem(LS_OVR+p); localStorage.removeItem(LS_CUR+p); localStorage.removeItem(LS_BOARD_WEEK+p); localStorage.removeItem(LS_BOARD_ONLY+p); localStorage.removeItem(LS_CONF+p); }catch(e){}
   const next=projs[0]||'default'; if(projs.indexOf('default')<0){ projs.unshift('default'); saveProjs(projs); }
   setProject(next); renderProjMenu(); showToast('已删除项目：'+p,'info');
 }
@@ -1011,8 +1017,8 @@ function renderMapPanel(){
   }
   const snap=h.snapshots[h.snapshots.length-1];
   const links=Object.keys(snap.links).map(n=>({name:n, ...snap.links[n]}));
-  // 待确认 = 自动归类落入「其他」且未手动覆盖
-  const isPending=l=> !STATE.override[l.name] && catOf(l.name)==='其他';
+  // 待确认 = 自动归类落入「其他」且未手动覆盖、且用户没有主动 change 过 select（即便结果仍是「其他」也算确认过意图）
+  const isPending=l=> !STATE.override[l.name] && !(STATE.confirmed||{})[l.name] && catOf(l.name)==='其他';
   const pendingSet=new Set(links.filter(l=>l.status!=='removed' && isPending(l)).map(l=>l.name));
   const ovSet=new Set(Object.keys(STATE.override||{}));
   // 按当前 catOf 分组
@@ -1079,6 +1085,10 @@ function renderMapPanel(){
     s.addEventListener('change',e=>{
       const link=e.target.getAttribute('data-link');
       const cat=e.target.value;
+      // 无论选什么（即便仍是「其他」），用户已显式确认意图；从待确认集合里清掉
+      if(!STATE.confirmed) STATE.confirmed={};
+      STATE.confirmed[link]=true;
+      saveConfirmed(STATE.proj, STATE.confirmed);
       if(cat===classify(link)) delete STATE.override[link]; // 与自动归类一致，清掉 override
       else STATE.override[link]=cat;
       saveOverride(STATE.proj, STATE.override);
@@ -1352,6 +1362,7 @@ $('btnResetCat').addEventListener('click',()=>{
   if(!n){ showToast('当前没有手动分类覆盖，无需重置','info'); return; }
   if(!confirm('将清空「'+STATE.proj+'」的 '+n+' 条手动分类覆盖，所有 link 重新按自动规则归类。继续？')) return;
   STATE.override={}; saveOverride(STATE.proj, STATE.override);
+  STATE.confirmed={}; saveConfirmed(STATE.proj, STATE.confirmed);
   renderReport();
   showToast('已重置分类，共清除 '+n+' 条手动覆盖','success');
 });
