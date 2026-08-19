@@ -170,6 +170,7 @@ tr.cat td:first-child,tr.total td:first-child{background:#f1f5f9}
 .map-section .map-head .catname{font-size:14px;font-weight:600;color:var(--ink)}
 .map-section .map-head .cnt{margin-left:auto;color:var(--muted);font-size:13px}
 .map-section .map-head .badge{display:inline-block;background:#fdeef5;color:var(--accent);font-size:11px;padding:1px 7px;border-radius:999px;margin-left:6px;font-weight:600}
+.map-section .map-head .badge.warn{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
 .map-section.collapsed .map-body{display:none}
 .map-section .map-body{padding:4px 14px 12px}
 .map-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f3f4f6}
@@ -268,7 +269,7 @@ const LS_CMP=LS_PREFIX+'compare_v1_';
 const CURRENCIES=['USD','HKD'];
 const FX_TO_USD={ USD:1, HKD:1/7.8 };
 const CUR_SYMBOL={ USD:'$', HKD:'HK$' };
-let STATE={ proj:'default', cur:'USD', displayCur:'USD', history:null, override:{}, detailCollapsed:{}, compareN:3, boardWeek:'all', boardOnlyActive:true, mapCollapsed:{}, mapOnlySaved:false, mapQuery:'' };
+let STATE={ proj:'default', cur:'USD', displayCur:'USD', history:null, override:{}, detailCollapsed:{}, compareN:3, boardWeek:'all', boardOnlyActive:true, mapCollapsed:{}, mapOnlyPending:false, mapQuery:'' };
 
 /* ---------- 工具函数 ---------- */
 function $(id){ return document.getElementById(id); }
@@ -559,10 +560,10 @@ function renderReport(){
   }
   if(insights.length) html+='<div class="insight-banner"><div class="ib-title">💡 自动洞察</div><ul>'+insights.map(s=>'<li>'+s+'</li>').join('')+'</ul></div>';
   html+=renderChannelModule(h, snap, links, totalAll);
+  html+=renderClassifyModule(h, snap, links);
   html+=renderWeekModule(h);
   html+=renderBoardModule(h);
   html+=renderCompareModule(h);
-  html+=renderClassifyModule(h, snap, links);
   body.innerHTML=html;
   bindTableEvents();
   bindBoardEvents();
@@ -729,7 +730,7 @@ function buildNaturalWeeks(snaps){
   return weeks;
 }
 
-/* ---------- ② 自然周汇总（KS 风格：每周总额柱 + 分渠道周卡） ---------- */
+/* ---------- ③ 自然周汇总（KS 风格：每周总额柱 + 分渠道周卡） ---------- */
 function svgStackedIGG(weekly, labels){
   const n=weekly.length; if(!n) return '<div class="insight note">暂无周数据。</div>';
   const W=800,H=348,M={l:62,r:22,t:38,b:62}; const cw=W-M.l-M.r, ch=H-M.t-M.b;
@@ -786,7 +787,7 @@ function renderWeekModule(h){
   const maxI=totals.indexOf(Math.max(...totals));
   const pct=sumWeekly?Math.round(totals[maxI]/sumWeekly*100):0;
   const insight='<div class="insight-banner cmp"><div class="ib-title">📊 洞察</div><ul><li>出单高峰出现在 <b>第'+(maxI+1)+'周</b>，新增 <b>'+fmt(totals[maxI])+'</b>，占各周新增合计的 <b>'+pct+'%</b>。</li></ul></div>';
-  return '<div class="module"><h3>② 自然周汇总</h3><div class="desc">按自然周（以首个快照日为上线日：第 1 周 = 上线日→当周周日，后续整周）汇总各渠道新增出单金额。柱状图为每周总额，下方卡片为每周分渠道明细。</div>'+
+  return '<div class="module"><h3>③ 自然周汇总</h3><div class="desc">按自然周（以首个快照日为上线日：第 1 周 = 上线日→当周周日，后续整周）汇总各渠道新增出单金额。柱状图为每周总额，下方卡片为每周分渠道明细。</div>'+
     '<div class="chart-wrap">'+svgStackedIGG(weekly, weekLabels)+'</div>'+wkBlocks+insight+'</div>';
 }
 
@@ -847,9 +848,9 @@ function renderBoardModule(h){
   const onlyActive=activeCount?'<label class="board-toggle"><input type="checkbox" id="boardOnlyActive"'+(STATE.boardOnlyActive?' checked':'')+'> 仅显示有出单的 link（'+activeCount+'）</label>':'';
   const drillNote=isDrill?' <span class="board-drill">· 正在查看「第'+drillWeek.k+'周」逐日下钻</span>':'';
   const tip=isDrill
-    ? '行 = link，列 = 第'+drillWeek.k+'周内各快照日，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。周汇总可在「② 自然周汇总」板块查看。'
-    : '行 = link，列 = 快照日期，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。横向纵向可滚动。按周汇总请在「② 自然周汇总」板块查看。';
-  const title=isDrill?'③ 每日新增看板（第'+drillWeek.k+'周逐日下钻）':'③ 每日新增看板';
+    ? '行 = link，列 = 第'+drillWeek.k+'周内各快照日，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。周汇总可在「③ 自然周汇总」板块查看。'
+    : '行 = link，列 = 快照日期，单元格 = 当日新增金额（当前累计 − 上一次快照）；背景绿色越深表示当日新增越多，「·」表示该日无新增。横向纵向可滚动。按周汇总请在「③ 自然周汇总」板块查看。';
+  const title=isDrill?'④ 每日新增看板（第'+drillWeek.k+'周逐日下钻）':'④ 每日新增看板';
   return '<div class="module"><h3>'+title+'</h3><div class="desc">'+tip+drillNote+'</div>'+
     '<div class="board-toolbar">'+weekSel+onlyActive+'</div>'+
     '<div class="board-wrap"><table class="board" id="boardTbl"><thead><tr><th class="rowhdr">'+rowHdr+'</th>'+headCells+'</tr></thead><tbody>'+bodyRows+'</tbody></table></div></div>';
@@ -947,7 +948,7 @@ function renderCompareModule(h){
 
   const insightItems=cats.map(c=>({c, a:hasPrev?(prevByCat[c]||0):0, b:recentByCat[c]||0}));
   const insight=cmpInsightIGG(insightItems, hasPrev?('前'+N+'天'):'前期', '近'+N+'天');
-  return '<div class="module"><h3>④ 类别对比</h3><div class="desc">对比前 '+N+' 天 vs 近 '+N+' 天各渠道新增金额（基于快照累计差值）。切换窗口查看不同时间段对比。</div>'+
+  return '<div class="module"><h3>⑤ 类别对比</h3><div class="desc">对比前 '+N+' 天 vs 近 '+N+' 天各渠道新增金额（基于快照累计差值）。切换窗口查看不同时间段对比。</div>'+
     '<div class="filters"><span>对比窗口：</span><select id="compareNSel">'+
       '<option value="1"'+(N===1?' selected':'')+'>1 天</option>'+
       '<option value="3"'+(N===3?' selected':'')+'>3 天</option>'+
@@ -958,8 +959,13 @@ function renderCompareModule(h){
     insight+'</div>';
 }
 
-/* ---------- ⑤ 分类口径调整（独立模块，对齐 KS 风格） ---------- */
+/* ---------- ② 分类口径调整（独立模块，对齐 KS） ---------- */
 function renderClassifyModule(h, snap, links){
+  // 待确认 = 自动归类落到「其他」且未手动覆盖（与 KS 一致：需人工确认）
+  const isPending=l=> !STATE.override[l.name] && catOf(l.name)==='其他';
+  const pendingSet=new Set(links.filter(l=>l.status!=='removed' && isPending(l)).map(l=>l.name));
+  const ovSet=new Set(Object.keys(STATE.override||{}));
+
   // 按当前 catOf 分组
   const byCat={}; const order=[];
   links.forEach(l=>{
@@ -974,14 +980,11 @@ function renderClassifyModule(h, snap, links){
     return sb-sa;
   });
   const q=(STATE.mapQuery||'').trim().toLowerCase();
-  const onlySaved=!!STATE.mapOnlySaved;
-  const onlyOv=Object.keys(STATE.override||{});
-  const onlySavedSet=new Set(onlyOv);
+  const onlyPending=!!STATE.mapOnlyPending;
 
-  const ovCount=onlyOv.length;
   const toolbar='<div class="map-toolbar">'+
     '<input type="text" id="mapSearch" placeholder="搜索 referrer..." value="'+escapeHtml(STATE.mapQuery||'')+'">'+
-    '<label class="chk"><input type="checkbox" id="mapOnlySaved"'+(onlySaved?' checked':'')+'> 仅显示已手动调整（'+ovCount+'）</label>'+
+    '<label class="chk"><input type="checkbox" id="mapOnlyPending"'+(onlyPending?' checked':'')+'> 仅看待确认（'+pendingSet.size+'）</label>'+
     '<button class="btn ghost sm" id="mapExpandAll">全部展开</button>'+
     '<button class="btn ghost sm" id="mapCollapseAll">全部折叠</button>'+
   '</div>';
@@ -989,19 +992,20 @@ function renderClassifyModule(h, snap, links){
   let cards=''; let totalShown=0;
   order.forEach(c=>{
     let rows=byCat[c].slice();
-    if(onlySaved) rows=rows.filter(l=>onlySavedSet.has(l.name));
+    if(onlyPending) rows=rows.filter(l=>pendingSet.has(l.name));
     if(q) rows=rows.filter(l=>l.name.toLowerCase().indexOf(q)>=0);
     if(!rows.length) return;
     totalShown+=rows.length;
     const id='cat_'+(c.replace(/[^a-z0-9_]/gi,'_'));
     const collapsed = STATE.mapCollapsed[id]!==undefined ? STATE.mapCollapsed[id] : true;
     const color=CAT_COLORS[c]||'#7f7f7f';
-    const ovN=rows.filter(l=>onlySavedSet.has(l.name)).length;
-    const badge=ovN ? '<span class="badge">'+ovN+' 已调整</span>' : '';
+    const pN=rows.filter(l=>pendingSet.has(l.name)).length;
+    const ovN=rows.filter(l=>ovSet.has(l.name)).length;
+    const badge=pN?'<span class="badge warn">⚠️ '+pN+' 待确认</span>':(ovN?'<span class="badge">'+ovN+' 已调整</span>':'');
     const body=rows.map(l=>{
       const cur=catOf(l.name);
       const sel='<select class="cat-select" data-link="'+escapeHtml(l.name)+'">'+CAT_ORDER.map(cc=>'<option value="'+cc+'"'+(cc===cur?' selected':'')+'>'+cc+'</option>').join('')+'</select>';
-      const tag = onlySavedSet.has(l.name) ? ' <span class="tag saved">💾 已手动调整</span>' : '';
+      const tag = ovSet.has(l.name) ? ' <span class="tag saved">💾 已手动调整</span>' : (pendingSet.has(l.name) ? ' <span class="tag warn">⚠️ 待确认</span>' : '');
       return '<div class="map-row"><div class="map-ref" title="'+escapeHtml(l.name)+'">'+escapeHtml(l.name)+tag+'</div>'+sel+'</div>';
     }).join('');
     cards+='<div class="map-section'+(collapsed?' collapsed':'')+'" data-cat-id="'+id+'">'+
@@ -1009,9 +1013,9 @@ function renderClassifyModule(h, snap, links){
       '<div class="map-body">'+body+'</div></div>';
   });
   if(!totalShown) cards='<div style="color:var(--muted);padding:14px 0">没有匹配的 referrer。</div>';
-  const legend='<div class="map-legend">💾 = 已记住的手动归类（存于本机浏览器，下次上传自动套用）；默认规则已自动归类，无需任何操作。</div>';
-  const desc='默认规则已自动归类。如需修改某 link 的渠道口径，在下方按类折叠的卡片里调整下拉即可，切换后自动保存并刷新报表。';
-  return '<div class="module"><h3>⑤ 分类口径调整（可选）</h3><div class="desc">'+desc+'</div>'+
+  const legend='<div class="map-legend">⚠️ 待确认 = 自动归类落入「其他」，需人工指定渠道；💾 已手动调整 = 已记住的手动归类（存于本机浏览器）。改完自动保存并刷新报表。</div>';
+  const desc='默认规则已自动归类，只需关注标 ⚠️ 的「待确认」项；其余按类别折叠，点标题展开。改完自动保存并刷新报表。';
+  return '<div class="module"><h3>② 分类口径调整（可选）</h3><div class="desc">'+desc+'</div>'+
     toolbar+cards+legend+'</div>';
 }
 
@@ -1044,9 +1048,9 @@ function bindClassifyEvents(){
   const q=$('mapSearch'); if(q){
     q.addEventListener('input',e=>{ STATE.mapQuery=e.target.value; renderReport(); });
   }
-  // 仅显示手动调整
-  const oc=$('mapOnlySaved'); if(oc){
-    oc.addEventListener('change',e=>{ STATE.mapOnlySaved=e.target.checked; renderReport(); });
+  // 仅看待确认
+  const oc=$('mapOnlyPending'); if(oc){
+    oc.addEventListener('change',e=>{ STATE.mapOnlyPending=e.target.checked; renderReport(); });
   }
 }
 function bindBoardEvents(){
