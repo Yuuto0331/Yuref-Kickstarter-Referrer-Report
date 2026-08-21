@@ -682,7 +682,7 @@ function linkRow(l, hidden){
   const statusTag = l.status==='removed' ? '<span class="tag-off">已移除</span>' : (l.status==='active'?'<span style="color:var(--green)">active</span>':'<span style="color:var(--muted)">inactive</span>');
   const current=catOf(l.name);
   const catOpts=CAT_ORDER.map(c=>'<option value="'+c+'"'+(current===c?' selected':'')+'>'+c+'</option>').join('');
-  const styleParts=[]; if(hidden) styleParts.push('display:none'); if(isNew) styleParts.push('background:#fdeef5');
+  const styleParts=[]; if(hidden) styleParts.push('display:none');
   const st = styleParts.length ? ' style="'+styleParts.join(';')+'"' : '';
   return '<tr class="sub" data-cat="'+escapeHtml(current)+'"'+st+'><td class="link-cell" title="'+escapeHtml(l.name)+'">'+escapeHtml(l.name)+(isNew?'<span class="tag-new">NEW</span>':'')+'</td>'+
     '<td><select class="cat-select" data-link="'+escapeHtml(l.name)+'">'+catOpts+'</select></td>'+
