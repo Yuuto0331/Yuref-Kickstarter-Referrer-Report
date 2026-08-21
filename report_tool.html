@@ -146,10 +146,14 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:12px;top:50%;t
 .insight.info::before{content:'ⓘ';color:var(--blue)}
 .insight.danger::before{content:'⚠';color:var(--red)}
 .insight.note::before{content:'ℹ';color:#64748b}
-.map-row{display:grid;grid-template-columns:1fr 200px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
-.map-row.warn{grid-template-columns:1fr 140px 88px}
+.map-row{display:grid;grid-template-columns:1fr 110px 200px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.map-row.warn{grid-template-columns:1fr 110px 140px 88px}
 .map-row .map-act{justify-self:end;padding:5px 8px;font-size:12px;white-space:nowrap}
 .map-row.warn{background:#fffbeb}
+.map-row .map-amt{justify-self:end;text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ink);line-height:1.3}
+.map-row .map-amt .amt-sub{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.map-head .cnt .cnt-amt{color:var(--ink);font-weight:600}
+.map-head .cnt .cnt-sep{margin:0 4px;color:var(--muted)}
 .map-row.saved{background:#eff6ff}
 .map-ref{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative;padding-left:28px;color:#475569}
 .map-ref::after{content:'└';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:11px;color:#94a3b8;font-family:system-ui,sans-serif}
@@ -198,7 +202,7 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:12px;top:50%;t
 .insight-banner li b.up{color:var(--green)}.insight-banner li b.down{color:var(--red)}
 .insight-banner.cmp{background:#f8fafc;border-color:var(--line);margin:10px 0 0;border-radius:12px}
 .insight-banner.cmp .ib-title{color:var(--muted);font-weight:600}
-@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.map-row{grid-template-columns:1fr 140px}.map-row.warn{grid-template-columns:1fr 110px 76px}}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.map-row{grid-template-columns:1fr 90px 140px}.map-row.warn{grid-template-columns:1fr 90px 110px 76px}}
 @media(max-width:560px){.kpis{grid-template-columns:1fr}.panel{padding:16px}.module{padding:16px}.rpt-toolbar{gap:10px}.module h3{font-size:16px}}
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0}
 .tbl-scroll table{min-width:520px}
@@ -641,6 +645,9 @@ function finalClassify(ref, typ){
 function renderMapping(){
   const list=document.getElementById('mapList'); list.innerHTML='';
   const refs=Array.from(new Set(STATE.rows.map(r=>r.ref)));
+  // link 维度聚合：每个 ref 的累计金额/订单（用于分类 header 与行内显示）
+  const linkAmts={}, linkPls={};
+  STATE.rows.forEach(r=>{ linkAmts[r.ref]=(linkAmts[r.ref]||0)+(r.am||0); linkPls[r.ref]=(linkPls[r.ref]||0)+(r.pl||0); });
   const q=document.getElementById('mapSearch').value.trim().toLowerCase();
   const onlyWarn=document.getElementById('mapOnlyWarn').checked;
   const info=refs.map(ref=>{
@@ -649,17 +656,18 @@ function renderMapping(){
     const ov=STATE.override[ref]!==undefined?STATE.override[ref]:null;
     const cat=ov!==null?ov:def;
     const warn=ov===null && !hasExplicitRule(ref,typ);
-    return {ref,typ,def,cat,ov,warn};
+    return {ref,typ,def,cat,ov,warn,am:linkAmts[ref]||0,pl:linkPls[ref]||0};
   }).filter(i=>(!q||i.ref.toLowerCase().includes(q)) && (!onlyWarn||i.warn))
-    .sort((a,b)=>a.ref<b.ref?-1:1);
+    .sort((a,b)=>(b.am||0)-(a.am||0) || (a.ref<b.ref?-1:1));
   const sec = (id,title,badge,items,opts={})=>{
     if(opts.forceHide && items.length===0) return;
     const collapsed = STATE.mapCollapsed[id]!==undefined ? STATE.mapCollapsed[id] : (opts.defaultCollapsed||false);
     const sec2=document.createElement('div');
     sec2.className='map-section'+(collapsed?' collapsed':'')+(opts.warn?' warnsec':'');
-    const cnt = items.length+(opts.cntNote?(' · '+opts.cntNote):'');
+    const catTotal = items.reduce((s,i)=>s+(i.am||0),0);
+    const cntHtml = `<span class="cnt-amt">${fmt(catTotal)}</span><span class="cnt-sep">·</span><span>${items.length} 个 link</span>`;
     const headAct = opts.headAction ? `<button class="btn ghost sm head-act" data-action="${opts.headAction}">${opts.headActionLabel||'操作'}</button>` : '';
-    sec2.innerHTML=`<div class="map-head" data-sec="${id}"><span class="caret">▾</span>${title}${badge?` <span class="badge">${badge}</span>`:''}<div style="margin-left:auto;display:flex;gap:8px;align-items:center">${headAct}<span class="cnt">${cnt}</span></div></div><div class="map-body"></div>`;
+    sec2.innerHTML=`<div class="map-head" data-sec="${id}"><span class="caret">▾</span>${title}${badge?` <span class="badge">${badge}</span>`:''}<div style="margin-left:auto;display:flex;gap:8px;align-items:center">${headAct}<span class="cnt">${cntHtml}</span></div></div><div class="map-body"></div>`;
     const body=sec2.querySelector('.map-body');
     for(const it of items){
       const row=document.createElement('div');
@@ -667,7 +675,8 @@ function renderMapping(){
       const sel='<select data-ref="'+escapeAttr(it.ref)+'">'+CAT_ORDER.map(c=>'<option value="'+c+'"'+(c===it.cat?' selected':'')+'>'+c+'</option>').join('')+'</select>';
       const tag = it.ov!==null ? ' 💾' : (it.warn?' ⚠️':'');
       const act = it.warn ? `<button class="btn ghost sm map-act" data-ref="${escapeAttr(it.ref)}" data-act="other">归其他</button>` : '';
-      row.innerHTML='<div class="map-ref" title="'+escapeAttr(it.ref)+'">'+escapeAttr(it.ref)+tag+'</div>'+sel+act;
+      const amt = `<div class="map-amt">${fmt(it.am)}<span class="amt-sub">${it.pl} 单</span></div>`;
+      row.innerHTML='<div class="map-ref" title="'+escapeAttr(it.ref)+'">'+escapeAttr(it.ref)+tag+'</div>'+amt+sel+act;
       body.appendChild(row);
     }
     body.querySelectorAll('select').forEach(s=>{
