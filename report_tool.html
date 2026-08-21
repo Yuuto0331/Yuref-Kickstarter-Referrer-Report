@@ -152,8 +152,6 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:12px;top:50%;t
 .map-row .map-amt{justify-self:end;text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--ink);white-space:nowrap;display:flex;align-items:baseline;gap:5px}
 .map-row .map-amt .amt-dot{color:#cbd5e1;font-weight:400;font-size:13px}
 .map-row .map-amt .amt-cnt{color:#94a3b8;font-size:11.5px;font-weight:500;letter-spacing:.01em}
-.map-head .cnt .cnt-amt{color:var(--ink);font-weight:600}
-.map-head .cnt .cnt-sep{margin:0 4px;color:var(--muted)}
 .map-row.saved{background:#eff6ff}
 .map-ref{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative;padding-left:28px;color:#475569}
 .map-ref::after{content:'└';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:11px;color:#94a3b8;font-family:system-ui,sans-serif}
@@ -168,7 +166,11 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:12px;top:50%;t
 .map-head:hover{background:#f1f5f9}
 .map-head .caret{transition:transform .15s;font-size:12px;color:var(--muted)}
 .map-section.collapsed .caret{transform:rotate(-90deg)}
-.map-head .cnt{margin-left:auto;font-size:12px;color:var(--muted);font-weight:400}
+.map-head .cnt{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);font-weight:400}
+.map-head .cnt .cat-bar{display:inline-block;width:64px;height:5px;background:#e2e8f0;border-radius:99px;overflow:hidden;position:relative;top:-1px}
+.map-head .cnt .cat-bar-fill{display:block;height:100%;background:linear-gradient(90deg,#3b82f6,#60a5fa);border-radius:99px;min-width:2px}
+.map-head .cnt .cnt-amt{color:var(--ink);font-weight:700;font-size:15.5px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.map-head .cnt .cnt-sep{margin:0 1px;color:#cbd5e1;font-weight:400}
 .map-head .badge{font-size:11px;padding:1px 7px;border-radius:999px;background:#fde68a;color:#92400e;font-weight:600}
 .map-body{max-height:520px;overflow-y:auto}
 .map-section.collapsed .map-body{display:none}
@@ -665,7 +667,8 @@ function renderMapping(){
     const sec2=document.createElement('div');
     sec2.className='map-section'+(collapsed?' collapsed':'')+(opts.warn?' warnsec':'');
     const catTotal = items.reduce((s,i)=>s+(i.am||0),0);
-    const cntHtml = `<span class="cnt-amt">${fmt(catTotal)}</span><span class="cnt-sep">·</span><span>${items.length} 个 link</span>`;
+    const barHtml = opts.pct ? `<span class="cat-bar" title="占最大分类的 ${opts.pct}%"><span class="cat-bar-fill" style="width:${opts.pct}%"></span></span>` : '';
+    const cntHtml = `${barHtml}<span class="cnt-amt">${fmt(catTotal)}</span><span class="cnt-sep">·</span><span>${items.length} 个 link</span>`;
     const headAct = opts.headAction ? `<button class="btn ghost sm head-act" data-action="${opts.headAction}">${opts.headActionLabel||'操作'}</button>` : '';
     sec2.innerHTML=`<div class="map-head" data-sec="${id}"><span class="caret">▾</span>${title}${badge?` <span class="badge">${badge}</span>`:''}<div style="margin-left:auto;display:flex;gap:8px;align-items:center">${headAct}<span class="cnt">${cntHtml}</span></div></div><div class="map-body"></div>`;
     const body=sec2.querySelector('.map-body');
@@ -705,10 +708,20 @@ function renderMapping(){
   const warns=info.filter(i=>i.warn);
   const byCat={}; CAT_ORDER.forEach(c=>byCat[c]=[]);
   info.forEach(i=>{ if(!i.warn) byCat[i.cat].push(i); });
+  // 已分类：先收集每个分类的总金额，按金额降序排
+  const cats = CAT_ORDER.map(c => {
+    const items = byCat[c];
+    const total = items.reduce((s,i)=>s+(i.am||0), 0);
+    return { id:c, items, total };
+  }).sort((a,b)=>(b.total||0)-(a.total||0));
+  const maxTotal = cats[0]?.total || 0;
   // 待确认（默认展开）
   sec('__warn__','⚠️ 待确认（未命中默认规则）','',warns,{warn:true,forceHide:true,headAction:'allOther',headActionLabel:'全部归为其他'});
-  // 已分类：按类别分组（默认折叠）
-  for(const c of CAT_ORDER){ sec(c,c,'',byCat[c],{forceHide:true,defaultCollapsed:true}); }
+  // 已分类：按金额降序 + 显示占比条
+  for(const cat of cats){
+    const pct = maxTotal > 0 ? Math.max(2, Math.round(cat.total/maxTotal*100)) : 0;
+    sec(cat.id, cat.id, '', cat.items, {forceHide:true, defaultCollapsed:true, pct});
+  }
   if(warns.length===0 && info.length===0){ list.innerHTML='<div style="color:var(--muted);padding:14px 0">没有匹配的 referrer。</div>'; }
 }
 function escapeAttr(s){ return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
