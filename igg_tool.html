@@ -876,11 +876,13 @@ function renderBoardModule(h){
   snaps.forEach(s=>{ for(const n in s.links){ nameTotals[n]=Math.max(nameTotals[n]||0, s.links[n].total||0); } });
   const names=Object.keys(nameTotals).sort((a,b)=>nameTotals[b]-nameTotals[a]);
 
-  // NEW：每个 link 首次出现（非 removed）的快照索引，用于在该列 cell 上标 NEW
-  const firstSnapIdx={};
+  // NEW：每个 link 首次出单(dTotal>0)的快照索引，用于在该列 cell 上标 NEW
+  // 用「首次出单」而非「首次出现」：首次出现的快照日 dTotal=0（无前一天基线），
+  // 挂 NEW 反而让空 cell 看起来像有单；改成「首次出单」语义更清晰。
+  const firstOrderSnapIdx={};
   snaps.forEach((s,si)=>{
     for(const n in s.links){
-      if(firstSnapIdx[n]===undefined && s.links[n].status!=='removed') firstSnapIdx[n]=si;
+      if(firstOrderSnapIdx[n]===undefined && s.links[n].status!=='removed' && (s.links[n].dTotal||0)>0) firstOrderSnapIdx[n]=si;
     }
   });
   const colSnapIdx={}; // col -> 对应 snaps 里的索引（drill 模式下 wkSnaps 仍是 snaps 子集）
@@ -900,9 +902,9 @@ function renderBoardModule(h){
 
   // cell 配色：dV 与 globalMax 比例画绿深；负值用红。isFirst=true 时 cell 右上角加 NEW 角标
   function cellHtml(dv, max, posLabel, negLabel, isFirst){
-    if(dv===0) return '<td class="cell dot-zero'+(isFirst?' cell-new':'')+'" title="'+posLabel+'" style="position:relative">·'+(isFirst?'<span class="new-badge" title="此 link 首次出现">NEW</span>':'')+'</td>';
-    if(dv>0){ const intensity=Math.min(1, dv/max); const bg='rgba(26,127,55,'+(0.06+0.34*intensity).toFixed(3)+')'; return '<td class="cell dot-on'+(isFirst?' cell-new':'')+'" title="'+posLabel+'" style="background:'+bg+';position:relative">'+deltaText(dv)+(isFirst?'<span class="new-badge" title="此 link 首次出现">NEW</span>':'')+'</td>'; }
-    return '<td class="cell dot-on'+(isFirst?' cell-new':'')+'" title="'+negLabel+'" style="background:rgba(192,57,43,0.12);position:relative">'+deltaText(dv)+(isFirst?'<span class="new-badge" title="此 link 首次出现">NEW</span>':'')+'</td>';
+    if(dv===0) return '<td class="cell dot-zero'+(isFirst?' cell-new':'')+'" title="'+posLabel+'" style="position:relative">·'+(isFirst?'<span class="new-badge" title="此 link 首次出单">NEW</span>':'')+'</td>';
+    if(dv>0){ const intensity=Math.min(1, dv/max); const bg='rgba(26,127,55,'+(0.06+0.34*intensity).toFixed(3)+')'; return '<td class="cell dot-on'+(isFirst?' cell-new':'')+'" title="'+posLabel+'" style="background:'+bg+';position:relative">'+deltaText(dv)+(isFirst?'<span class="new-badge" title="此 link 首次出单">NEW</span>':'')+'</td>'; }
+    return '<td class="cell dot-on'+(isFirst?' cell-new':'')+'" title="'+negLabel+'" style="background:rgba(192,57,43,0.12);position:relative">'+deltaText(dv)+(isFirst?'<span class="new-badge" title="此 link 首次出单">NEW</span>':'')+'</td>';
   }
 
   const bodyRows=names.map(n=>{
@@ -910,7 +912,7 @@ function renderBoardModule(h){
     let r='<tr data-hasany="'+hasAny+'"><td class="rowhdr" title="'+escapeHtml(n)+'">'+escapeHtml(n)+'</td>';
     cellMatrix[n].forEach((dv,ci)=>{
       const col=cols[ci];
-      const isFirst = firstSnapIdx[n]!==undefined && colSnapIdx[col.date]===firstSnapIdx[n];
+      const isFirst = firstOrderSnapIdx[n]!==undefined && colSnapIdx[col.date]===firstOrderSnapIdx[n];
       r+=cellHtml(dv, globalMax, col.date+'：'+fmt(dv), col.date+'：'+fmt(dv), isFirst);
     });
     return r+'</tr>';
