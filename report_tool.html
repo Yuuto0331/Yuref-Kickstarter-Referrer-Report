@@ -656,7 +656,7 @@ function renderMapping(){
     const warn=ov===null && !hasExplicitRule(ref,typ);
     return {ref,typ,def,cat,ov,warn,am:linkAmts[ref]||0,pl:linkPls[ref]||0};
   }).filter(i=>(!q||i.ref.toLowerCase().includes(q)) && (!onlyWarn||i.warn))
-    .sort((a,b)=>a.ref<b.ref?-1:1);
+    .sort((a,b)=>(b.am||0)-(a.am||0) || (a.ref<b.ref?-1:1));
   const sec = (id,title,badge,items,opts={})=>{
     if(opts.forceHide && items.length===0) return;
     const collapsed = STATE.mapCollapsed[id]!==undefined ? STATE.mapCollapsed[id] : (opts.defaultCollapsed||false);
