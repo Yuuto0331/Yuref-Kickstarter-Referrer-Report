@@ -344,6 +344,26 @@ const KPI_ICONS = {
   week:'<svg viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>'
 };
 
+// CSV 表头识别：Kickstarter 后台按语言切换表头（英 / 简中 / 繁中），用别名 + 三级匹配做兼容
+// 优先级：英文/中文精确 → 不区分大小写 → 包含（更宽松兜底）
+const HEADER_ALIASES = {
+  ref:  ['Referrer','引荐','引薦','推介人','推荐人','来源','來源'],
+  date: ['Date','日期','时间','時間'],
+  typ:  ['Type','类型','類型','类型/来源','类型/來源'],
+  pl:   ['# of Pledges','Pledges','认缴数','認繳數','认购数','認購數'],
+  am:   ['Pledged','Amount','已认缴','已認繳','金额','金額','认购金额','認購金額']
+};
+function findCol(head, aliases){
+  // 1) 精确匹配
+  for(const a of aliases){ const i=head.indexOf(a); if(i>=0) return i; }
+  // 2) 不区分大小写
+  for(const a of aliases){ const i=head.findIndex(h=>h.toLowerCase()===a.toLowerCase()); if(i>=0) return i; }
+  // 3) 包含（最长别名优先防误判）
+  const sorted=[...aliases].sort((x,y)=>y.length-x.length);
+  for(const a of sorted){ const i=head.findIndex(h=>h.includes(a)||a.includes(h)); if(i>=0) return i; }
+  return -1;
+}
+
 function parseCSV(text){
   const lines = text.replace(/\r/g,'').split('\n').filter(l=>l.length);
   // 轻量 CSV：支持双引号包裹
@@ -358,30 +378,37 @@ function parseCSV(text){
     out.push(cur); return out;
   }
   const head = splitLine(lines[0]).map(h=>h.trim());
+  const idxRef  = findCol(head, HEADER_ALIASES.ref);
+  const idxDate = findCol(head, HEADER_ALIASES.date);
+  const idxType = findCol(head, HEADER_ALIASES.typ);
+  const idxPl   = findCol(head, HEADER_ALIASES.pl);
+  const idxAm   = findCol(head, HEADER_ALIASES.am);
+  // 关键列缺失就直接返回空数组，让上层 toast 提示
+  if(idxRef<0 || idxDate<0 || (idxPl<0 && idxAm<0)) return [];
   const rows=[];
   for(let i=1;i<lines.length;i++){
     const f = splitLine(lines[i]);
-    if(f.length<6) continue;
-    const o={}; head.forEach((h,j)=>o[h]=f[j]);
+    if(f.length<head.length) continue;
     rows.push({
-      ref: (o['Referrer']||'').trim(),
-      date: (o['Date']||'').trim(),
-      typ: (o['Type']||'').trim(),
-      pl: parseInt(o['# of Pledges']||'0',10)||0,
-      am: parseFloat(o['Pledged']||'0')||0
+      ref: (f[idxRef]||'').trim(),
+      date: (f[idxDate]||'').trim(),
+      typ: (f[idxType]||'').trim(),
+      pl: idxPl>=0 ? (parseInt(f[idxPl]||'0',10)||0) : 0,
+      am: idxAm>=0 ? (parseFloat(f[idxAm]||'0')||0) : 0
     });
   }
   return rows;
 }
-// CSV 格式校验：检查表头是否为 Kickstarter referrers 导出
+// CSV 格式校验：检查必需列（接受中英文表头）
 function validateCSV(text){
   const lines=text.replace(/\r/g,'').split('\n').filter(l=>l.length);
   if(!lines.length) return {ok:false,msg:'文件为空，请确认内容后重试。'};
   const head=lines[0].split(',').map(h=>h.trim());
-  const missing=['Referrer','Date'].filter(c=>!head.includes(c));
-  if(missing.length) return {ok:false,msg:'未检测到必需列「'+missing.join('、')+'」。请确认上传的是 Kickstarter referrers 导出 CSV（表头应含 Referrer, Date, Type, # of Pledges, Pledged）。'};
-  const hasPledge=head.includes('# of Pledges')||head.includes('Pledged');
-  if(!hasPledge) return {ok:false,msg:'未检测到「# of Pledges / Pledged」列，可能不是有效的 referrers 导出。'};
+  const hasRef=findCol(head, HEADER_ALIASES.ref)>=0;
+  const hasDate=findCol(head, HEADER_ALIASES.date)>=0;
+  const hasAmount=findCol(head, HEADER_ALIASES.pl)>=0 || findCol(head, HEADER_ALIASES.am)>=0;
+  if(!hasRef || !hasDate) return {ok:false,msg:'未检测到 Referrer/Date 列（支持中英文表头）。请确认上传的是 Kickstarter referrers 导出。'};
+  if(!hasAmount) return {ok:false,msg:'未检测到认缴金额/数量列（支持中英文表头）。'};
   return {ok:true};
 }
 
