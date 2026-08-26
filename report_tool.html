@@ -138,11 +138,16 @@ tr.sub td:first-child::after{content:'└';position:absolute;left:12px;top:50%;t
 tr.cmp-cat{cursor:pointer}
 tr.cmp-cat:hover td{background:#f1f5f9}
 tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .15s;width:10px}
-.inner-link-tbl{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
-.inner-link-tbl th,.inner-link-tbl td{padding:7px 12px;border-bottom:1px solid var(--line)}
-.inner-link-tbl th{background:#eef2f7;font-weight:600;color:var(--muted);font-size:11.5px}
-.inner-link-tbl tr:last-child td{border-bottom:none}
-.inner-link-tbl td.num{font-variant-numeric:tabular-nums}
+.cmp-link-list{margin:2px 0 6px 6px;padding:2px 0 4px 18px;border-left:2px solid var(--line)}
+.cmp-link-title{font-size:11.5px;color:var(--muted);padding:6px 6px 6px 0;display:flex;align-items:center;gap:6px;font-weight:500;letter-spacing:.01em}
+.cmp-link-rows{display:flex;flex-direction:column}
+.cmp-link-row{display:grid;grid-template-columns:1.2fr .95fr .95fr .95fr .8fr;align-items:center;padding:7px 6px;border-bottom:1px solid var(--line);font-size:13px;min-height:32px}
+.cmp-link-row:last-child{border-bottom:none}
+.cmp-link-row.hd{background:#f8fafc;font-size:11.5px;color:var(--muted);font-weight:600;padding:6px 6px;border-bottom:1px solid var(--line)}
+.cmp-link-row .cl-name{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;color:#64748b;padding-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-link-row .cl-cell{padding:0 6px;text-align:right;font-variant-numeric:tabular-nums}
+.cmp-link-row.hd .cl-cell{padding:0 6px}
+.cmp-link-empty{color:var(--muted);font-size:12.5px;padding:8px 24px}
 .cat .caret{display:inline-block;color:var(--muted);font-size:11px;margin-left:4px;transition:transform .12s}
 .rcnt{display:inline-block;margin-left:6px;font-size:11px;color:var(--muted);font-weight:400}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
@@ -883,17 +888,17 @@ function buildCmpLinkTable(cat, daysA, daysB, lblA, lblB){
   for(const d of daysA){ const dict=rd[d]; if(!dict||!dict[cat]) continue; for(const r in dict[cat]){ if(!agg[r]) agg[r]={a:0,b:0}; agg[r].a+=dict[cat][r][1]; } }
   for(const d of daysB){ const dict=rd[d]; if(!dict||!dict[cat]) continue; for(const r in dict[cat]){ if(!agg[r]) agg[r]={a:0,b:0}; agg[r].b+=dict[cat][r][1]; } }
   const refs=Object.keys(agg).filter(r=>agg[r].a>0 || agg[r].b>0);
-  if(refs.length===0) return `<div style="color:var(--muted);font-size:12.5px;padding:6px 0">该分类在两区间内暂无 link 数据。</div>`;
+  if(refs.length===0) return `<div class="cmp-link-empty">该分类在两区间内暂无 link 数据。</div>`;
   refs.sort((x,y)=>Math.abs(agg[y].b-agg[y].a)-Math.abs(agg[x].b-agg[x].a) || (x<y?-1:1));
-  let rows='';
+  let rows=`<div class="cmp-link-row hd"><div class="cl-name">link</div><div class="cl-cell num">基准 ${lblA}</div><div class="cl-cell num">对比 ${lblB}</div><div class="cl-cell num">变化</div><div class="cl-cell num">变化%</div></div>`;
   refs.forEach(r=>{
     const o=agg[r];
     const a=o.a, b=o.b, diff=b-a, pct=a?diff/a*100:0;
     const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
     const pc=a?(pct>=0?'+':'')+pct.toFixed(0)+'%':(b?'新增':'—');
-    rows+=`<tr class="${cls}"><td style="font-family:monospace;font-size:12px">${escapeAttr(r)}</td><td class="num">${fmt(a)}</td><td class="num">${fmt(b)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
+    rows+=`<div class="cmp-link-row ${cls}"><div class="cl-name">${escapeAttr(r)}</div><div class="cl-cell num">${fmt(a)}</div><div class="cl-cell num">${fmt(b)}</div><div class="cl-cell num ${cls}">${sign}${fmt(diff)}</div><div class="cl-cell num ${cls}">${pc}</div></div>`;
   });
-  return `<table class="inner-link-tbl"><tr><th>link</th><th class="num">基准 ${lblA}</th><th class="num">对比 ${lblB}</th><th class="num">变化</th><th class="num">变化%</th></tr>${rows}</table>`;
+  return `<div class="cmp-link-list"><div class="cmp-link-title"><span class="dot" style="background:${CAT_COLORS[cat]}"></span>${escapeAttr(cat)} · 共 ${refs.length} 个 link，按变化绝对值排序</div><div class="cmp-link-rows">${rows}</div></div>`;
 }
 
 function renderReport(){
@@ -928,7 +933,7 @@ function renderReport(){
     const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
     const open=STATE.cmpDetailOpen['r3__'+c]===true;
     cmp3Rows+=`<tr class="${cls} cmp-cat" data-tbl="r3" data-cat="${c}" data-prior="${dPrior[0]}|${dPrior[2]}" data-recent="${dRecent[0]}|${dRecent[2]}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
-    cmp3Rows+=`<tr class="cmp-detail-row" data-tbl="r3" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#f8fafc;padding:8px 14px 14px 36px">${buildCmpLinkTable(c, dPrior, dRecent, priorLbl, recentLbl)}</td></tr>`;
+    cmp3Rows+=`<tr class="cmp-detail-row" data-tbl="r3" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#f8fafc;padding:6px 14px 10px">${buildCmpLinkTable(c, dPrior, dRecent, priorLbl, recentLbl)}</td></tr>`;
   });
   cmp3Rows+=`<tr class="total"><td>合计</td><td class="num">${fmt(t3p)}</td><td class="num">${fmt(t3r)}</td><td class="num">${(t3r-t3p>0?'+':'')+fmt(t3r-t3p)}</td><td class="num">${t3p?((t3r-t3p)/t3p*100>=0?'+':'')+((t3r-t3p)/t3p*100).toFixed(0)+'%':'—'}</td></tr>`;
   const cmp3Html=`<div class="chart-wrap">${svgGroup(order3, amt3P, amt3R, '前三天（'+priorLbl+'）', '近三天（'+recentLbl+'）')}</div>
@@ -977,7 +982,7 @@ function renderReport(){
       const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
       const open=STATE.cmpDetailOpen['rn__'+c]===true;
       cmpRangeRows+=`<tr class="${cls} cmp-cat" data-tbl="rn" data-cat="${c}" data-prior="${STATE.cmpRangeAStart}|${STATE.cmpRangeAEnd}" data-recent="${STATE.cmpRangeBStart}|${STATE.cmpRangeBEnd}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
-      cmpRangeRows+=`<tr class="cmp-detail-row" data-tbl="rn" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#f8fafc;padding:8px 14px 14px 36px">${buildCmpLinkTable(c, daysA, daysB, lblA, lblB)}</td></tr>`;
+      cmpRangeRows+=`<tr class="cmp-detail-row" data-tbl="rn" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#f8fafc;padding:6px 14px 10px">${buildCmpLinkTable(c, daysA, daysB, lblA, lblB)}</td></tr>`;
     });
     cmpRangeRows+=`<tr class="total"><td>合计</td><td class="num">${fmt(tA)}</td><td class="num">${fmt(tB)}</td><td class="num">${(tB-tA>0?'+':'')+fmt(tB-tA)}</td><td class="num">${tA?((tB-tA)/tA*100>=0?'+':'')+((tB-tA)/tA*100).toFixed(0)+'%':'—'}</td></tr>`;
     cmpRangeContent=`<div class="chart-wrap">${svgGroup(CAT_ORDER, amtA, amtB, lblA, lblB)}</div>
