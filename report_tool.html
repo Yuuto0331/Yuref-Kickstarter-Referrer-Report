@@ -141,23 +141,29 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .cmp-link-list{margin:2px 0 6px 6px;padding:2px 0 4px 18px;border-left:2px solid var(--line)}
 .cmp-link-title{font-size:11.5px;color:var(--muted);padding:6px 0;display:flex;align-items:center;gap:6px;font-weight:500;letter-spacing:.01em}
 .cmp-link-rows{display:flex;flex-direction:column}
-.cmp-link-row{display:grid;grid-template-columns:26% 18.5% 18.5% 18.5% 18.5%;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;min-height:32px}
+.cmp-link-row{display:grid;grid-template-columns:26% 18.5% 18.5% 18.5% 18.5%;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;min-height:32px;color:#64748b}
 .cmp-link-row.d2{grid-template-columns:22% 10% 10% 17% 17% 24%}
 .cmp-link-row:last-child{border-bottom:none}
-.cmp-link-row:hover{background:#f1f5f9}
-.cmp-link-row.hd{background:#f8fafc;font-size:11.5px;color:var(--muted);font-weight:600;padding:6px 0;border-bottom:1px solid var(--line)}
-.cmp-link-row.hd:hover{background:#f8fafc}
-.cmp-link-row .cl-name{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cmp-link-row .cl-cell{text-align:left;font-variant-numeric:tabular-nums;padding:0}
+.cmp-link-row:hover{background:#e9eef5}
+.cmp-link-row.hd{background:#eef2f7;font-size:11.5px;color:#94a3b8;font-weight:600;padding:6px 0;border-bottom:1px solid var(--line)}
+.cmp-link-row.hd:hover{background:#eef2f7}
+.cmp-link-row .cl-name{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-link-row .cl-cell{text-align:left;font-variant-numeric:tabular-nums;padding:0;color:#64748b}
 .cmp-link-row.hd .cl-sort{cursor:pointer;user-select:none;transition:color .12s}
 .cmp-link-row.hd .cl-sort:hover{color:var(--ink)}
 .cmp-link-row.hd .cl-sort-active{color:var(--ink)}
 .cmp-link-row.hd .cl-sort-arrow{display:inline-block;margin-left:2px;color:var(--muted);font-size:10px}
 .cmp-link-empty{color:var(--muted);font-size:12.5px;padding:8px 24px}
+.cmp-link-title{font-size:11.5px;color:#94a3b8;padding:6px 6px 6px 0;display:flex;align-items:center;gap:6px;font-weight:500;letter-spacing:.01em}
+.cmp-link-list{margin:2px 0 6px 6px;padding:2px 0 4px 18px;border-left:2px solid var(--line)}
 .cat .caret{display:inline-block;color:var(--muted);font-size:11px;margin-left:4px;transition:transform .12s}
 .rcnt{display:inline-block;margin-left:6px;font-size:11px;color:var(--muted);font-weight:400}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
 .ref{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;color:#64748b}
+/* 主表分类行：左侧分类色竖条，让分类标识更醒目（不挤压内容） */
+tr.cmp-cat td:first-child{position:relative;box-shadow:inset 3px 0 0 0 var(--cat);padding-left:12px}
+tr.cmp-cat{border-bottom:1px solid var(--line)}
+tr.cmp-cat:hover{background:#f8fafc}
 .up{color:var(--green)}.down{color:var(--red)}
 .insight{position:relative;border-radius:10px;padding:12px 16px 12px 42px;margin-bottom:10px;font-size:13px;line-height:1.6;border-left:4px solid}
 .insight::before{position:absolute;left:15px;top:11px;font-size:16px;line-height:1}
@@ -986,8 +992,8 @@ function renderReport(){
   order3.forEach(c=>{ const [a2,a3]=cmp3[c], diff=a3-a2, pct=a2?diff/a2*100:0, pc=a2?(pct>=0?'+':'')+pct.toFixed(0)+'%':(a3?'新增':'—');
     const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
     const open=STATE.cmpDetailOpen['r3__'+c]===true;
-    cmp3Rows+=`<tr class="${cls} cmp-cat" data-tbl="r3" data-cat="${c}" data-prior="${dPrior[0]}|${dPrior[2]}" data-recent="${dRecent[0]}|${dRecent[2]}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
-    cmp3Rows+=`<tr class="cmp-detail-row" data-tbl="r3" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#f8fafc;padding:6px 14px 10px">${buildCmpLinkTable(c, dPrior, dRecent, priorLbl, recentLbl, 'r3')}</td></tr>`;
+    cmp3Rows+=`<tr class="${cls} cmp-cat" data-tbl="r3" data-cat="${c}" style="--cat:${CAT_COLORS[c]}" data-prior="${dPrior[0]}|${dPrior[2]}" data-recent="${dRecent[0]}|${dRecent[2]}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
+    cmp3Rows+=`<tr class="cmp-detail-row" data-tbl="r3" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#eef2f7;padding:6px 14px 10px">${buildCmpLinkTable(c, dPrior, dRecent, priorLbl, recentLbl, 'r3')}</td></tr>`;
   });
   cmp3Rows+=`<tr class="total"><td>合计</td><td class="num">${fmt(t3p)}</td><td class="num">${fmt(t3r)}</td><td class="num">${(t3r-t3p>0?'+':'')+fmt(t3r-t3p)}</td><td class="num">${t3p?((t3r-t3p)/t3p*100>=0?'+':'')+((t3r-t3p)/t3p*100).toFixed(0)+'%':'—'}</td></tr>`;
   const cmp3Html=`<div class="chart-wrap">${svgGroup(order3, amt3P, amt3R, '前三天（'+priorLbl+'）', '近三天（'+recentLbl+'）')}</div>
@@ -1035,8 +1041,8 @@ function renderReport(){
       const [a2,a3]=cmpRange[c], diff=a3-a2, pct=a2?diff/a2*100:0, pc=a2?(pct>=0?'+':'')+pct.toFixed(0)+'%':(a3?'新增':'—');
       const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
       const open=STATE.cmpDetailOpen['rn__'+c]===true;
-      cmpRangeRows+=`<tr class="${cls} cmp-cat" data-tbl="rn" data-cat="${c}" data-prior="${STATE.cmpRangeAStart}|${STATE.cmpRangeAEnd}" data-recent="${STATE.cmpRangeBStart}|${STATE.cmpRangeBEnd}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
-      cmpRangeRows+=`<tr class="cmp-detail-row" data-tbl="rn" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#f8fafc;padding:6px 14px 10px">${buildCmpLinkTable(c, daysA, daysB, lblA, lblB, 'rn')}</td></tr>`;
+      cmpRangeRows+=`<tr class="${cls} cmp-cat" data-tbl="rn" data-cat="${c}" style="--cat:${CAT_COLORS[c]}" data-prior="${STATE.cmpRangeAStart}|${STATE.cmpRangeAEnd}" data-recent="${STATE.cmpRangeBStart}|${STATE.cmpRangeBEnd}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
+      cmpRangeRows+=`<tr class="cmp-detail-row" data-tbl="rn" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#eef2f7;padding:6px 14px 10px">${buildCmpLinkTable(c, daysA, daysB, lblA, lblB, 'rn')}</td></tr>`;
     });
     cmpRangeRows+=`<tr class="total"><td>合计</td><td class="num">${fmt(tA)}</td><td class="num">${fmt(tB)}</td><td class="num">${(tB-tA>0?'+':'')+fmt(tB-tA)}</td><td class="num">${tA?((tB-tA)/tA*100>=0?'+':'')+((tB-tA)/tA*100).toFixed(0)+'%':'—'}</td></tr>`;
     cmpRangeContent=`<div class="chart-wrap">${svgGroup(CAT_ORDER, amtA, amtB, lblA, lblB)}</div>
@@ -1062,8 +1068,8 @@ function renderReport(){
   for(const c of CAT_ORDER){ const [cpl,cam]=cur[c]||[0,0], [ppl,pam]=prev[c]||[0,0]; const diff=cam-pam;
     const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
     const open=STATE.d2DetailOpen[c]===true;
-    cmpRows+=`<tr class="${cls} cmp-cat" data-tbl="d2" data-cat="${c}" data-prior="${P}" data-recent="${D}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${ppl}</td><td class="num">${cpl}</td><td class="num">${fmt(pam)}</td><td class="num">${fmt(cam)}</td><td class="num">${sign}${diff?fmt(diff):fmt(0)}</td></tr>`;
-    cmpRows+=`<tr class="d2-detail-row" data-tbl="d2" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="6" style="background:#f8fafc;padding:6px 14px 10px">${buildD2LinkTable(c, P, D)}</td></tr>`;
+    cmpRows+=`<tr class="${cls} cmp-cat" data-tbl="d2" data-cat="${c}" style="--cat:${CAT_COLORS[c]}" data-prior="${P}" data-recent="${D}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${ppl}</td><td class="num">${cpl}</td><td class="num">${fmt(pam)}</td><td class="num">${fmt(cam)}</td><td class="num">${sign}${diff?fmt(diff):fmt(0)}</td></tr>`;
+    cmpRows+=`<tr class="d2-detail-row" data-tbl="d2" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="6" style="background:#eef2f7;padding:6px 14px 10px">${buildD2LinkTable(c, P, D)}</td></tr>`;
   }
   cmpRows+=`<tr class="total"><td>合计</td><td class="num">${prevPl}</td><td class="num">${curPl}</td><td class="num">${fmt(prevAm)}</td><td class="num">${fmt(curAm)}</td><td class="num">${(curAm-prevAm>0?'+':'')+fmt(curAm-prevAm)}</td></tr>`;
   // 区间对比已整合进 rangeCmpHtml
