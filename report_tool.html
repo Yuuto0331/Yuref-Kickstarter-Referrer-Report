@@ -1112,13 +1112,19 @@ function sortTable(table, col){
   for(const h of header.cells){ h.dataset.sortDir=''; h.innerHTML=h.innerHTML.replace(/ [▲▼]$/,''); }
   th.dataset.sortDir=dir; th.innerHTML+=' '+(dir==='asc'?'▲':'▼');
   const totalRow=Array.from(table.rows).find(r=>r.classList.contains('total'))||null;
-  const catBlocks=[]; let current=null, plain=[];
+  // 收集 cat 块：cat/cmp-cat 作锚点；d2-detail-row/cmp-detail-row/sub 作块成员，整组随锚点移动
+  const blocks=[]; let current=null;
   for(let i=1;i<table.rows.length;i++){
     const r=table.rows[i];
     if(r===totalRow) continue;
-    if(r.classList.contains('cat')){ current={cat:r, rows:[]}; catBlocks.push(current); }
-    else if(current) current.rows.push(r);
-    else plain.push(r);
+    if(r.classList.contains('cat') || r.classList.contains('cmp-cat')){
+      current={anchor:r, rows:[]};
+      blocks.push(current);
+    } else if(current && (r.classList.contains('sub') || r.classList.contains('d2-detail-row') || r.classList.contains('cmp-detail-row'))){
+      current.rows.push(r);
+    } else {
+      current=null;
+    }
   }
   const cmp=(a,b)=>{
     const ca=parseCellVal(a.cells[col]?a.cells[col].innerText:'');
@@ -1126,13 +1132,9 @@ function sortTable(table, col){
     if(ca.type==='num' && cb.type==='num') return dir==='asc'? ca.val-cb.val : cb.val-ca.val;
     return dir==='asc'? ca.val.localeCompare(cb.val,'zh-CN') : cb.val.localeCompare(ca.val,'zh-CN');
   };
-  const doSort=arr=>arr.sort(cmp);
+  blocks.sort((x,y)=>cmp(x.anchor, y.anchor));
   const frag=document.createDocumentFragment();
-  if(catBlocks.length){
-    for(const b of catBlocks){ doSort(b.rows); frag.appendChild(b.cat); b.rows.forEach(r=>frag.appendChild(r)); }
-  } else {
-    doSort(plain); plain.forEach(r=>frag.appendChild(r));
-  }
+  for(const b of blocks){ frag.appendChild(b.anchor); b.rows.forEach(r=>frag.appendChild(r)); }
   if(totalRow) frag.appendChild(totalRow);
   table.appendChild(frag);
 }
