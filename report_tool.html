@@ -142,6 +142,7 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .cmp-link-title{font-size:11.5px;color:var(--muted);padding:6px 0;display:flex;align-items:center;gap:6px;font-weight:500;letter-spacing:.01em}
 .cmp-link-rows{display:flex;flex-direction:column}
 .cmp-link-row{display:grid;grid-template-columns:22% 19.5% 19.5% 19.5% 19.5%;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;min-height:32px}
+.cmp-link-row.d2{grid-template-columns:18% 11% 11% 18% 18% 24%}
 .cmp-link-row:last-child{border-bottom:none}
 .cmp-link-row:hover{background:#f1f5f9}
 .cmp-link-row.hd{background:#f8fafc;font-size:11.5px;color:var(--muted);font-weight:600;padding:6px 0;border-bottom:1px solid var(--line)}
@@ -651,7 +652,7 @@ function aggregate(rows, classifyFn){
 // ==CORE_END==
 
 // ---------- 以下为界面/渲染逻辑（依赖 DOM） ----------
-let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'} };
+let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc' };
 
 function finalClassify(ref, typ){
   if(STATE.override[ref]!==undefined) return STATE.override[ref];
@@ -918,6 +919,42 @@ function buildCmpLinkTable(cat, daysA, daysB, lblA, lblB, tblKey){
   return `<div class="cmp-link-list"><div class="cmp-link-title"><span class="dot" style="background:${CAT_COLORS[cat]}"></span>${escapeAttr(cat)} · 共 ${refs.length} 个 link，${titleSort}</div><div class="cmp-link-rows">${rows}</div></div>`;
 }
 
+// 前一日对比 link 级明细：6 列（link / a日单量 / b日单量 / a日金额 / b日金额 / 金额变化）
+function buildD2LinkTable(cat, dayA, dayB){
+  const rd=STATE.agg.refDict, agg={};
+  for(const d of [dayA, dayB]){
+    const dict=rd[d]; if(!dict||!dict[cat]) continue;
+    for(const r in dict[cat]){
+      if(!agg[r]) agg[r]={pa:0,pb:0,aa:0,ab:0};
+      if(d===dayA){ agg[r].pa+=dict[cat][r][0]; agg[r].aa+=dict[cat][r][1]; }
+      else { agg[r].pb+=dict[cat][r][0]; agg[r].ab+=dict[cat][r][1]; }
+    }
+  }
+  const refs=Object.keys(agg).filter(r=>(agg[r].aa+agg[r].ab)>0 || (agg[r].pa+agg[r].pb)>0);
+  if(refs.length===0) return `<div class="cmp-link-empty">该分类这两天暂无 link 数据。</div>`;
+
+  const curKey=STATE.d2SortKey||'diff', curDir=STATE.d2SortDir||'desc';
+  const valOf=(r,key)=>{ if(key==='diff') return agg[r].ab-agg[r].aa; if(key==='plDiff') return agg[r].pb-agg[r].pa; if(key==='aa') return agg[r].aa; if(key==='ab') return agg[r].ab; if(key==='pa') return agg[r].pa; if(key==='pb') return agg[r].pb; return 0; };
+  refs.sort((x,y)=>{ if(curKey==='name'){ return curDir==='asc'?(x<y?-1:1):(x>y?-1:1); } const vx=valOf(x,curKey), vy=valOf(y,curKey); return curDir==='desc'?vy-vx:vx-vy; });
+
+  const aLbl=dayA.slice(5).replace('-','/'), bLbl=dayB.slice(5).replace('-','/');
+  const COLS=[{k:'pa',t:`${aLbl} 单量`},{k:'pb',t:`${bLbl} 单量`},{k:'aa',t:`${aLbl} 金额`},{k:'ab',t:`${bLbl} 金额`},{k:'diff',t:'金额变化'}];
+  const arrow=(col)=>curKey===col?(curDir==='desc'?' <span class="cl-sort-arrow">↓</span>':' <span class="cl-sort-arrow">↑</span>'):'';
+  const activeCls=(col)=>curKey===col?' cl-sort-active':'';
+  const hdrCell=(k,t)=>`<div class="cl-cell num cl-hd cl-sort${activeCls(k)}" data-tbl="d2" data-col="${k}">${t}${arrow(k)}</div>`;
+  const hdrName=`<div class="cl-name cl-hd cl-sort${activeCls('name')}" data-tbl="d2" data-col="name">link${arrow('name')}</div>`;
+  const LBL={pa:`${aLbl}单量`,pb:`${bLbl}单量`,aa:`${aLbl}金额`,ab:`${bLbl}金额`,diff:'金额变化',plDiff:'单量变化',name:'link 名'};
+  let titleSort=`按${LBL[curKey]||curKey}${curDir==='desc'?'从大到小':'从小到大'}`;
+
+  let rows=`<div class="cmp-link-row hd d2">${hdrName}${COLS.map(c=>hdrCell(c.k,c.t)).join('')}</div>`;
+  refs.forEach(r=>{
+    const o=agg[r];
+    const diff=o.ab-o.aa, cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
+    rows+=`<div class="cmp-link-row ${cls} d2"><div class="cl-name">${escapeAttr(r)}</div><div class="cl-cell">${o.pa}</div><div class="cl-cell">${o.pb}</div><div class="cl-cell">${fmt(o.aa)}</div><div class="cl-cell">${fmt(o.ab)}</div><div class="cl-cell ${cls}">${sign}${fmt(diff)}</div></div>`;
+  });
+  return `<div class="cmp-link-list"><div class="cmp-link-title"><span class="dot" style="background:${CAT_COLORS[cat]}"></span>${escapeAttr(cat)} · 共 ${refs.length} 个 link，${titleSort}</div><div class="cmp-link-rows">${rows}</div></div>`;
+}
+
 function renderReport(){
   const {daily,refDict,dates}=STATE.agg;
   const D=STATE.D, P=STATE.P, launch=STATE.launch;
@@ -1024,7 +1061,9 @@ function renderReport(){
   let cmpRows='';
   for(const c of CAT_ORDER){ const [cpl,cam]=cur[c]||[0,0], [ppl,pam]=prev[c]||[0,0]; const diff=cam-pam;
     const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
-    cmpRows+=`<tr class="${cls}"><td><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${ppl}</td><td class="num">${cpl}</td><td class="num">${fmt(pam)}</td><td class="num">${fmt(cam)}</td><td class="num">${sign}${diff?fmt(diff):fmt(0)}</td></tr>`;
+    const open=STATE.d2DetailOpen[c]===true;
+    cmpRows+=`<tr class="${cls} cmp-cat" data-tbl="d2" data-cat="${c}" data-prior="${P}" data-recent="${D}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${ppl}</td><td class="num">${cpl}</td><td class="num">${fmt(pam)}</td><td class="num">${fmt(cam)}</td><td class="num">${sign}${diff?fmt(diff):fmt(0)}</td></tr>`;
+    cmpRows+=`<tr class="d2-detail-row" data-tbl="d2" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="6" style="background:#f8fafc;padding:6px 14px 10px">${buildD2LinkTable(c, P, D)}</td></tr>`;
   }
   cmpRows+=`<tr class="total"><td>合计</td><td class="num">${prevPl}</td><td class="num">${curPl}</td><td class="num">${fmt(prevAm)}</td><td class="num">${fmt(curAm)}</td><td class="num">${(curAm-prevAm>0?'+':'')+fmt(curAm-prevAm)}</td></tr>`;
   // 区间对比已整合进 rangeCmpHtml
@@ -1045,7 +1084,7 @@ function renderReport(){
     ${hbar?'<div class="chart-wrap">'+hbar+'</div>':''}
     <div class="tbl-card"><table id="catDetail"><tr><th>渠道 / Referrer</th><th class="num">单量</th><th class="num">金额</th><th class="num">单量占比</th><th class="num">金额占比</th></tr>${catDetailTable(cur, refD)}</table></div></div>
   <div class="module"><h3>前一日对比（${Plbl} → ${Dlbl}）</h3><div class="desc">各渠道两天金额变化，上涨绿、下滑红。</div>
-    <div class="tbl-card"><table><tr><th>渠道</th><th class="num">${Plbl} 单量</th><th class="num">${Dlbl} 单量</th><th class="num">${Plbl} 金额</th><th class="num">${Dlbl} 金额</th><th class="num">金额变化</th></tr>${cmpRows}</table></div>
+    <div class="tbl-card"><table style="table-layout:fixed"><colgroup><col style="width:18%"><col style="width:11%"><col style="width:11%"><col style="width:18%"><col style="width:18%"><col style="width:24%"></colgroup><tr><th>渠道</th><th class="num">${Plbl} 单量</th><th class="num">${Dlbl} 单量</th><th class="num">${Plbl} 金额</th><th class="num">${Dlbl} 金额</th><th class="num">金额变化</th></tr>${cmpRows}</table></div>
     ${cmpInsightHtml(CAT_ORDER.map(c=>({c,a:prev[c]?prev[c][1]:0,b:cur[c]?cur[c][1]:0})), Plbl, Dlbl)}</div>
   <div class="module"><h3>自然周汇总</h3><div class="desc">众筹期内各自然周渠道出单金额（按上线日 ${launch} 划分）。堆叠柱展示每周渠道构成；下方卡片展示每周明细。</div>
     ${channelLegend()}
@@ -1297,20 +1336,33 @@ reportBodyEl.addEventListener('click', e=>{
   // 子表表头点击切排序
   const sortEl=e.target.closest('.cl-sort'); if(sortEl){
     const tbl=sortEl.dataset.tbl, col=sortEl.dataset.col;
-    if(STATE.cmpSortKey[tbl]===col){ STATE.cmpSortDir[tbl]=STATE.cmpSortDir[tbl]==='desc'?'asc':'desc'; }
-    else { STATE.cmpSortKey[tbl]=col; STATE.cmpSortDir[tbl]='desc'; }
+    if(tbl==='d2'){
+      if(STATE.d2SortKey===col){ STATE.d2SortDir=STATE.d2SortDir==='desc'?'asc':'desc'; }
+      else { STATE.d2SortKey=col; STATE.d2SortDir='desc'; }
+    } else {
+      if(STATE.cmpSortKey[tbl]===col){ STATE.cmpSortDir[tbl]=STATE.cmpSortDir[tbl]==='desc'?'asc':'desc'; }
+      else { STATE.cmpSortKey[tbl]=col; STATE.cmpSortDir[tbl]='desc'; }
+    }
     renderReport();
     return;
   }
   // 区间对比表行展开 link 明细
   const cmpCat=e.target.closest('tr.cmp-cat'); if(cmpCat){
     const tbl=cmpCat.dataset.tbl, cat=cmpCat.dataset.cat;
-    const key=tbl+'__'+cat;
-    STATE.cmpDetailOpen[key]=!(STATE.cmpDetailOpen[key]===true);
-    const open=STATE.cmpDetailOpen[key];
-    const table=cmpCat.closest('table');
-    if(table) table.querySelectorAll('tr.cmp-detail-row[data-tbl="'+cssEscape(tbl)+'"][data-cat="'+cssEscape(cat)+'"]').forEach(r=>r.style.display=open?'':'none');
-    const caret=cmpCat.querySelector('.caret-sm'); if(caret) caret.textContent=open?'▾':'▸';
+    if(tbl==='d2'){
+      STATE.d2DetailOpen[cat]=!(STATE.d2DetailOpen[cat]===true);
+      const open=STATE.d2DetailOpen[cat];
+      const table=cmpCat.closest('table');
+      if(table) table.querySelectorAll('tr.d2-detail-row[data-cat="'+cssEscape(cat)+'"]').forEach(r=>r.style.display=open?'':'none');
+      const caret=cmpCat.querySelector('.caret-sm'); if(caret) caret.textContent=open?'▾':'▸';
+    } else {
+      const key=tbl+'__'+cat;
+      STATE.cmpDetailOpen[key]=!(STATE.cmpDetailOpen[key]===true);
+      const open=STATE.cmpDetailOpen[key];
+      const table=cmpCat.closest('table');
+      if(table) table.querySelectorAll('tr.cmp-detail-row[data-tbl="'+cssEscape(tbl)+'"][data-cat="'+cssEscape(cat)+'"]').forEach(r=>r.style.display=open?'':'none');
+      const caret=cmpCat.querySelector('.caret-sm'); if(caret) caret.textContent=open?'▾':'▸';
+    }
     return;
   }
   const tr=e.target.closest('tr.cat'); if(!tr) return;
