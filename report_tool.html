@@ -1195,7 +1195,7 @@ function loadFile(file){
   reader.readAsText(file);
 }
 function safeRender(){
-  try{ syncCurrencyUI(); renderMapping(); renderReport(); wrapTables(); }
+  try{ syncCurrencyUI(); renderMapping(); renderReport(); wrapTables(); requestAnimationFrame(syncCmpLinkCols); }
   catch(e){ document.getElementById('reportBody').innerHTML='<div class="insight danger">渲染出错：'+(e&&e.message||e)+'</div>'; console.error(e); }
 }
 // 窄屏下把报表内的表格包一层横向滚动容器
@@ -1311,6 +1311,7 @@ reportBodyEl.addEventListener('click', e=>{
     const table=cmpCat.closest('table');
     if(table) table.querySelectorAll('tr.cmp-detail-row[data-tbl="'+cssEscape(tbl)+'"][data-cat="'+cssEscape(cat)+'"]').forEach(r=>r.style.display=open?'':'none');
     const caret=cmpCat.querySelector('.caret-sm'); if(caret) caret.textContent=open?'▾':'▸';
+    requestAnimationFrame(syncCmpLinkCols);
     return;
   }
   const tr=e.target.closest('tr.cat'); if(!tr) return;
@@ -1322,6 +1323,23 @@ reportBodyEl.addEventListener('click', e=>{
   const caret=tr.querySelector('.caret'); if(caret) caret.textContent=collapsed?'▸':'▾';
 });
 function cssEscape(s){ return String(s).replace(/["\\]/g,'\\$&'); }
+// 子表列宽与主表列宽严格对齐：从主表首行 5 列 th/td 实测宽度转 fr 比例，写回可见 .cmp-detail-row 内的 .cmp-link-row
+function syncCmpLinkCols(){
+  document.querySelectorAll('table').forEach(tbl=>{
+    const firstRow=tbl.querySelector('tr');
+    if(!firstRow) return;
+    const cells=firstRow.querySelectorAll('th,td');
+    if(cells.length<5) return;
+    const widths=Array.from(cells).slice(0,5).map(c=>c.getBoundingClientRect().width);
+    if(widths.some(w=>!w||w<10)) return;
+    const ratios=widths.map(w=>w.toFixed(2)).join('px ');
+    const cols=ratios+'px';
+    tbl.querySelectorAll('tr.cmp-detail-row').forEach(row=>{
+      if(row.style.display==='none') return;
+      row.querySelectorAll('.cmp-link-row').forEach(r=>{ r.style.gridTemplateColumns=cols; });
+    });
+  });
+}
 function setProject(val){
   if(val==='__new__'){ return; }
   STATE.proj=val;
