@@ -994,7 +994,7 @@ function renderReport(){
     const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
     const open=STATE.cmpDetailOpen['r3__'+c]===true;
     cmp3Rows+=`<tr class="${cls} cmp-cat" data-tbl="r3" data-cat="${c}" style="--cat:${CAT_COLORS[c]}" data-prior="${dPrior[0]}|${dPrior[2]}" data-recent="${dRecent[0]}|${dRecent[2]}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
-    cmp3Rows+=`<tr class="cmp-detail-row" data-tbl="r3" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#f5f8fb;padding:6px 14px 10px">${buildCmpLinkTable(c, dPrior, dRecent, priorLbl, recentLbl, 'r3')}</td></tr>`;
+    cmp3Rows+=`<tr class="cmp-detail-row" data-tbl="r3" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#f5f8fb;padding:6px 14px 10px 28px">${buildCmpLinkTable(c, dPrior, dRecent, priorLbl, recentLbl, 'r3')}</td></tr>`;
   });
   cmp3Rows+=`<tr class="total"><td>合计</td><td class="num">${fmt(t3p)}</td><td class="num">${fmt(t3r)}</td><td class="num">${(t3r-t3p>0?'+':'')+fmt(t3r-t3p)}</td><td class="num">${t3p?((t3r-t3p)/t3p*100>=0?'+':'')+((t3r-t3p)/t3p*100).toFixed(0)+'%':'—'}</td></tr>`;
   const cmp3Html=`<div class="chart-wrap">${svgGroup(order3, amt3P, amt3R, '前三天（'+priorLbl+'）', '近三天（'+recentLbl+'）')}</div>
@@ -1043,7 +1043,7 @@ function renderReport(){
       const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
       const open=STATE.cmpDetailOpen['rn__'+c]===true;
       cmpRangeRows+=`<tr class="${cls} cmp-cat" data-tbl="rn" data-cat="${c}" style="--cat:${CAT_COLORS[c]}" data-prior="${STATE.cmpRangeAStart}|${STATE.cmpRangeAEnd}" data-recent="${STATE.cmpRangeBStart}|${STATE.cmpRangeBEnd}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${fmt(a2)}</td><td class="num">${fmt(a3)}</td><td class="num">${sign}${fmt(diff)}</td><td class="num">${pc}</td></tr>`;
-      cmpRangeRows+=`<tr class="cmp-detail-row" data-tbl="rn" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#f5f8fb;padding:6px 14px 10px">${buildCmpLinkTable(c, daysA, daysB, lblA, lblB, 'rn')}</td></tr>`;
+      cmpRangeRows+=`<tr class="cmp-detail-row" data-tbl="rn" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="5" style="background:#f5f8fb;padding:6px 14px 10px 28px">${buildCmpLinkTable(c, daysA, daysB, lblA, lblB, 'rn')}</td></tr>`;
     });
     cmpRangeRows+=`<tr class="total"><td>合计</td><td class="num">${fmt(tA)}</td><td class="num">${fmt(tB)}</td><td class="num">${(tB-tA>0?'+':'')+fmt(tB-tA)}</td><td class="num">${tA?((tB-tA)/tA*100>=0?'+':'')+((tB-tA)/tA*100).toFixed(0)+'%':'—'}</td></tr>`;
     cmpRangeContent=`<div class="chart-wrap">${svgGroup(CAT_ORDER, amtA, amtB, lblA, lblB)}</div>
@@ -1070,7 +1070,7 @@ function renderReport(){
     const cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
     const open=STATE.d2DetailOpen[c]===true;
     cmpRows+=`<tr class="${cls} cmp-cat" data-tbl="d2" data-cat="${c}" style="--cat:${CAT_COLORS[c]}" data-prior="${P}" data-recent="${D}"><td><span class="caret-sm" style="margin-right:6px;color:var(--muted)">${open?'▾':'▸'}</span><span class="dot" style="background:${CAT_COLORS[c]}"></span>${c}</td><td class="num">${ppl}</td><td class="num">${cpl}</td><td class="num">${fmt(pam)}</td><td class="num">${fmt(cam)}</td><td class="num">${sign}${diff?fmt(diff):fmt(0)}</td></tr>`;
-    cmpRows+=`<tr class="d2-detail-row" data-tbl="d2" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="6" style="background:#f5f8fb;padding:6px 14px 10px">${buildD2LinkTable(c, P, D)}</td></tr>`;
+    cmpRows+=`<tr class="d2-detail-row" data-tbl="d2" data-cat="${c}" style="display:${open?'':'none'}"><td colspan="6" style="background:#f5f8fb;padding:6px 14px 10px 28px">${buildD2LinkTable(c, P, D)}</td></tr>`;
   }
   cmpRows+=`<tr class="total"><td>合计</td><td class="num">${prevPl}</td><td class="num">${curPl}</td><td class="num">${fmt(prevAm)}</td><td class="num">${fmt(curAm)}</td><td class="num">${(curAm-prevAm>0?'+':'')+fmt(curAm-prevAm)}</td></tr>`;
   // 区间对比已整合进 rangeCmpHtml
