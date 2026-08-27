@@ -911,7 +911,7 @@ function buildCmpLinkTable(cat, daysA, daysB, lblA, lblB, tblKey){
   const arrow=(col)=>curKey===col?(curDir==='desc'?' <span class="cl-sort-arrow">↓</span>':' <span class="cl-sort-arrow">↑</span>'):'';
   const activeCls=(col)=>curKey===col?' cl-sort-active':'';
   const hdrCell=(k,t)=>`<div class="cl-cell num cl-hd cl-sort${activeCls(k)}" data-tbl="${tblKey}" data-col="${k}">${t}${arrow(k)}</div>`;
-  const hdrName=`<div class="cl-name cl-hd cl-sort${activeCls('name')}" data-tbl="${tblKey}" data-col="name">link${arrow('name')}</div>`;
+  const hdrName=`<div class="cl-name cl-hd cl-sort${activeCls('name')}" data-tbl="${tblKey}" data-col="name">link · ${refs.length}${arrow('name')}</div>`;
   const LBL={a:'基准',b:'对比',diff:'变化',pct:'变化%',name:'link 名'};
   let titleSort=`按${LBL[curKey]}${curDir==='desc'?'从大到小':'从小到大'}`;
 
@@ -923,7 +923,7 @@ function buildCmpLinkTable(cat, daysA, daysB, lblA, lblB, tblKey){
     const pc=a?(pct>=0?'+':'')+pct.toFixed(0)+'%':(b?'新增':'—');
     rows+=`<div class="cmp-link-row ${cls}"><div class="cl-name" title="${escapeAttr(r)}">${escapeAttr(r)}</div><div class="cl-cell">${fmt(a)}</div><div class="cl-cell">${fmt(b)}</div><div class="cl-cell ${cls}">${sign}${fmt(diff)}</div><div class="cl-cell ${cls}">${pc}</div></div>`;
   });
-  return `<div class="cmp-link-list"><div class="cmp-link-title"><span class="dot" style="background:${CAT_COLORS[cat]}"></span>${escapeAttr(cat)} · 共 ${refs.length} 个 link，${titleSort}</div><div class="cmp-link-rows">${rows}</div></div>`;
+  return `<div class="cmp-link-rows">${rows}</div>`;
 }
 
 // 前一日对比 link 级明细：6 列（link / a日单量 / b日单量 / a日金额 / b日金额 / 金额变化）
@@ -949,7 +949,7 @@ function buildD2LinkTable(cat, dayA, dayB){
   const arrow=(col)=>curKey===col?(curDir==='desc'?' <span class="cl-sort-arrow">↓</span>':' <span class="cl-sort-arrow">↑</span>'):'';
   const activeCls=(col)=>curKey===col?' cl-sort-active':'';
   const hdrCell=(k,t)=>`<div class="cl-cell num cl-hd cl-sort${activeCls(k)}" data-tbl="d2" data-col="${k}">${t}${arrow(k)}</div>`;
-  const hdrName=`<div class="cl-name cl-hd cl-sort${activeCls('name')}" data-tbl="d2" data-col="name">link${arrow('name')}</div>`;
+  const hdrName=`<div class="cl-name cl-hd cl-sort${activeCls('name')}" data-tbl="d2" data-col="name">link · ${refs.length}${arrow('name')}</div>`;
   const LBL={pa:`${aLbl}单量`,pb:`${bLbl}单量`,aa:`${aLbl}金额`,ab:`${bLbl}金额`,diff:'金额变化',plDiff:'单量变化',name:'link 名'};
   let titleSort=`按${LBL[curKey]||curKey}${curDir==='desc'?'从大到小':'从小到大'}`;
 
@@ -959,7 +959,7 @@ function buildD2LinkTable(cat, dayA, dayB){
     const diff=o.ab-o.aa, cls=diff>0?'up':(diff<0?'down':''), sign=diff>0?'+':'';
     rows+=`<div class="cmp-link-row ${cls} d2"><div class="cl-name" title="${escapeAttr(r)}">${escapeAttr(r)}</div><div class="cl-cell">${o.pa}</div><div class="cl-cell">${o.pb}</div><div class="cl-cell">${fmt(o.aa)}</div><div class="cl-cell">${fmt(o.ab)}</div><div class="cl-cell ${cls}">${sign}${fmt(diff)}</div></div>`;
   });
-  return `<div class="cmp-link-list"><div class="cmp-link-title"><span class="dot" style="background:${CAT_COLORS[cat]}"></span>${escapeAttr(cat)} · 共 ${refs.length} 个 link，${titleSort}</div><div class="cmp-link-rows">${rows}</div></div>`;
+  return `<div class="cmp-link-rows">${rows}</div>`;
 }
 
 function renderReport(){
