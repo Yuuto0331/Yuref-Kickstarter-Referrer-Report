@@ -178,6 +178,17 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-ctl select{padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:12px;color:#334155;cursor:pointer}
 .an-ctl select:focus{outline:2px solid rgba(59,130,246,.25);outline-offset:1px}
 .an-spark{flex:none;background:#fff;border:1px solid var(--line);border-radius:6px}
+.an-body-grid{display:flex;flex-direction:column;gap:14px}
+.an-section.an-risk{background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:10px 12px}
+.an-sec-title{font-size:12.5px;font-weight:700;color:#b91c1c;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.an-cat{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.an-cat-head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;user-select:none;background:#f8fafc;transition:background .12s}
+.an-cat-head:hover{background:#f1f5f9}
+.an-cat-head .caret{font-size:11px;color:var(--muted);width:12px;text-align:center;flex:none}
+.an-cat-name{font-weight:600;font-size:13px;color:#334155}
+.an-cat-meta{font-size:11.5px;color:var(--muted);margin-left:auto}
+.an-card.van{border-color:#ef4444;background:#fff5f5;box-shadow:0 1px 6px rgba(239,68,68,.18)}
+.an-badge.van-badge{background:#b91c1c}
 .cmp-link-title{font-size:11.5px;color:#64748b;padding:6px 6px 8px 0;display:flex;align-items:center;gap:6px;font-weight:500;letter-spacing:.01em;background:transparent}
 .cmp-link-list{margin:2px 0 6px 6px;padding:2px 0 4px 14px;border-left:1px solid var(--line)}
 .cat .caret{display:inline-block;color:var(--muted);font-size:11px;margin-left:4px;transition:transform .12s}
@@ -683,7 +694,7 @@ function aggregate(rows, classifyFn){
 // ==CORE_END==
 
 // ---------- 以下为界面/渲染逻辑（依赖 DOM） ----------
-let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:false, anomalyDim:'amount', snapshots:[] };
+let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:false, anomalyDim:'amount', snapshots:[], anomalyCatCollapsed:{} };
 
 function finalClassify(ref, typ){
   if(STATE.override[ref]!==undefined) return STATE.override[ref];
@@ -1029,6 +1040,8 @@ function buildAnomalyData(){
   // 用快照模型：每次 paste 一份 CSV 累计统计 → 跨 paste 对比累计曲线
   const snaps=STATE.snapshots||[];
   if(snaps.length<2) return [];
+  const snapDates=snaps.map(s=>s.date).sort();
+  const latestSnapD=snapDates[snapDates.length-1]; // 全局最新快照日期
   const map={}; // link -> {cat, series:{date:{am,pl}}}
   for(const s of snaps){
     for(const c in s.totals){
@@ -1041,20 +1054,26 @@ function buildAnomalyData(){
   const list=[];
   for(const r in map){
     const series=map[r].series, ds=Object.keys(series).sort();
-    if(ds.length<2) continue;
-    let peak=0, peakD=null, peakPl=0, latestD=ds[ds.length-1];
+    let peak=0, peakD=null, peakPl=0;
     for(const d of ds){ if(series[d].am>peak){ peak=series[d].am; peakD=d; peakPl=series[d].pl; } }
-    const latestEntry=series[latestD]||{am:0,pl:0};
+    if(peak<=0) continue;
+    const latestEntry=series[latestSnapD]||{am:0,pl:0};
     const latest=latestEntry.am, latestPl=latestEntry.pl;
+    const vanished=!series[latestSnapD]; // 最新快照里完全不存在 = 带量退光
     const drop=peak>0?(peak-latest)/peak:0;
     const dropPl=peakPl>0?(peakPl-latestPl)/peakPl:0;
-    list.push({link:r, cat:map[r].cat, ds, series, peak, peakD, latest, latestD, latestPl, peakPl, drop, dropPl});
+    list.push({link:r, cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished});
   }
-  list.sort((a,b)=>b.drop-a.drop);
+  // 风险优先：已消失的 link 永远排最前，其余按回撤降序
+  list.sort((a,b)=>{
+    if(a.vanished!==b.vanished) return a.vanished?-1:1;
+    return b.drop-a.drop;
+  });
   return list;
 }
 function anomalySpark(it, flagged, useVol){
-  const W=180,H=40,pad=5, ds=it.ds, ams=ds.map(d=>(useVol?it.series[d].pl:it.series[d].am));
+  const W=180,H=40,pad=5, ds=it.ds.slice(), ams=ds.map(d=>(useVol?it.series[d].pl:it.series[d].am));
+  if(it.vanished){ ds.push(it.latestD); ams.push(0); } // 已消失：末尾补 0 点，曲线明显跌到 0
   const maxA=Math.max(...ams,1), minA=Math.min(...ams,0), n=ams.length;
   const x=i=>pad+i*(W-2*pad)/(Math.max(n-1,1));
   const y=v=>H-pad-(v-minA)/((maxA-minA)||1)*(H-2*pad);
@@ -1068,13 +1087,15 @@ function anomalyCard(it, flagged, dim){
   const useVol = dim==='vol';
   const amCls = flagged && (dim==='amount'||dim==='either'||dim==='both') ? 'down':'';
   const plCls = flagged && (dim==='vol'||dim==='either'||dim==='both') ? 'down':'';
-  const badge = flagged ? (dim==='vol'?'异常·单量':(dim==='amount'?'异常·金额':(dim==='both'?'异常·双':(dim==='either'?'异常':'')))) : '';
-  return `<div class="an-card ${flagged?'flag':''}">
-    <div class="an-head"><span class="dot" style="background:${col}"></span><span class="an-link" title="${escapeAttr(it.link)}">${escapeAttr(it.link)}</span>${flagged?'<span class="an-badge">'+badge+'</span>':''}</div>
+  const badge = flagged ? (it.vanished?'已消失':(dim==='vol'?'异常·单量':(dim==='amount'?'异常·金额':(dim==='both'?'异常·双':(dim==='either'?'异常':''))))) : '';
+  const curTxt = it.vanished ? '已退光' : fmt(it.latest);
+  const curSub = it.vanished ? '最新快照无此 link' : it.latestD.slice(5);
+  return `<div class="an-card ${flagged?'flag':''} ${it.vanished?'van':''}">
+    <div class="an-head"><span class="dot" style="background:${col}"></span><span class="an-link" title="${escapeAttr(it.link)}">${escapeAttr(it.link)}</span>${flagged?'<span class="an-badge'+(it.vanished?' van-badge':'')+'">'+badge+'</span>':''}</div>
     <div class="an-body">
       <div class="an-stats">
         <div><span class="an-lbl">峰值</span>${fmt(it.peak)}<span class="an-sub">${it.peakD.slice(5)}</span></div>
-        <div><span class="an-lbl">当前</span>${fmt(it.latest)}<span class="an-sub">${it.latestD.slice(5)}</span></div>
+        <div><span class="an-lbl">当前</span>${curTxt}<span class="an-sub">${curSub}</span></div>
         <div class="an-drop"><span class="an-lbl">回撤</span><b class="${amCls}">-${Math.abs(pct)}%</b><span class="an-sub ${plCls}">单量 -${Math.abs(pctPl)}%</span></div>
       </div>
       ${anomalySpark(it, flagged, useVol)}
@@ -1090,11 +1111,9 @@ function buildAnomalyHtml(){
     return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3><div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div><div class="insight note"><b>${need?'快照不足':'当前数据无任何 link'}</b>。当前已记录快照：<b>${snaps.length}</b> 个（${dateList}）。${need?'再粘贴一份不同日期的 referral 导出即可触发识别（CSV 中最大 pledge 日期需不同）。':'可放宽阈值试试。'}</div></div>`;
   }
   const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly, dim=STATE.anomalyDim;
-  const isFlag=it=>anomalyFlag(it, thr, dim);
-  const flagged=list.filter(isFlag), shown=only?flagged:list;
-  const cards=shown.map(it=>anomalyCard(it, isFlag(it), dim)).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
+  const flagged=list.filter(it=>it.vanished||anomalyFlag(it,thr,dim));
   return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3>
-    <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div>
+    <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款；某 link 在最新快照<b>完全消失</b> = 带量被退光（最高风险）。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div>
     <div class="an-controls">
       <label class="an-ctl">告警维度
         <select id="anomalyDim">
@@ -1108,16 +1127,45 @@ function buildAnomalyHtml(){
       <label class="an-ctl an-toggle"><input type="checkbox" id="anomalyOnly" ${only?'checked':''}> 只看异常（<span id="anOnlyCount">${flagged.length}</span>）</label>
       <span class="an-meta" id="anMeta">${STATE.snapshots.length} 个快照（${STATE.snapshots.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 ${flagged.length}</span>
     </div>
-    <div class="an-grid" id="anGrid">${cards}</div>
+    <div class="an-body-grid" id="anGrid">${anomalyCardsHtml(list, dim, only)}</div>
   </div>`;
+}
+// 异常卡片内部布局：风险速览（置顶）+ 按分类折叠分组
+function anomalyCardsHtml(list, dim, only){
+  const thr=STATE.anomalyThreshold;
+  const isR=it=>it.vanished||anomalyFlag(it,thr,dim);
+  const cmpRisk=(a,b)=>{ if(a.vanished!==b.vanished) return a.vanished?-1:1; if(Math.abs(a.drop-b.drop)>1e-9) return b.drop-a.drop; return b.peak-a.peak; };
+  if(only){
+    const shown=list.filter(isR).sort(cmpRisk);
+    return shown.map(it=>anomalyCard(it,true,dim)).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
+  }
+  let html='';
+  const risk=list.filter(isR).sort(cmpRisk);
+  if(risk.length){
+    html+='<div class="an-section an-risk"><div class="an-sec-title">⚠ 风险速览（'+risk.length+' 个，已消失优先）</div><div class="an-grid">'+risk.map(it=>anomalyCard(it,true,dim)).join('')+'</div></div>';
+  }
+  const cats={};
+  for(const it of list){ (cats[it.cat]=cats[it.cat]||[]).push(it); }
+  const catOrder=CAT_ORDER.filter(c=>cats[c]);
+  catOrder.sort((a,b)=>{ const ra=cats[a].some(isR), rb=cats[b].some(isR); if(ra!==rb) return rb?1:-1; return CAT_ORDER.indexOf(a)-CAT_ORDER.indexOf(b); });
+  for(const c of catOrder){
+    const items=cats[c].slice().sort(cmpRisk);
+    const hitN=items.filter(isR).length;
+    const coll=STATE.anomalyCatCollapsed[c]===true;
+    html+='<div class="an-cat'+(coll?' collapsed':'')+'">'+
+      '<div class="an-cat-head" data-cat="'+escapeAttr(c)+'"><span class="caret">'+(coll?'▸':'▾')+'</span><span class="dot" style="background:'+(CAT_COLORS[c]||'#94a3b8')+'"></span><span class="an-cat-name">'+escapeHtml(c)+'</span><span class="an-cat-meta">命中 '+hitN+' / 共 '+items.length+'</span></div>'+
+      (coll?'':'<div class="an-grid">'+items.map(it=>anomalyCard(it,isR(it),dim)).join('')+'</div>')+
+      '</div>';
+  }
+  return html || '<div class="insight note">当前筛选下无结果。</div>';
 }
 function renderAnomaly(){
   const grid=document.getElementById('anGrid'); if(!grid) return;
   const list=buildAnomalyData();
-  const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly, dim=STATE.anomalyDim;
-  const isFlag=it=>anomalyFlag(it, thr, dim);
-  const flagged=list.filter(isFlag), shown=only?flagged:list;
-  grid.innerHTML=shown.map(it=>anomalyCard(it, isFlag(it), dim)).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
+  const only=STATE.anomalyOnly, dim=STATE.anomalyDim;
+  const thr=STATE.anomalyThreshold;
+  const flagged=list.filter(it=>it.vanished||anomalyFlag(it,thr,dim));
+  grid.innerHTML=anomalyCardsHtml(list, dim, only);
   const meta=document.getElementById('anMeta'); if(meta) meta.textContent=(STATE.snapshots||[]).length+' 个快照（'+(STATE.snapshots||[]).map(s=>s.date.slice(5)).join('、')+'） · 共 '+list.length+' 个 link · 命中 '+flagged.length;
   const oc=document.getElementById('anOnlyCount'); if(oc) oc.textContent=flagged.length;
 }
@@ -1511,6 +1559,10 @@ reportBodyEl.addEventListener('click', e=>{
     }
     return;
   }
+  // 异常板块：分类分组折叠
+  const catHead=e.target.closest('.an-cat-head'); if(catHead){
+    const cat=catHead.dataset.cat; STATE.anomalyCatCollapsed[cat]=!(STATE.anomalyCatCollapsed[cat]===true); renderAnomaly(); return;
+  }
   if(e.target.id==='btnResetRolling'){ STATE.cmpMode='rolling3'; STATE.cmpQuick='r3'; applyAndRender(); return; }
   // 子表表头点击切排序
   const sortEl=e.target.closest('.cl-sort'); if(sortEl){
@@ -1689,6 +1741,7 @@ function restoreFrom(saved){
   STATE.D=(saved.D&&dates.includes(saved.D))?saved.D:dates[dates.length-1];
   STATE.P=(saved.P&&dates.includes(saved.P))?saved.P:addDays(STATE.D,-1);
   STATE.snapshots=Array.isArray(saved.snapshots)?saved.snapshots.slice():[];
+  STATE.anomalyCatCollapsed={};
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
   // 迁移：旧数据无快照时，用当前 CSV 种子化第一个快照
   if(!STATE.snapshots.length) recordSnapshot(STATE.rows);
