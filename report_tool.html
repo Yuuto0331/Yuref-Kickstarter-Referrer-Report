@@ -155,40 +155,45 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .cmp-link-row.hd .cl-sort-arrow{display:inline-block;margin-left:2px;color:var(--muted);font-size:10px}
 .cmp-link-empty{color:var(--muted);font-size:12.5px;padding:8px 24px}
 /* 异常识别板块 */
-.an-controls{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin:10px 0 14px;padding:10px 12px;background:#f8fafc;border:1px solid var(--line);border-radius:10px}
+.an-controls{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:8px 0 12px;padding:9px 12px;background:#f8fafc;border:1px solid var(--line);border-radius:10px}
 .an-ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)}
 .an-ctl output{font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
-.an-ctl input[type=range]{accent-color:var(--blue);width:150px}
-.an-toggle{cursor:pointer;user-select:none}
-.an-meta{font-size:12px;color:var(--muted);margin-left:auto}
-.an-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-.an-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;transition:box-shadow .15s,border-color .15s}
-.an-card.flag{border-color:#fca5a5;background:#fff7f7;box-shadow:0 1px 4px rgba(239,68,68,.12)}
-.an-head{display:flex;align-items:center;gap:7px;margin-bottom:8px}
-.an-head .dot{width:9px;height:9px;border-radius:50%;flex:none}
-.an-link{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
-.an-badge{font-size:10.5px;font-weight:700;color:#fff;background:#ef4444;border-radius:5px;padding:1px 6px;flex:none}
-.an-body{display:flex;align-items:center;gap:10px}
-.an-stats{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
-.an-stats>div{display:flex;align-items:baseline;gap:6px;font-size:13px;font-variant-numeric:tabular-nums;color:#0f172a}
-.an-lbl{font-size:11px;color:var(--muted);min-width:28px}
-.an-sub{font-size:10.5px;color:var(--muted)}
-.an-drop b{font-size:14px}
-.an-drop b.down{color:var(--red)}
+.an-ctl input[type=range]{accent-color:var(--blue);width:140px}
 .an-ctl select{padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:12px;color:#334155;cursor:pointer}
 .an-ctl select:focus{outline:2px solid rgba(59,130,246,.25);outline-offset:1px}
-.an-spark{flex:none;background:#fff;border:1px solid var(--line);border-radius:6px}
-.an-body-grid{display:flex;flex-direction:column;gap:14px}
-.an-section.an-risk{background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:10px 12px}
-.an-sec-title{font-size:12.5px;font-weight:700;color:#b91c1c;margin:0 0 8px;display:flex;align-items:center;gap:6px}
-.an-cat{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
-.an-cat-head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;user-select:none;background:#f8fafc;transition:background .12s}
-.an-cat-head:hover{background:#f1f5f9}
-.an-cat-head .caret{font-size:11px;color:var(--muted);width:12px;text-align:center;flex:none}
-.an-cat-name{font-weight:600;font-size:13px;color:#334155}
-.an-cat-meta{font-size:11.5px;color:var(--muted);margin-left:auto}
+.an-toggle{cursor:pointer;user-select:none}
+.an-meta{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.an-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:10px}
+.an-card{border:1px solid var(--line);border-radius:10px;padding:8px 11px 10px;background:#fff;transition:box-shadow .15s,border-color .15s}
+.an-card.flag{border-color:#fca5a5;background:#fff7f7;box-shadow:0 1px 4px rgba(239,68,68,.12)}
 .an-card.van{border-color:#ef4444;background:#fff5f5;box-shadow:0 1px 6px rgba(239,68,68,.18)}
+.an-card.ignored{background:#fafafa;border-color:#e2e8f0;opacity:.92;box-shadow:none}
+.an-head{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.an-head .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.an-link{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12.5px;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.an-card.ignored .an-link{color:#94a3b8;text-decoration:line-through}
+.an-badge{font-size:10px;font-weight:700;color:#fff;background:#ef4444;border-radius:5px;padding:1px 6px;flex:none;white-space:nowrap}
 .an-badge.van-badge{background:#b91c1c}
+.an-badge.ig-badge{background:#94a3b8}
+.an-ignore{font-size:11px;color:#64748b;background:transparent;border:1px solid #e2e8f0;border-radius:5px;padding:1px 7px;cursor:pointer;flex:none;transition:all .12s;font-family:inherit;line-height:1.5;white-space:nowrap}
+.an-ignore:hover{background:#fff;border-color:#94a3b8;color:#334155}
+.an-card.ignored .an-ignore{color:#0f172a;border-color:#94a3b8;background:#fff}
+.an-body{display:flex;align-items:stretch;gap:10px}
+.an-bar-wrap{flex:1;min-width:0;display:flex;align-items:center}
+.an-spark{width:100%;height:46px;display:block}
+.an-stats{display:flex;flex-direction:column;gap:3px;flex:none;width:144px;font-size:12px}
+.an-stat{display:flex;align-items:baseline;gap:5px;font-variant-numeric:tabular-nums;color:#0f172a;white-space:nowrap;overflow:hidden}
+.an-stat .num{font-size:13px;font-weight:600;color:#0f172a}
+.an-stat .num.down{color:var(--red)}
+.an-lbl{font-size:10.5px;color:var(--muted);width:28px;flex:none}
+.an-sub{font-size:10.5px;color:var(--muted);white-space:nowrap;flex:none;margin-left:auto}
+.an-drops{display:flex;flex-direction:column;gap:1px;padding-top:3px;border-top:1px dashed #e2e8f0;margin-top:3px}
+.an-dropline{display:flex;align-items:baseline;gap:5px;font-size:11.5px;color:#64748b}
+.an-dropline b{font-size:12px;font-weight:700}
+.an-dropline b.down{color:var(--red)}
+.an-dropline .an-lbl{width:28px}
+.an-body-grid{display:flex;flex-direction:column;gap:14px}
+.an-empty{text-align:center;padding:16px 12px;color:var(--muted);font-size:12.5px}
 .an-banner.warn{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin:0 0 12px;font-size:12.5px;color:#78350f;line-height:1.55}
 .an-banner.warn b{color:#92400e}
 .an-banner.warn .an-snapline{margin-top:6px;font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:11.5px;color:#57534e}
@@ -699,7 +704,7 @@ function aggregate(rows, classifyFn){
 // ==CORE_END==
 
 // ---------- 以下为界面/渲染逻辑（依赖 DOM） ----------
-let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:false, anomalyDim:'amount', snapshots:[], anomalyCatCollapsed:{} };
+let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:true, anomalyDim:'amount', snapshots:[], anomalyCatCollapsed:{}, anomalyIgnored:[], anomalyShowIgnored:true };
 
 function finalClassify(ref, typ){
   if(STATE.override[ref]!==undefined) return STATE.override[ref];
@@ -1309,50 +1314,84 @@ function buildAnomalyData(){
   });
   return list;
 }
-function anomalySpark(it, flagged, useVol){
-  const W=180,H=40,pad=5, ds=it.ds.slice(), ams=ds.map(d=>(useVol?it.series[d].pl:it.series[d].am));
-  if(it.vanished){ ds.push(it.latestD); ams.push(0); } // 已消失：末尾补 0 点，曲线明显跌到 0
-  const maxA=Math.max(...ams,1), minA=Math.min(...ams,0), n=ams.length;
-  const x=i=>pad+i*(W-2*pad)/(Math.max(n-1,1));
-  const y=v=>H-pad-(v-minA)/((maxA-minA)||1)*(H-2*pad);
-  const pts=ams.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ');
+// 横向条形图：peak → current 的资金存活率。每个 snap 一根柱，peak 柱描边高亮
+// 用 SVG 画是因为它要 1) 透明可叠加 2) 鼠标悬浮看数值（未来可加 title）
+function anomalyBar(it, flagged, useVol){
+  const W=240,H=46,padL=0,padR=0,padT=8,padB=8;
+  const ds=it.ds.slice();
+  const ams=ds.map(d=>useVol?it.series[d].pl:it.series[d].am);
+  if(it.vanished){ ds.push(it.latestD); ams.push(0); } // 已消失：末尾补 0 柱，更直观
+  const maxA=Math.max(...ams,1);
+  const n=ams.length;
+  const slot=(W-padL-padR)/n;
+  const barW=Math.max(2, slot-3);
+  const barH=H-padT-padB;
   const pi=ams.indexOf(maxA);
-  return `<svg width="${W}" height="${H}" class="an-spark"><polyline points="${pts}" fill="none" stroke="${flagged?'#ef4444':'#94a3b8'}" stroke-width="1.6"/><circle cx="${x(pi).toFixed(1)}" cy="${y(maxA).toFixed(1)}" r="2.6" fill="${flagged?'#ef4444':'#94a3b8'}"/></svg>`;
+  let bars='';
+  for(let i=0;i<n;i++){
+    const v=ams[i], h=Math.max(2, v/maxA*barH);
+    const x=padL+i*slot+(slot-barW)/2;
+    const y=padT+(barH-h);
+    const isPeak=i===pi;
+    const isLatest=i===n-1;
+    let fill='#cbd5e1', stroke='none', strokeW=0;
+    if(flagged && isPeak){ fill='#fecaca'; stroke='#ef4444'; strokeW=1.5; }
+    else if(isPeak){ fill='#cbd5e1'; stroke='#94a3b8'; strokeW=1.2; }
+    if(flagged && isLatest && v===0){ fill='#fecaca'; } // 最新一根为 0 高亮
+    bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" rx="1.5"/>`;
+  }
+  return `<svg width="${W}" height="${H}" class="an-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${bars}</svg>`;
 }
-function anomalyCard(it, flagged, dim){
+function anomalyCard(it, flagged, dim, ignored){
   const col=CAT_COLORS[it.cat]||'#94a3b8';
   const pct=(it.drop*100).toFixed(0), pctPl=(it.dropPl*100).toFixed(0);
   const useVol = dim==='vol';
   const amCls = flagged && (dim==='amount'||dim==='either'||dim==='both') ? 'down':'';
   const plCls = flagged && (dim==='vol'||dim==='either'||dim==='both') ? 'down':'';
-  const badge = flagged ? (it.vanished?'已消失':(dim==='vol'?'异常·单量':(dim==='amount'?'异常·金额':(dim==='both'?'异常·双':(dim==='either'?'异常':''))))) : '';
+  const badge = flagged ? (it.vanished?'已消失':(dim==='vol'?'异常·单量':(dim==='amount'?'异常·金额':(dim==='both'?'异常·双':(dim==='either'?'异常':''))))) : (ignored?'已忽略':'');
   const curTxt = it.vanished ? '已退光' : fmt(it.latest);
-  const curSub = it.vanished ? '最新快照无此 link' : it.latestD.slice(5);
-  return `<div class="an-card ${flagged?'flag':''} ${it.vanished?'van':''}">
-    <div class="an-head"><span class="dot" style="background:${col}"></span><span class="an-link" title="${escapeAttr(it.link)}">${escapeAttr(it.link)}</span>${flagged?'<span class="an-badge'+(it.vanished?' van-badge':'')+'">'+badge+'</span>':''}</div>
+  const curSub = it.vanished ? '最新快照无' : it.latestD.slice(5);
+  // link key 用于 ignore 标记（不区分大小写）
+  const linkKey = (it._allKey || (it.link||'').toLowerCase());
+  return `<div class="an-card${flagged?' flag':''}${it.vanished?' van':''}${ignored?' ignored':''}" data-key="${escapeAttr(linkKey)}">
+    <div class="an-head">
+      <span class="dot" style="background:${col}"></span>
+      <span class="an-link" title="${escapeAttr(it.link)}">${escapeAttr(it.link)}</span>
+      ${badge?`<span class="an-badge${it.vanished?' van-badge':''}${ignored?' ig-badge':''}">${badge}</span>`:''}
+      <button class="an-ignore" data-act="${ignored?'unignore':'ignore'}" data-key="${escapeAttr(linkKey)}" title="${ignored?'取消忽略，重新参与识别':'忽略此 link（保留显示，但不再计入异常）'}">${ignored?'↺ 取消忽略':'忽略'}</button>
+    </div>
     <div class="an-body">
+      <div class="an-bar-wrap">${anomalyBar(it,flagged,useVol)}</div>
       <div class="an-stats">
-        <div><span class="an-lbl">峰值</span>${fmt(it.peak)}<span class="an-sub">${it.peakD.slice(5)}</span></div>
-        <div><span class="an-lbl">当前</span>${curTxt}<span class="an-sub">${curSub}</span></div>
-        <div class="an-drop"><span class="an-lbl">回撤</span><b class="${amCls}">-${Math.abs(pct)}%</b><span class="an-sub ${plCls}">单量 -${Math.abs(pctPl)}%</span></div>
+        <div class="an-stat"><span class="an-lbl">峰值</span><b class="num">${fmt(it.peak)}</b><span class="an-sub">${it.peakD.slice(5)}</span></div>
+        <div class="an-stat"><span class="an-lbl">当前</span><b class="num${flagged?' down':''}">${curTxt}</b><span class="an-sub">${curSub}</span></div>
+        <div class="an-stat an-drops">
+          <span class="an-dropline"><span class="an-lbl">金额</span><b class="${amCls||'num'}">-${Math.abs(pct)}%</b></span>
+          <span class="an-dropline"><span class="an-lbl">单量</span><b class="${plCls||'num'}">-${Math.abs(pctPl)}%</b></span>
+        </div>
       </div>
-      ${anomalySpark(it, flagged, useVol)}
     </div>
   </div>`;
 }
 function buildAnomalyHtml(){
   const list=buildAnomalyData();
+  const snaps=STATE.snapshots||[];
   if(!list.length) {
-    const snaps=STATE.snapshots||[];
     const dateList=snaps.map(s=>s.date.slice(5)).join('、')||'（无）';
     const need=snaps.length<2;
     return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3><div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div><div class="insight note"><b>${need?'快照不足':'当前数据无任何 link'}</b>。当前已记录快照：<b>${snaps.length}</b> 个（${dateList}）。${need?'再粘贴一份不同日期的 referral 导出即可触发识别（CSV 中最大 pledge 日期需不同）。':'可放宽阈值试试。'}</div></div>`;
   }
-  const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly, dim=STATE.anomalyDim;
-  const flagged=list.filter(it=>!it.silenced && (it.vanished||anomalyFlag(it,thr,dim)));
+  const thr=STATE.anomalyThreshold, dim=STATE.anomalyDim;
+  // 给每个 item 注入 _ignored 标记（不区分大小写）
+  const igSet=new Set((STATE.anomalyIgnored||[]).map(s=>s.toLowerCase()));
+  for(const it of list){ it._ignored = igSet.has((it.link||'').toLowerCase()); }
+  // 命中 = 告警条件成立 且 未被忽略
+  const flagged = list.filter(it=>!it._ignored && (it.vanished||anomalyFlag(it,thr,dim)));
+  const flaggedCount = flagged.length;
+  // 已忽略计数（只算 link 本身没命中异常但被忽略的；命中异常但被忽略的也单独计，但优先鼓励用户取消忽略）
+  const ignoredCount = list.filter(it=>it._ignored).length;
   // 当「已消失」link 比例异常高时（通常是最新 CSV 不全 / 分类口径变了），顶部加 banner 提示
   let banner='';
-  const snaps=STATE.snapshots||[];
   const van=list.filter(it=>it.vanished);
   if(snaps.length>=2 && van.length>=5 && van.length/Math.max(list.length,1)>=0.3){
     const cnt=s=>Object.values(s.totals).reduce((n,c)=>n+Object.keys(c).length,0);
@@ -1360,6 +1399,9 @@ function buildAnomalyHtml(){
     const snapLines=snaps.map(s=>s.date.slice(5)+': '+cnt(s)+' link · '+fmt(sum(s))).join('  →  ');
     banner=`<div class="an-banner warn"><b>⚠ 检测到 ${van.length} 个「已消失」link（占 ${(van.length/Math.max(list.length,1)*100).toFixed(0)}%）</b>，通常意味着<b>最新 CSV 导出不全</b>或<b>分类口径变化</b>。请核对下方快照规模（明显小于前一快照 = 新 CSV 砍了部分 referral）：<div class="an-snapline">${snapLines}</div></div>`;
   }
+  // 【核心】如果没有任何命中、也没有任何已忽略 → 整模块隐藏，不渲染
+  if(flaggedCount===0 && ignoredCount===0) return '';
+  const igLink = ignoredCount ? `<a href="javascript:void(0)" id="anIgClear" style="color:#64748b;text-decoration:underline;cursor:pointer" title="清空所有已忽略 link">已忽略 ${ignoredCount}</a>` : '';
   return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3>
     <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款；某 link 在最新快照<b>完全消失</b> = 带量被退光（最高风险）。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div>
     ${banner}
@@ -1373,50 +1415,51 @@ function buildAnomalyHtml(){
         </select></label>
       <label class="an-ctl">告警阈值 <output id="anThrOut">${thr}%</output>
         <input type="range" id="anomalyThreshold" min="5" max="90" step="5" value="${thr}"></label>
-      <label class="an-ctl an-toggle"><input type="checkbox" id="anomalyOnly" ${only?'checked':''}> 只看异常（<span id="anOnlyCount">${flagged.length}</span>）</label>
-      <span class="an-meta" id="anMeta">${STATE.snapshots.length} 个快照（${STATE.snapshots.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 ${flagged.length}</span>
+      <span class="an-meta" id="anMeta">${snaps.length} 个快照（${snaps.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 <b style="color:${flaggedCount?'#ef4444':'#0f172a'};font-variant-numeric:tabular-nums">${flaggedCount}</b>${igLink?` · ${igLink}`:''}</span>
     </div>
-    <div class="an-body-grid" id="anGrid">${anomalyCardsHtml(list, dim, only)}</div>
+    <div class="an-body-grid" id="anGrid">${anomalyCardsHtml(list, dim)}</div>
   </div>`;
 }
 // 异常卡片内部布局：风险速览（置顶）+ 按分类折叠分组
-function anomalyCardsHtml(list, dim, only){
+function anomalyCardsHtml(list, dim){
   const thr=STATE.anomalyThreshold;
-  const isR=it=>!it.silenced && (it.vanished||anomalyFlag(it,thr,dim));
   const cmpRisk=(a,b)=>{ if(a.vanished!==b.vanished) return a.vanished?-1:1; if(Math.abs(a.drop-b.drop)>1e-9) return b.drop-a.drop; return b.peak-a.peak; };
-  if(only){
-    const shown=list.filter(isR).sort(cmpRisk);
-    return shown.map(it=>anomalyCard(it,true,dim)).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
-  }
+  const risk=list.filter(it=>!it._ignored && (it.vanished||anomalyFlag(it,thr,dim))).sort(cmpRisk);
+  // 已忽略：所有被忽略的 link 都展示（包括已消失/已命中），作为"灰显卡"，让用户随时能看到被忽略的
+  const ignored=list.filter(it=>it._ignored);
   let html='';
-  const risk=list.filter(isR).sort(cmpRisk);
-  if(risk.length){
-    html+='<div class="an-section an-risk"><div class="an-sec-title">⚠ 风险速览（'+risk.length+' 个，已消失优先）</div><div class="an-grid">'+risk.map(it=>anomalyCard(it,true,dim)).join('')+'</div></div>';
-  }
-  const cats={};
-  for(const it of list){ (cats[it.cat]=cats[it.cat]||[]).push(it); }
-  const catOrder=CAT_ORDER.filter(c=>cats[c]);
-  catOrder.sort((a,b)=>{ const ra=cats[a].some(isR), rb=cats[b].some(isR); if(ra!==rb) return rb?1:-1; return CAT_ORDER.indexOf(a)-CAT_ORDER.indexOf(b); });
-  for(const c of catOrder){
-    const items=cats[c].slice().sort(cmpRisk);
-    const hitN=items.filter(isR).length;
-    const coll=STATE.anomalyCatCollapsed[c]!==false;  // 默认折叠，仅当显式设 false 才展开
-    html+='<div class="an-cat'+(coll?' collapsed':'')+'">'+
-      '<div class="an-cat-head" data-cat="'+escapeAttr(c)+'"><span class="caret">'+(coll?'▸':'▾')+'</span><span class="dot" style="background:'+(CAT_COLORS[c]||'#94a3b8')+'"></span><span class="an-cat-name">'+escapeHtml(c)+'</span><span class="an-cat-meta">命中 '+hitN+' / 共 '+items.length+'</span></div>'+
-      (coll?'':'<div class="an-grid">'+items.map(it=>anomalyCard(it,isR(it),dim)).join('')+'</div>')+
-      '</div>';
-  }
-  return html || '<div class="insight note">当前筛选下无结果。</div>';
+  if(risk.length) html += '<div class="an-grid">'+risk.map(it=>anomalyCard(it,true,dim,false)).join('')+'</div>';
+  if(ignored.length) html += '<div class="an-grid" style="margin-top:8px">'+ignored.map(it=>anomalyCard(it,false,dim,true)).join('')+'</div>';
+  if(!html) return '<div class="an-empty">当前筛选下无结果（可放宽阈值）。</div>';
+  return html;
 }
 function renderAnomaly(){
   const grid=document.getElementById('anGrid'); if(!grid) return;
   const list=buildAnomalyData();
-  const only=STATE.anomalyOnly, dim=STATE.anomalyDim;
+  const dim=STATE.anomalyDim;
   const thr=STATE.anomalyThreshold;
-  const flagged=list.filter(it=>!it.silenced && (it.vanished||anomalyFlag(it,thr,dim)));
-  grid.innerHTML=anomalyCardsHtml(list, dim, only);
-  const meta=document.getElementById('anMeta'); if(meta) meta.textContent=(STATE.snapshots||[]).length+' 个快照（'+(STATE.snapshots||[]).map(s=>s.date.slice(5)).join('、')+'） · 共 '+list.length+' 个 link · 命中 '+flagged.length;
-  const oc=document.getElementById('anOnlyCount'); if(oc) oc.textContent=flagged.length;
+  // 注入 _ignored 标记（与 buildAnomalyHtml 保持一致）
+  const igSet=new Set((STATE.anomalyIgnored||[]).map(s=>s.toLowerCase()));
+  for(const it of list){ it._ignored = igSet.has((it.link||'').toLowerCase()); }
+  const flagged=list.filter(it=>!it._ignored && (it.vanished||anomalyFlag(it,thr,dim)));
+  grid.innerHTML=anomalyCardsHtml(list, dim);
+  // 顶层模块可能在 0 命中时整段不渲染（buildAnomalyHtml 返回 ''），这里同步处理
+  const module=document.getElementById('anomalyModule');
+  if(module){
+    const container=module.parentNode;
+    if(!flagged.length && !list.some(it=>it._ignored)){
+      // 隐藏模块：把 module 整个从 DOM 移除（下次 renderReport 时如果还有命中会重建）
+      container.removeChild(module);
+      return;
+    }
+  }
+  // 命中数 meta：baseRender 之后（buildAnomalyHtml 已写好），仅刷新命中数（保持其它不变）
+  const meta=document.getElementById('anMeta');
+  if(meta){
+    const snaps=(STATE.snapshots||[]);
+    const igN=list.filter(it=>it._ignored).length;
+    meta.innerHTML = `${snaps.length} 个快照（${snaps.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 <b style="color:${flagged.length?'#ef4444':'#0f172a'};font-variant-numeric:tabular-nums">${flagged.length}</b>${igN?` · <a href="javascript:void(0)" id="anIgClear" style="color:#64748b;text-decoration:underline;cursor:pointer" title="清空所有已忽略 link">已忽略 ${igN}</a>`:''}`;
+  }
 }
 
 function renderReport(){
@@ -1785,10 +1828,28 @@ reportBodyEl.addEventListener('input', e=>{
   if(e.target.id==='anomalyThreshold'){ STATE.anomalyThreshold=+e.target.value; const o=document.getElementById('anThrOut'); if(o) o.textContent=STATE.anomalyThreshold+'%'; renderAnomaly(); }
 });
 reportBodyEl.addEventListener('change', e=>{
-  if(e.target.id==='anomalyOnly'){ STATE.anomalyOnly=e.target.checked; renderAnomaly(); }
   if(e.target.id==='anomalyDim'){ STATE.anomalyDim=e.target.value; renderAnomaly(); }
 });
 reportBodyEl.addEventListener('click', e=>{
+  // 异常板块：忽略 / 取消忽略 / 清空忽略
+  const igBtn=e.target.closest('.an-ignore'); if(igBtn){
+    const key=igBtn.dataset.key; const act=igBtn.dataset.act;
+    STATE.anomalyIgnored = STATE.anomalyIgnored||[];
+    if(act==='ignore'){
+      if(!STATE.anomalyIgnored.includes(key)) STATE.anomalyIgnored.push(key);
+    } else {
+      STATE.anomalyIgnored = STATE.anomalyIgnored.filter(k=>k!==key);
+    }
+    saveData();
+    renderAnomaly();
+    return;
+  }
+  const igClear=e.target.closest('#anIgClear'); if(igClear){
+    STATE.anomalyIgnored=[];
+    saveData();
+    renderAnomaly();
+    return;
+  }
   const chip=e.target.closest('.chip');
   if(chip){
     const q=chip.dataset.q;
@@ -1808,10 +1869,7 @@ reportBodyEl.addEventListener('click', e=>{
     }
     return;
   }
-  // 异常板块：分类分组折叠
-  const catHead=e.target.closest('.an-cat-head'); if(catHead){
-    const cat=catHead.dataset.cat; STATE.anomalyCatCollapsed[cat]=!(STATE.anomalyCatCollapsed[cat]===true); renderAnomaly(); return;
-  }
+  // 异常板块分类折叠已移除（v2 设计：只平铺命中）
   if(e.target.id==='btnResetRolling'){ STATE.cmpMode='rolling3'; STATE.cmpQuick='r3'; applyAndRender(); return; }
   // 子表表头点击切排序
   const sortEl=e.target.closest('.cl-sort'); if(sortEl){
