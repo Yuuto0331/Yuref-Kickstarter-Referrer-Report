@@ -1035,13 +1035,71 @@ const MIN_ANOMALY_PEAK_PL = 5;  // 单量维度过滤蚊子腿（订单数）
 // KS 后台可切语言，内置 referrer 名称会随导出语言变（英文 Email – Automated ⇄ 中文 邮件 – 自动）。
 // 跨快照匹配若用原名当 key，会误判"消失/新增"。这里把中英文内置 referrer 归一到英文 canonical，
 // 自定义 link 名（拉丁字母、不含中文）不受影响。
-const REF_ZH2EN = {
-  '邮件自动':'Email – Automated','邮件手动发送':'Email – Manually Sent','邮件支持者更新':'Email – Backer Update',
-  '发现':'Discovery','应用':'App','认筹管理':'Pledge Manager','承诺管理器':'Pledge Manager','认筹':'Pledge Manager',
-  '项目页面':'Project Page','项目页':'Project Page','搜索':'Search','外部':'External',
-  '新闻邮件':'Newsletters','自定义':'Custom','账户':'Account','个人资料':'Account'
-};
-function normRef(ref){ return REF_ZH2EN[(ref||'').replace(/[\s –—\-·]/g,'')] || ref; }
+// KS 后台可切语言（简/繁/英），内置 referrer 名称随导出语言变，且常带长串子分类。
+// 跨快照匹配若用原名当 key，会误判"消失/新增"。这里把中/繁/英内置 referrer 归一到英文主分类 canonical，
+// 并裁剪长串子分类（如 Email – Automated – Published Project – Followers → Email – Automated）。
+// 含中文字符的走 ZH_RULES；纯拉丁的 KS 内置长名走 EN_RULES 裁剪前缀；自定义 link（拉丁、跨语言不变）不命中则原样。
+const ZH_RULES = [
+  [/電子郵件\s*[-–—]\s*自動|邮件\s*[-–—]\s*自動|email\s*[-–—]\s*automated/i, 'Email – Automated'],
+  [/電子郵件\s*[-–—]\s*專案更新|邮件\s*[-–—]\s*项目更新|email\s*[-–—]\s*project\s*update/i, 'Email – Project Update'],
+  [/電子郵件\s*[-–—]\s*獨立郵件|email\s*[-–—]\s*standalone/i, 'Email – Standalone'],
+  [/電子郵件\s*[-–—]\s*交易|email\s*[-–—]\s*transaction/i, 'Email – Transactional'],
+  [/電子郵件|邮件|email/i, 'Email'],
+  [/應用程式\s*[-–—]\s*搜尋|app\s*[-–—]\s*search/i, 'App – Search'],
+  [/應用程式\s*[-–—]\s*已儲存|app\s*[-–—]\s*saved/i, 'App – Saved'],
+  [/應用程式\s*[-–—]\s*推薦|app\s*[-–—]\s*recommended/i, 'App – Recommended'],
+  [/應用程式|app/i, 'App'],
+  [/發現登陸頁面|discovery\s*landing/i, 'Discovery Landing Page'],
+  [/發現\s*[-–—]\s*篩選器|discovery\s*[-–—]\s*filter/i, 'Discovery – Filters'],
+  [/發現|discovery/i, 'Discovery'],
+  [/探索|explore/i, 'Explore'],
+  [/首頁\s*[-–—]\s*為你推薦|首页\s*[-–—]\s*为你推荐|home\s*[-–—]\s*recommended/i, 'Home – Recommended'],
+  [/首頁\s*[-–—]\s*精選專案|首页\s*[-–—]\s*精选|home\s*[-–—]\s*featured/i, 'Home – Featured'],
+  [/首頁\s*[-–—]\s*新鮮出爐|home\s*[-–—]\s*fresh/i, 'Home – Fresh'],
+  [/首頁|首页|home/i, 'Home'],
+  [/個人資料\s*[-–—]\s*使用者建立|profile\s*[-–—]\s*user\s*created/i, 'Profile – User created'],
+  [/個人資料\s*[-–—]\s*支持的|profile\s*[-–—]\s*backed/i, 'Profile – Backed'],
+  [/個人資料\s*[-–—]\s*儲存\s*[-–—]\s*預發佈|profile\s*[-–—]\s*saved\s*[-–—]\s*prelaunch/i, 'Profile – Saved – Prelaunch'],
+  [/個人資料\s*[-–—]\s*儲存|profile\s*[-–—]\s*saved/i, 'Profile – Saved'],
+  [/個人資料|profile/i, 'Profile'],
+  [/推薦\s*[-–—]\s*進行中|recommendations\s*[-–—]\s*live/i, 'Recommendations – Live footer'],
+  [/推薦\s*[-–—]\s*已結束|recommendations\s*[-–—]\s*ended/i, 'Recommendations – Ended footer'],
+  [/推薦\s*[-–—]\s*感謝|recommendations\s*[-–—]\s*thanks/i, 'Recommendations – Thanks'],
+  [/推薦|推荐|recommendations/i, 'Recommendations'],
+  [/直接流量\s*[-–—]\s*無引薦|直接流量\s*[-–—]\s*无引荐|direct\s*[-–—]\s*no\s*referral/i, 'Direct – No referral info'],
+  [/kickstarter\s*發現|kickstarter\s*发现|kickstarter\s*discovery/i, 'Kickstarter Discovery'],
+  [/kickstarter\s*搜尋|kickstarter\s*搜索|kickstarter\s*search/i, 'Kickstarter Search'],
+  [/設計與技術登陸頁面|design\s*&\s*tech\s*landing/i, 'Design & Tech Landing Page'],
+  [/電子類\s*diy\s*\(發現\)|electronics\s*diy\s*\(discovery\)/i, 'Electronics DIY (Discovery)'],
+  [/android\s*深度連結|android\s*deep\s*link/i, 'Android Deep Link'],
+  [/全站導航|site\s*nav/i, 'Site nav'],
+  [/推送|push/i, 'Push'],
+  [/活動流|activity\s*feed/i, 'Activity feed'],
+  [/x（原\s*twitter）|twitter|x\s*\(formerly/i, 'X (formerly Twitter)']
+];
+const EN_RULES = [
+  [/^email\s*[-–—]\s*automated/i, 'Email – Automated'],
+  [/^email\s*[-–—]\s*project\s*update/i, 'Email – Project Update'],
+  [/^email\s*[-–—]\s*standalone/i, 'Email – Standalone'],
+  [/^email\s*[-–—]\s*transaction/i, 'Email – Transactional'],
+  [/^email\b/i, 'Email'],
+  [/^app\s*[-–—]\s*search/i, 'App – Search'],
+  [/^app\s*[-–—]\s*saved/i, 'App – Saved'],
+  [/^app\s*[-–—]\s*recommended/i, 'App – Recommended'],
+  [/^discovery\b/i, 'Discovery'],
+  [/^home\b/i, 'Home'],
+  [/^profile\b/i, 'Profile'],
+  [/^recommendations\b/i, 'Recommendations'],
+  [/^direct\b/i, 'Direct – No referral info'],
+  [/^kickstarter\s*discovery/i, 'Kickstarter Discovery'],
+  [/^kickstarter\s*search/i, 'Kickstarter Search']
+];
+function normRef(ref){
+  const r=(ref||'').trim();
+  if(/[一-鿿]/.test(r)){ for(const [re,can] of ZH_RULES){ if(re.test(r)) return can; } return r; }
+  for(const [re,can] of EN_RULES){ if(re.test(r)) return can; }
+  return r;
+}
 // 统一的告警判定：支持 金额 / 单量 / 任一 / 两者 四种维度
 function anomalyFlag(it, thr, dim){
   const amF = it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
