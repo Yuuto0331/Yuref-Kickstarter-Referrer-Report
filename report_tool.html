@@ -175,6 +175,8 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-sub{font-size:10.5px;color:var(--muted)}
 .an-drop b{font-size:14px}
 .an-drop b.down{color:var(--red)}
+.an-ctl select{padding:2px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:12px;color:#334155;cursor:pointer}
+.an-ctl select:focus{outline:2px solid rgba(59,130,246,.25);outline-offset:1px}
 .an-spark{flex:none;background:#fff;border:1px solid var(--line);border-radius:6px}
 .cmp-link-title{font-size:11.5px;color:#64748b;padding:6px 6px 8px 0;display:flex;align-items:center;gap:6px;font-weight:500;letter-spacing:.01em;background:transparent}
 .cmp-link-list{margin:2px 0 6px 6px;padding:2px 0 4px 14px;border-left:1px solid var(--line)}
@@ -985,7 +987,17 @@ function buildD2LinkTable(cat, dayA, dayB){
 }
 
 // == 异常识别：基于本地各日期快照，对比每个 link 历史峰值金额 vs 最近一次快照 ==
-const MIN_ANOMALY_PEAK = 50; // 过滤蚊子腿 link 的噪声（原始货币单位）
+const MIN_ANOMALY_PEAK = 50;   // 金额维度过滤蚊子腿（原始货币单位）
+const MIN_ANOMALY_PEAK_PL = 5;  // 单量维度过滤蚊子腿（订单数）
+// 统一的告警判定：支持 金额 / 单量 / 任一 / 两者 四种维度
+function anomalyFlag(it, thr, dim){
+  const amF = it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
+  const plF = it.dropPl*100>=thr && it.peakPl>=MIN_ANOMALY_PEAK_PL;
+  if(dim==='vol') return plF;
+  if(dim==='either') return amF||plF;
+  if(dim==='both') return amF&&plF;
+  return amF;
+}
 function buildAnomalyData(){
   const rd=STATE.agg.refDict, dates=STATE.agg.dates;
   if(!rd||!dates||!dates.length) return [];
@@ -1008,8 +1020,8 @@ function buildAnomalyData(){
   list.sort((a,b)=>b.drop-a.drop);
   return list;
 }
-function anomalySpark(it, flagged){
-  const W=180,H=40,pad=5, ds=it.ds, ams=ds.map(d=>it.series[d].am);
+function anomalySpark(it, flagged, useVol){
+  const W=180,H=40,pad=5, ds=it.ds, ams=ds.map(d=>(useVol?it.series[d].pl:it.series[d].am));
   const maxA=Math.max(...ams,1), minA=Math.min(...ams,0), n=ams.length;
   const x=i=>pad+i*(W-2*pad)/(Math.max(n-1,1));
   const y=v=>H-pad-(v-minA)/((maxA-minA)||1)*(H-2*pad);
@@ -1017,31 +1029,42 @@ function anomalySpark(it, flagged){
   const pi=ams.indexOf(maxA);
   return `<svg width="${W}" height="${H}" class="an-spark"><polyline points="${pts}" fill="none" stroke="${flagged?'#ef4444':'#94a3b8'}" stroke-width="1.6"/><circle cx="${x(pi).toFixed(1)}" cy="${y(maxA).toFixed(1)}" r="2.6" fill="${flagged?'#ef4444':'#94a3b8'}"/></svg>`;
 }
-function anomalyCard(it, flagged){
+function anomalyCard(it, flagged, dim){
   const col=CAT_COLORS[it.cat]||'#94a3b8';
   const pct=(it.drop*100).toFixed(0), pctPl=(it.dropPl*100).toFixed(0);
+  const useVol = dim==='vol';
+  const amCls = flagged && (dim==='amount'||dim==='either'||dim==='both') ? 'down':'';
+  const plCls = flagged && (dim==='vol'||dim==='either'||dim==='both') ? 'down':'';
+  const badge = flagged ? (dim==='vol'?'异常·单量':(dim==='amount'?'异常·金额':(dim==='both'?'异常·双':(dim==='either'?'异常':'')))) : '';
   return `<div class="an-card ${flagged?'flag':''}">
-    <div class="an-head"><span class="dot" style="background:${col}"></span><span class="an-link" title="${escapeAttr(it.link)}">${escapeAttr(it.link)}</span>${flagged?'<span class="an-badge">异常</span>':''}</div>
+    <div class="an-head"><span class="dot" style="background:${col}"></span><span class="an-link" title="${escapeAttr(it.link)}">${escapeAttr(it.link)}</span>${flagged?'<span class="an-badge">'+badge+'</span>':''}</div>
     <div class="an-body">
       <div class="an-stats">
         <div><span class="an-lbl">峰值</span>${fmt(it.peak)}<span class="an-sub">${it.peakD.slice(5)}</span></div>
         <div><span class="an-lbl">当前</span>${fmt(it.latest)}<span class="an-sub">${it.latestD.slice(5)}</span></div>
-        <div class="an-drop"><span class="an-lbl">回撤</span><b class="${flagged?'down':''}">-${Math.abs(pct)}%</b><span class="an-sub">单量 -${Math.abs(pctPl)}%</span></div>
+        <div class="an-drop"><span class="an-lbl">回撤</span><b class="${amCls}">-${Math.abs(pct)}%</b><span class="an-sub ${plCls}">单量 -${Math.abs(pctPl)}%</span></div>
       </div>
-      ${anomalySpark(it, flagged)}
+      ${anomalySpark(it, flagged, useVol)}
     </div>
   </div>`;
 }
 function buildAnomalyHtml(){
   const list=buildAnomalyData();
   if(!list.length) return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3><div class="desc">基于本地存储的各日期快照，对比每个 link 的历史峰值金额与最近一次快照，识别大幅回撤（疑似刷单后集体退款）。</div><div class="insight note">尚未积累足够数据：需要至少 2 次不同日期的快照才能识别回撤。多粘贴几次不同时间的 referral 导出即可。</div></div>`;
-  const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly;
-  const isFlag=it=>it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
+  const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly, dim=STATE.anomalyDim;
+  const isFlag=it=>anomalyFlag(it, thr, dim);
   const flagged=list.filter(isFlag), shown=only?flagged:list;
-  const cards=shown.map(it=>anomalyCard(it, isFlag(it))).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
+  const cards=shown.map(it=>anomalyCard(it, isFlag(it), dim)).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
   return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3>
-    <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值金额</b>与<b>最近一次快照</b>。金额大幅下降 = 疑似刷单后集体退款。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div>
+    <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值</b>与<b>最近一次快照</b>。大幅下降 = 疑似刷单后集体退款。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div>
     <div class="an-controls">
+      <label class="an-ctl">告警维度
+        <select id="anomalyDim">
+          <option value="amount"${dim==='amount'?' selected':''}>金额回撤</option>
+          <option value="vol"${dim==='vol'?' selected':''}>单量回撤</option>
+          <option value="either"${dim==='either'?' selected':''}>任一（金额或单量）</option>
+          <option value="both"${dim==='both'?' selected':''}>两者（金额且单量）</option>
+        </select></label>
       <label class="an-ctl">告警阈值 <output id="anThrOut">${thr}%</output>
         <input type="range" id="anomalyThreshold" min="5" max="90" step="5" value="${thr}"></label>
       <label class="an-ctl an-toggle"><input type="checkbox" id="anomalyOnly" ${only?'checked':''}> 只看异常（<span id="anOnlyCount">${flagged.length}</span>）</label>
@@ -1053,10 +1076,10 @@ function buildAnomalyHtml(){
 function renderAnomaly(){
   const grid=document.getElementById('anGrid'); if(!grid) return;
   const list=buildAnomalyData();
-  const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly;
-  const isFlag=it=>it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
+  const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly, dim=STATE.anomalyDim;
+  const isFlag=it=>anomalyFlag(it, thr, dim);
   const flagged=list.filter(isFlag), shown=only?flagged:list;
-  grid.innerHTML=shown.map(it=>anomalyCard(it, isFlag(it))).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
+  grid.innerHTML=shown.map(it=>anomalyCard(it, isFlag(it), dim)).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
   const meta=document.getElementById('anMeta'); if(meta) meta.textContent='共 '+list.length+' 个 link · 命中 '+flagged.length;
   const oc=document.getElementById('anOnlyCount'); if(oc) oc.textContent=flagged.length;
 }
@@ -1426,6 +1449,7 @@ reportBodyEl.addEventListener('input', e=>{
 });
 reportBodyEl.addEventListener('change', e=>{
   if(e.target.id==='anomalyOnly'){ STATE.anomalyOnly=e.target.checked; renderAnomaly(); }
+  if(e.target.id==='anomalyDim'){ STATE.anomalyDim=e.target.value; renderAnomaly(); }
 });
 reportBodyEl.addEventListener('click', e=>{
   const chip=e.target.closest('.chip');
