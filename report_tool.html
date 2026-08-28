@@ -1091,38 +1091,31 @@ const MIN_ANOMALY_PEAK_PL = 5;  // 单量维度过滤蚊子腿（订单数）
 // 并裁剪长串子分类（如 Email – Automated – Published Project – Followers → Email – Automated）。
 // 含中文字符的走 ZH_RULES；纯拉丁的 KS 内置长名走 EN_RULES 裁剪前缀；自定义 link（拉丁、跨语言不变）不命中则原样。
 const ZH_RULES = [
-  [/電子郵件\s*[-–—]\s*自動|邮件\s*[-–—]\s*自動|email\s*[-–—]\s*automated/i, 'Email – Automated'],
-  [/電子郵件\s*[-–—]\s*專案更新|邮件\s*[-–—]\s*项目更新|email\s*[-–—]\s*project\s*update/i, 'Email – Project Update'],
-  [/電子郵件\s*[-–—]\s*獨立郵件|電子郵件\s*[-–—]\s*独立邮件|email\s*[-–—]\s*ad\s*hoc|email\s*[-–—]\s*standalone/i, 'Email – Standalone'],
-  [/電子郵件\s*[-–—]\s*交易|email\s*[-–—]\s*transaction/i, 'Email – Transactional'],
+  [/電子郵件\s*[-–—]\s*(?:自動|獨立郵件|專案更新|交易|独立邮件|自动|项目更新|ad\s*hoc|standalone|project\s*update|transaction(?:al)?)/i, 'Email'],
+  [/邮件\s*[-–—]\s*(?:自動|獨立郵件|專案更新|交易|独立邮件|自动|项目更新|ad\s*hoc|standalone|project\s*update|transaction(?:al)?)/i, 'Email'],
+  [/email\s*[-–—]\s*(?:automated|standalone|ad\s*hoc|project\s*update|transaction(?:al)?)/i, 'Email'],
   [/電子郵件|邮件|email/i, 'Email'],
-  [/應用程式\s*[-–—]\s*搜尋|app\s*[-–—]\s*search|應用程式\s*[-–—]\s*搜尋\s*頁面|app\s*[-–—]\s*search\s*page/i, 'App – Search'],
-  [/應用程式\s*[-–—]\s*已儲存|app\s*[-–—]\s*saved/i, 'App – Saved'],
-  [/應用程式\s*[-–—]\s*推薦|app\s*[-–—]\s*recommended/i, 'App – Recommended'],
+  [/應用程式\s*[-–—]\s*(?:搜尋(?:頁面)?|已儲存|推薦|搜寻|已储存|推荐|search(?:page)?|recommended|saved)/i, 'App'],
+  [/app\s*[-–—]\s*(?:搜尋(?:頁面)?|已儲存|推薦|搜寻|已储存|推荐|search(?:page)?|recommended|saved)/i, 'App'],
   [/應用程式|app/i, 'App'],
   // DIY Electronics (Discover) — 必须在通用 'Discovery' 规则之前命中，否则被抢归 'Discovery'
   [/電子類\s*diy\s*\(\s*發現\s*\)|電子類\s*diy\s*\(\s*发现\s*\)|電子類\s*DIY\s*\(\s*發現\s*\)|電子類\s*DIY\s*\(\s*发现\s*\)|diy\s*electronics\s*\(\s*discover\s*\)/i, 'DIY Electronics (Discover)'],
   [/電子類\s*diy|電子類\s*DIY|电子类\s*diy|diy\s*electronics/i, 'DIY Electronics (Discover)'],
   // Kickstarter Discovery - No Referral Code (必须在通用 'Discovery' 规则之前)
   [/kickstarter\s*discovery\s*[-–—]\s*no\s*referral|kickstarter\s*發現\s*[-–—]\s*無引薦代碼|kickstarter\s*發現\s*[-–—]\s*無引薦資訊|kickstarter\s*发现\s*[-–—]\s*无引荐代码|kickstarter\s*发现\s*[-–—]\s*无引荐信息/i, 'Kickstarter Discovery – No Referral Code'],
-  [/發現登陸頁面|discovery\s*landing|discover\s*landing/i, 'Discovery Landing Page'],
-  [/發現\s*[-–—]\s*篩選器|discovery\s*[-–—]\s*filter|discover\s*[-–—]\s*filter/i, 'Discovery – Filters'],
-  [/發現|discovery|discover/i, 'Discovery'],
-  [/探索\s*[-–—]\s*類別|探索\s*[-–—]\s*类别|explore\s*[-–—]\s*category|explore\s*[-–—]\s*class/i, 'Explore – Category'],
+  [/發現登陸頁面|發現登陸頁|discovery\s*landing|discover\s*landing|发现登陆页面/i, 'Discovery Landing Page'],
+  [/發現\s*[-–—]\s*篩選器|discovery\s*[-–—]\s*filter|discover\s*[-–—]\s*filter|发现\s*[-–—]\s*筛选器/i, 'Discovery – Filters'],
+  [/發現|discovery|discover|发现/i, 'Discovery'],
   [/探索|explore/i, 'Explore'],
-  [/首頁\s*[-–—]\s*為你推薦|首頁\s*[-–—]\s*為你推薦\s*頁面|首页\s*[-–—]\s*为你推荐|首頁\s*[-–—]\s*為你推薦\s*頁面|homepage\s*[-–—]\s*recommended\s*for\s*you|homepage\s*[-–—]\s*recommended|home\s*[-–—]\s*recommended|homepage\s*推薦|首页推荐/i, 'Homepage – Recommended For You'],
-  [/首頁\s*[-–—]\s*精選專案|首頁\s*[-–—]\s*精選|首页\s*[-–—]\s*精选|homepage\s*[-–—]\s*featured|home\s*[-–—]\s*featured|homepage\s*精選|首页精选/i, 'Homepage – Featured Project'],
-  [/首頁\s*[-–—]\s*新鮮出爐|首页\s*[-–—]\s*新鲜出炉|homepage\s*[-–—]\s*fresh|home\s*[-–—]\s*fresh/i, 'Homepage – Fresh'],
   [/首頁|首页|homepage|home/i, 'Homepage'],
   [/個人資料\s*[-–—]\s*使用者建立(?:的)?專案|個人資料\s*[-–—]\s*使用者建立的專案|个人资料\s*[-–—]\s*用户建立的项目|profile\s*[-–—]\s*users?\s*created\s*projects?/i, 'Profile – User created'],
   [/個人資料\s*[-–—]\s*支持的(?:專案|项目)|profile\s*[-–—]\s*backed\s*projects?/i, 'Profile – Backed'],
   [/個人資料\s*[-–—]\s*儲存(?:的專案)?\s*[-–—]\s*預發佈|個人資料\s*[-–—]\s*储存(?:的项目)?\s*[-–—]\s*预发布|profile\s*[-–—]\s*saved\s*[-–—]\s*prelaunch|profile\s*[-–—]\s*saved\s*projects?\s*[-–—]\s*pre\s*-?\s*launch/i, 'Profile – Saved – Prelaunch'],
   [/個人資料\s*[-–—]\s*儲存|個人资料\s*[-–—]\s*储存|profile\s*[-–—]\s*saved/i, 'Profile – Saved'],
   [/個人資料|個人资料|profile/i, 'Profile'],
-  // 推荐 footer 三类：英文单复数都接受（Recommended / Recommendations）
-  [/推薦\s*[-–—]\s*進行中的專案頁面頁尾|推薦\s*[-–—]\s*进行中的项目页面页尾|recommended?\s*[-–—]\s*live\s*project\s*page\s*footer/i, 'Recommendations – Live footer'],
-  [/推薦\s*[-–—]\s*已結束的專案頁尾|推薦\s*[-–—]\s*已结束的项目页尾|recommended?\s*[-–—]\s*ended\s*project\s*footer/i, 'Recommendations – Ended footer'],
-  [/推薦\s*[-–—]\s*感謝頁面|推薦\s*[-–—]\s*感谢页面|recommended?\s*[-–—]\s*thanks\s*page/i, 'Recommendations – Thanks'],
+  // 推荐 footer 三类：英文单复数都接受（Recommended / Recommendations）——统一归大类 Recommendations
+  [/推薦\s*[-–—]\s*(?:進行中的專案頁面頁尾|已結束的專案頁尾|感謝頁面|进行中的项目页面页尾|已结束的项目页尾|感谢页面|live\s*project\s*page\s*footer|ended\s*project\s*footer|thanks\s*page)/i, 'Recommendations'],
+  [/推薦\s*[-–—]\s*(?:進行中|已結束|感謝|进行中|已结束|感谢|live|ended|thanks)/i, 'Recommendations'],
   [/推薦|推荐|recommended?\b/i, 'Recommendations'],
   [/直接流量\s*[-–—]\s*無引薦|直接流量\s*[-–—]\s*无引荐|direct\s*[-–—]\s*no\s*referral/i, 'Direct – No referral info'],
   [/kickstarter\s*發現\s*[-–—]\s*無引薦代碼|kickstarter\s*发现\s*[-–—]\s*无引荐代码|kickstarter\s*discovery\s*[-–—]\s*no\s*referral\s*code|kickstarter\s*discovery\s*[-–—]\s*no\s*referral/i, 'Kickstarter Discovery – No Referral Code'],
@@ -1130,54 +1123,70 @@ const ZH_RULES = [
   [/kickstarter\s*搜尋|kickstarter\s*搜索|kickstarter\s*search|ks\s*搜尋|ks\s*搜索|ks\s*search/i, 'Kickstarter Search'],
   [/設計與技術登陸頁面|design\s*&\s*tech\s*landing|设计和技术登陆页面/i, 'Design & Tech Landing Page'],
   [/android\s*深度連結|android\s*deep\s*link|安卓\s*深度链接/i, 'Android Deep Link'],
-  // 全站导航：ZH 用「全站導航 - 類別 - 精選專案」，EN 用「Global Nav - Category - Featured Project」——按子分类归到同一 canonical（保留子分类粒度）
-  [/全站導航\s*[-–—]\s*類別\s*[-–—]\s*精選專案|全站导览\s*[-–—]\s*类别\s*[-–—]\s*精选项目|global\s*nav\s*[-–—]\s*category\s*[-–—]\s*featured\s*project/i, 'Site nav – Featured Project'],
-  [/全站導航\s*[-–—]\s*類別|全站导览\s*[-–—]\s*类别|global\s*nav\s*[-–—]\s*category|global\s*nav\s*[-–—]\s*class|site\s*nav\s*[-–—]\s*category/i, 'Site nav – Category'],
+  // 全站导航：ZH 用「全站導航 - 類別 - 精選專案」，EN 用「Global Nav - Category - Featured Project」——合并为同一 canonical
+  [/全站導航\s*[-–—]\s*(?:類別\s*[-–—]\s*精選(?:專案)?|類別)|全站导览\s*[-–—]\s*(?:类别\s*[-–—]\s*精选(?:项目)?|类别)|global\s*nav\s*[-–—]\s*category\s*[-–—]\s*featured(?:\s*project)?|site\s*nav\s*[-–—]\s*category\s*[-–—]\s*featured(?:\s*project)?|global\s*nav\s*[-–—]\s*(?:category|class)|site\s*nav\s*[-–—]\s*(?:category|class)/i, 'Site nav'],
   [/全站導航|全站导览|global\s*nav|全站导航|site\s*nav/i, 'Site nav'],
   [/推送|push|推送\s*通知/i, 'Push'],
   [/活動流|activity\s*feed|动态信息流|動態消息流/i, 'Activity Feed'],
   [/x（原\s*twitter）|twitter|x\s*\(formerly|x\s*\(原/i, 'X (formerly Twitter)']
 ];
 const EN_RULES = [
-  [/^homepage\s*[-–—]\s*recommended\s*for\s*you/i, 'Homepage – Recommended For You'],
-  [/^homepage\s*[-–—]\s*recommended/i, 'Homepage – Recommended For You'],
-  [/^homepage\s*[-–—]\s*featured\s*project/i, 'Homepage – Featured Project'],
-  [/^homepage\s*[-–—]\s*featured/i, 'Homepage – Featured Project'],
-  [/^homepage\s*[-–—]\s*fresh/i, 'Homepage – Fresh'],
+  // ===== Homepage：大类合并 =====
+  // 所有 Homepage - XXX 子项统一归 Homepage，避免跨 snap 因子项拆分被误判消失
+  // 保留：DIY Electronics (Discover) - 这个独立类目
   [/^homepage\s*\(/i, 'Homepage'],
   [/^homepage\s*[-–—]/i, 'Homepage'],
   [/^homepage\b/i, 'Homepage'],
+  [/^home\s*\(/i, 'Homepage'],
+  [/^home\s*[-–—]/i, 'Homepage'],
+  [/^home\b/i, 'Homepage'],
+
+  // ===== DIY Electronics (Discover) - 独立类目 =====
   [/^diy\s*electronics\s*\(/i, 'DIY Electronics (Discover)'],
   [/^diy\s*electronics\b/i, 'DIY Electronics (Discover)'],
+
+  // ===== Activity Feed / Push =====
   [/^activity\s*feed/i, 'Activity Feed'],
   [/^push\b/i, 'Push'],
+
+  // ===== Kickstarter 内置 referrer =====
   [/^kickstarter\s*discovery\s*[-–—]\s*no\s*referral/i, 'Kickstarter Discovery – No Referral Code'],
   [/^kickstarter\s*discovery/i, 'Kickstarter Discovery'],
   [/^kickstarter\s*search/i, 'Kickstarter Search'],
   [/^kickstarter\b/i, 'Kickstarter'],
-  [/^site\s*nav\s*[-–—]\s*category\s*[-–—]\s*featured\s*project/i, 'Site nav – Featured Project'],
-  [/^site\s*nav\s*[-–—]\s*category/i, 'Site nav – Category'],
-  [/^site\s*nav/i, 'Site nav'],
-  [/^global\s*nav\s*[-–—]\s*category\s*[-–—]\s*featured\s*project/i, 'Site nav – Featured Project'],
-  [/^global\s*nav\s*[-–—]\s*category/i, 'Site nav – Category'],
-  [/^global\s*nav/i, 'Site nav'],
+
+  // ===== 全站导航 =====
+  // ZH "全站導航" 对应 EN "Site nav"（也叫 "Global Nav"），统一归 Site nav（保留子分类粒度仅用于显示，跨语言合并时取类名）
+  [/^(?:site|global)\s*nav\s*[-–—]\s*category\s*[-–—]\s*featured\s*project/i, 'Site nav'],
+  [/^(?:site|global)\s*nav\s*[-–—]\s*category/i, 'Site nav'],
+  [/^(?:site|global)\s*nav/i, 'Site nav'],
+
+  // ===== 其他 landing / deep link =====
   [/^design\s*&\s*tech\s*landing/i, 'Design & Tech Landing Page'],
   [/^design\s*&\s*tech/i, 'Design & Tech'],
   [/^android\s*deep\s*link/i, 'Android Deep Link'],
   [/^x\s*\(formerly/i, 'X (formerly Twitter)'],
-  [/^app\s*[-–—]\s*search/i, 'App – Search'],
-  [/^app\s*[-–—]\s*saved/i, 'App – Saved'],
-  [/^app\s*[-–—]\s*recommended/i, 'App – Recommended'],
+
+  // ===== App：合并大类（Search/Saved/Recommended 子项归 App） =====
+  [/^app\s*[-–—]\s*search/i, 'App'],
+  [/^app\s*[-–—]\s*saved/i, 'App'],
+  [/^app\s*[-–—]\s*recommended/i, 'App'],
   [/^app\s*\(/i, 'App'],
   [/^app\s*[-–—]/i, 'App'],
   [/^app\b/i, 'App'],
-  [/^discovery\s*landing/i, 'Discovery Landing Page'],
-  [/^discovery\s*[-–—]\s*filter/i, 'Discovery – Filters'],
-  [/^discover\s*landing/i, 'Discovery Landing Page'],
-  [/^discover\s*[-–—]\s*filter/i, 'Discovery – Filters'],
-  [/^discovery\b/i, 'Discovery'],
-  [/^discover\b/i, 'Discovery'],
+
+  // ===== Discovery：大类合并，保留 Landing Page / Filters 两种独立 subkey =====
+  [/^discover(?:y)?\s*landing/i, 'Discovery Landing Page'],
+  [/^discover(?:y)?\s*[-–—]\s*filter/i, 'Discovery – Filters'],
+  // 所有 Discovery - X 子项（含 Category/Newest 等）统一归 Discovery
+  [/^discover(?:y)?\b/i, 'Discovery'],
+
+  // ===== Explore：大类合并 =====
+  [/^explore\s*[-–—]\s*category/i, 'Explore'],
+  [/^explore\s*[-–—]\s*class/i, 'Explore'],
   [/^explore\b/i, 'Explore'],
+
+  // ===== Profile：保留子分类细分（用户已绑定 4 个 Profile 子分类） =====
   [/^profile\s*[-–—]\s*users?\s*created\s*projects?/i, 'Profile – User created'],
   [/^profile\s*[-–—]\s*user\s*created/i, 'Profile – User created'],
   [/^profile\s*[-–—]\s*backed\s*projects?/i, 'Profile – Backed'],
@@ -1186,22 +1195,19 @@ const EN_RULES = [
   [/^profile\s*[-–—]\s*saved\s*[-–—]\s*prelaunch/i, 'Profile – Saved – Prelaunch'],
   [/^profile\s*[-–—]\s*saved/i, 'Profile – Saved'],
   [/^profile\b/i, 'Profile'],
-  // 推荐 footer 三类：英文有多种词形（Recommended / Recommendations / Recommendation，单复数 / 动名词），统一归一
-  [/^(?:recommendations?|recommended)\s*[-–—]\s*live\s*project\s*page\s*footer/i, 'Recommendations – Live footer'],
-  [/^(?:recommendations?|recommended)\s*[-–—]\s*ended\s*project\s*footer/i, 'Recommendations – Ended footer'],
-  [/^(?:recommendations?|recommended)\s*[-–—]\s*thanks\s*page/i, 'Recommendations – Thanks'],
-  [/^recommendations?\s*[-–—]\s*live/i, 'Recommendations – Live footer'],
-  [/^recommendations?\s*[-–—]\s*ended/i, 'Recommendations – Ended footer'],
-  [/^recommendations?\s*[-–—]\s*thanks/i, 'Recommendations – Thanks'],
+
+  // ===== Recommendations：大类合并（漏斗型子项 Thanks / Live/Ended 归大类） =====
+  // 英文有 Recommended / Recommendations / Recommendation 三种词形，统一吞掉
+  [/^(?:recommendations?|recommended)\s*[-–—]\s*(?:thanks|live|ended)/i, 'Recommendations'],
+  [/^recommendations?\s*[-–—]\s*(?:thanks|live|ended)/i, 'Recommendations'],
   [/^recommendations?\b/i, 'Recommendations'],
+
+  // ===== Direct =====
   [/^direct\s*[-–—]\s*no\s*referral/i, 'Direct – No referral info'],
   [/^direct\b/i, 'Direct – No referral info'],
-  [/^email\s*[-–—]\s*automated/i, 'Email – Automated'],
-  [/^email\s*[-–—]\s*project\s*update/i, 'Email – Project Update'],
-  [/^email\s*[-–—]\s*standalone/i, 'Email – Standalone'],
-  [/^email\s*[-–—]\s*ad\s*hoc/i, 'Email – Standalone'],
-  [/^email\s*[-–—]\s*transaction/i, 'Email – Transactional'],
-  [/^email\s*[-–—]\s*transactional/i, 'Email – Transactional'],
+
+  // ===== Email：大类合并（Standalone/Automated/Project Update/Transactional 一律归 Email） =====
+  [/^email\s*[-–—]\s*(?:automated|project\s*update|standalone|ad\s*hoc|transaction(?:al)?)/i, 'Email'],
   [/^email\b/i, 'Email']
 ];
 function normRef(ref){
