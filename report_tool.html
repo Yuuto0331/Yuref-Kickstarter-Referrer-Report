@@ -1232,25 +1232,15 @@ function pickBestDisplay(variants){
   return best;
 }
 // 统一的告警判定：支持 金额 / 单量 / 任一 / 两者 四种维度
-// 额外支持 ghost-suppression：link 自身 drop ≥ 阈值，但所属 category 整体跨 snap 稳定（catDrop < 阈值），
-// 则视为"归一漂移导致的假阳性"（典型场景：老 snap 把该 cat 所有子项合并到大类，新 snap 拆细，跨 snap 比大类 link 看似 -100%），
-// 此时不告警，由 cat 级别稳定性决定。
-// 【重要】ghost-suppression 只对"KS 站内自然"启用：该 cat 下 referrer 是 KS 内部命名（如 Profile/Discovery/Homepage），
-// 跨 snap 会因归一规则细化被重新分桶（老 snap 大类 key vs 新 snap 细分子项 key），cat-level 看是稳定的；
-// 其他 cat（众筹 PR / 非众筹 PR / KOL / EDM / 独立站 / 付费广告 / 社媒运营 / 其他）都是用户自定义 UTM/PR 追踪链接，
-// 每条 link 独立，不会跨 snap 重组，cat 整体稳定不能掩盖单条 -100% 退光。
-const GHOST_SUPPRESS_CATS = new Set(['KS 站内自然']);
+// 异常识别只针对"用户可干预"的渠道：付费广告 / 独立站 / Kickbooster / 众筹 PR / 非众筹 PR / KOL / 社媒运营 / EDM / 其他。
+// "KS 站内自然" 整体排除：KS 内部 referrer 命名由 KS 自动维护（如 Profile/Discovery/Homepage 会随版本调整被重新分桶），
+// 且数据会被退款自然扰动（net 金额会因退款减少），在跨 snap 比对时 cat-level 看似下降、link-level 看似消失的情况
+// 多为归一漂移或退款噪声，对运营决策价值低；因此整 cat 沉默，不参与异常识别。
+const ANOMALY_EXCLUDED_CATS = new Set(['KS 站内自然']);
 function anomalyFlag(it, thr, dim){
+  if(it.cat && ANOMALY_EXCLUDED_CATS.has(it.cat)) return false;
   const amF = it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
   const plF = it.dropPl*100>=thr && it.peakPl>=MIN_ANOMALY_PEAK_PL;
-  // Ghost-suppression（仅 KS 站内自然 启用）：catDrop = -1 表示没数据（孤立 cat，跳过此判定）；catDrop < thr 视为 cat 稳定
-  //   且 catDrop < thr 同时 amF/plF 触发 → 抑制（除非是真 vanished，vanished 仍照常告警）
-  const suppressGhost = it.cat && GHOST_SUPPRESS_CATS.has(it.cat);
-  if(suppressGhost && !it.vanished){
-    const catOk = it.catDrop !== undefined && it.catDrop >= 0 && it.catDrop*100 < thr;
-    const catPlOk = it.catDropPl !== undefined && it.catDropPl >= 0 && it.catDropPl*100 < thr;
-    if((dim==='amount' && catOk) || (dim==='vol' && catPlOk) || (dim==='either' && (catOk||catPlOk)) || (dim==='both' && catOk && catPlOk)) return false;
-  }
   if(dim==='vol') return plF;
   if(dim==='either') return amF||plF;
   if(dim==='both') return amF&&plF;
@@ -1310,7 +1300,7 @@ function buildAnomalyData(){
     const drop=peak>0?(peak-latest)/peak:0;
     const dropPl=peakPl>0?(peakPl-latestPl)/peakPl:0;
     // 把 cat-level drop 也带进 item，给 anomalyFlag 做 ghost-suppression 判定
-    list.push({link:pickBestDisplay(map[r]._all), cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished, catDrop:cs.drop||-1, catDropPl:cs.dropPl||-1});
+    list.push({link:pickBestDisplay(map[r]._all), cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished, catDrop:cs.drop||-1, catDropPl:cs.dropPl||-1, silenced:ANOMALY_EXCLUDED_CATS.has(c)});
   }
   // 风险优先：已消失的 link 永远排最前，其余按回撤降序
   list.sort((a,b)=>{
@@ -1359,7 +1349,7 @@ function buildAnomalyHtml(){
     return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3><div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div><div class="insight note"><b>${need?'快照不足':'当前数据无任何 link'}</b>。当前已记录快照：<b>${snaps.length}</b> 个（${dateList}）。${need?'再粘贴一份不同日期的 referral 导出即可触发识别（CSV 中最大 pledge 日期需不同）。':'可放宽阈值试试。'}</div></div>`;
   }
   const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly, dim=STATE.anomalyDim;
-  const flagged=list.filter(it=>it.vanished||anomalyFlag(it,thr,dim));
+  const flagged=list.filter(it=>!it.silenced && (it.vanished||anomalyFlag(it,thr,dim)));
   // 当「已消失」link 比例异常高时（通常是最新 CSV 不全 / 分类口径变了），顶部加 banner 提示
   let banner='';
   const snaps=STATE.snapshots||[];
@@ -1392,7 +1382,7 @@ function buildAnomalyHtml(){
 // 异常卡片内部布局：风险速览（置顶）+ 按分类折叠分组
 function anomalyCardsHtml(list, dim, only){
   const thr=STATE.anomalyThreshold;
-  const isR=it=>it.vanished||anomalyFlag(it,thr,dim);
+  const isR=it=>!it.silenced && (it.vanished||anomalyFlag(it,thr,dim));
   const cmpRisk=(a,b)=>{ if(a.vanished!==b.vanished) return a.vanished?-1:1; if(Math.abs(a.drop-b.drop)>1e-9) return b.drop-a.drop; return b.peak-a.peak; };
   if(only){
     const shown=list.filter(isR).sort(cmpRisk);
@@ -1423,7 +1413,7 @@ function renderAnomaly(){
   const list=buildAnomalyData();
   const only=STATE.anomalyOnly, dim=STATE.anomalyDim;
   const thr=STATE.anomalyThreshold;
-  const flagged=list.filter(it=>it.vanished||anomalyFlag(it,thr,dim));
+  const flagged=list.filter(it=>!it.silenced && (it.vanished||anomalyFlag(it,thr,dim)));
   grid.innerHTML=anomalyCardsHtml(list, dim, only);
   const meta=document.getElementById('anMeta'); if(meta) meta.textContent=(STATE.snapshots||[]).length+' 个快照（'+(STATE.snapshots||[]).map(s=>s.date.slice(5)).join('、')+'） · 共 '+list.length+' 个 link · 命中 '+flagged.length;
   const oc=document.getElementById('anOnlyCount'); if(oc) oc.textContent=flagged.length;
