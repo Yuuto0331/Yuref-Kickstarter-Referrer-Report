@@ -1232,9 +1232,17 @@ function pickBestDisplay(variants){
   return best;
 }
 // 统一的告警判定：支持 金额 / 单量 / 任一 / 两者 四种维度
+// 额外支持 ghost-suppression：link 自身 drop ≥ 阈值，但所属 category 整体跨 snap 稳定（catDrop < 阈值），
+// 则视为"归一漂移导致的假阳性"（典型场景：老 snap 把该 cat 所有子项合并到大类，新 snap 拆细，跨 snap 比大类 link 看似 -100%），
+// 此时不告警，由 cat 级别稳定性决定。
 function anomalyFlag(it, thr, dim){
   const amF = it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
   const plF = it.dropPl*100>=thr && it.peakPl>=MIN_ANOMALY_PEAK_PL;
+  // Ghost-suppression：catDrop = -1 表示没数据（孤立 cat，跳过此判定）；catDrop < thr 视为 cat 稳定
+  //   且 catDrop < thr 同时 amF/plF 触发 → 抑制（除非是真 vanished，vanished 仍照常告警）
+  const catOk = it.catDrop !== undefined && it.catDrop >= 0 && it.catDrop*100 < thr;
+  const catPlOk = it.catDropPl !== undefined && it.catDropPl >= 0 && it.catDropPl*100 < thr;
+  if(!it.vanished && ((dim==='amount' && catOk) || (dim==='vol' && catPlOk) || (dim==='either' && (catOk||catPlOk)) || (dim==='both' && catOk && catPlOk))) return false;
   if(dim==='vol') return plF;
   if(dim==='either') return amF||plF;
   if(dim==='both') return amF&&plF;
@@ -1247,9 +1255,16 @@ function buildAnomalyData(){
   const snapDates=snaps.map(s=>s.date).sort();
   const latestSnapD=snapDates[snapDates.length-1]; // 全局最新快照日期
   const map={}; // link -> {cat, series:{date:{am,pl}}}
+  // cat-level aggregate：按 category 把同 cat 下所有 link 金额按日累加，用于 ghost-suppression 判定
+  // （场景：老 snap 用了合并大类的归一规则，新 snap 拆细到子项；link-level 大类 key 在新 snap 没数据看似 vanished / drop 100%，
+  //   但 cat 整体跨 snap 累加其实稳定，应判 ghost 不告警）
+  const catMap={}; // cat -> {series:{date:{am,pl}}}
   for(const s of snaps){
     for(const c in s.totals){
+      if(!catMap[c]) catMap[c]={series:{}};
+      const cEntry=catMap[c].series[s.date]||{am:0,pl:0};
       for(const r in s.totals[c]){
+        cEntry.am+=s.totals[c][r][1]; cEntry.pl+=s.totals[c][r][0];
         const rk=normRef(r).toLowerCase(); // 归一 + 大小写不敏感，避免 `Activity feed`(ZH) vs `Activity Feed`(CSV) 不合并
         if(!map[rk]) map[rk]={cat:c, series:{}, _all:[]};
         map[rk]._all.push(r);
@@ -1257,7 +1272,19 @@ function buildAnomalyData(){
         cur.am+=s.totals[c][r][1]; cur.pl+=s.totals[c][r][0];
         map[rk].series[s.date]=cur;
       }
+      catMap[c].series[s.date]=cEntry;
     }
+  }
+  // 预计算 cat-level peak / latest / drop，给每个 link-level item 用于 ghost-suppression 判定
+  const catStats={}; // cat -> {peak, peakD, peakPl, latest, latestPl, drop, dropPl, hasAtLatest}
+  for(const c in catMap){
+    const series=catMap[c].series, ds=Object.keys(series).sort();
+    let peak=0, peakD=null, peakPl=0;
+    for(const d of ds){ if(series[d].am>peak){ peak=series[d].am; peakD=d; peakPl=series[d].pl; } }
+    const latestEntry=series[latestSnapD]||{am:0,pl:0};
+    const drop=peak>0?(peak-latestEntry.am)/peak:0;
+    const dropPl=peakPl>0?(peakPl-latestEntry.pl)/peakPl:0;
+    catStats[c]={peak, peakD, peakPl, latest:latestEntry.am, latestPl:latestEntry.pl, drop, dropPl, hasAtLatest:!!series[latestSnapD]};
   }
   const list=[];
   for(const r in map){
@@ -1267,10 +1294,15 @@ function buildAnomalyData(){
     if(peak<=0 || peak<MIN_ANOMALY_PEAK) continue; // vanished 也走阈值过滤（蚊子腿不报警）
     const latestEntry=series[latestSnapD]||{am:0,pl:0};
     const latest=latestEntry.am, latestPl=latestEntry.pl;
-    const vanished=!series[latestSnapD]; // 最新快照里完全不存在 = 带量退光
+    const linkVanished=!series[latestSnapD];
+    // 真 vanished = link 消失 且 cat 整体也消失（cat-level 在最新 snap 没数据）
+    // 防止"老 snap 合并大类 / 新 snap 拆细"导致大类 link 看似 vanished（实际数据还在 cat 内其他子项里）
+    const cs=catStats[map[r].cat]||{};
+    const vanished=linkVanished && !cs.hasAtLatest;
     const drop=peak>0?(peak-latest)/peak:0;
     const dropPl=peakPl>0?(peakPl-latestPl)/peakPl:0;
-    list.push({link:pickBestDisplay(map[r]._all), cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished});
+    // 把 cat-level drop 也带进 item，给 anomalyFlag 做 ghost-suppression 判定
+    list.push({link:pickBestDisplay(map[r]._all), cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished, catDrop:cs.drop||-1, catDropPl:cs.dropPl||-1});
   }
   // 风险优先：已消失的 link 永远排最前，其余按回撤降序
   list.sort((a,b)=>{
