@@ -161,6 +161,8 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-ctl input[type=range]{accent-color:var(--blue);width:150px}
 .an-toggle{cursor:pointer;user-select:none}
 .an-meta{font-size:12px;color:var(--muted);margin-left:auto}
+.an-rebuild-btn{margin-left:10px;padding:4px 12px;font-size:12px;border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:4px;cursor:pointer;transition:all .15s}
+.an-rebuild-btn:hover{background:#f1f5f9;border-color:var(--accent);color:var(--accent)}
 .an-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .an-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;transition:box-shadow .15s,border-color .15s}
 .an-card.flag{border-color:#fca5a5;background:#fff7f7;box-shadow:0 1px 4px rgba(239,68,68,.12)}
@@ -745,7 +747,7 @@ function migrateSnapshotsToCanonical(){
     for(const c in s.totals){
       newT[c]=newT[c]||{};
       for(const r in s.totals[c]){
-        const k=normRef(r);
+        const k=normRef(r).toLowerCase();
         const old=s.totals[c][r];
         const cur=newT[c][k];
         if(cur){ cur[0]+=old[0]; cur[1]+=old[1]; }
@@ -755,6 +757,33 @@ function migrateSnapshotsToCanonical(){
     s.totals=newT;
   }
   saveData();
+}
+// 一键重建快照：基于当前 STATE.rows + 现存快照全部用新字典重新归一聚合，
+// 用于修复"老快照字典版本不一致造成的 persisted 千奇百怪 key"，
+// 用户点一下就能把所有快照 key 拉齐到 canonical（lowercase）。
+function rebuildAllSnapshots(){
+  const snaps=STATE.snapshots||[];
+  if(!snaps.length){ alert('当前没有任何快照，无需重建。\n请先粘贴一份 CSV 生成快照。'); return; }
+  if(!confirm('重建快照：会用最新归一字典把所有现存快照的 key 重新合并（不会丢任何累计数据）。\n通常用于修复语言切换造成的误判消失。\n\n点「确定」开始重建。')) return;
+  migrateSnapshotsToCanonical();
+  // 同时把当前 STATE.rows 也重新生成最新日期那份快照（覆盖同日期的旧快照）
+  if(STATE.rows && STATE.rows.length){
+    const recentSnaps=snaps.filter(s=>s.date===STATE.rows.map(r=>r.date).filter(Boolean).sort().pop());
+    const newest=STATE.rows.map(r=>r.date).filter(Boolean).sort().pop();
+    if(newest){
+      // 重新计算最大日期的快照（覆盖式）
+      const i=STATE.snapshots.findIndex(x=>x.date===newest);
+      const fresh=computeSnapshot(STATE.rows);
+      if(fresh){
+        if(i>=0) STATE.snapshots[i]=fresh;
+        else STATE.snapshots.push(fresh);
+        STATE.snapshots.sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:0));
+      }
+    }
+  }
+  saveData();
+  applyAndRender();
+  showToast('已重建 '+STATE.snapshots.length+' 个快照，全部按新字典归一。','success',3000);
 }
 
 function renderMapping(){
@@ -1120,10 +1149,13 @@ const EN_RULES = [
 ];
 function normRef(ref){
   const r=(ref||'').trim();
-  if(/[一-鿿]/.test(r)){ for(const [re,can] of ZH_RULES){ if(re.test(r)) return can; } return r; }
-  for(const [re,can] of EN_RULES){ if(re.test(r)) return can; }
-  return r;
+  if(/[一-鿿]/.test(r)){ for(const [re,can] of ZH_RULES){ if(re.test(r)) return canonical(can); } return canonical(r); }
+  for(const [re,can] of EN_RULES){ if(re.test(r)) return canonical(can); }
+  return canonical(r);
 }
+// 把 canonical 名按本地词法统一（去除首尾空格、压缩中间空白），
+// 与 buildAnomalyData 的 toLowerCase 对齐，避免 `Activity feed`(ZH) vs `Activity Feed`(CSV) 这类大小写不一致造成跨快照不合并。
+function canonical(s){ return (s||'').replace(/\s+/g,' ').trim(); }
 // 统一的告警判定：支持 金额 / 单量 / 任一 / 两者 四种维度
 function anomalyFlag(it, thr, dim){
   const amF = it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
@@ -1143,9 +1175,12 @@ function buildAnomalyData(){
   for(const s of snaps){
     for(const c in s.totals){
       for(const r in s.totals[c]){
-        const rk=normRef(r); // 中英/破折号归一，避免语言切换造成的误判消失
-        if(!map[rk]) map[rk]={cat:c, series:{}};
-        map[rk].series[s.date]={am:s.totals[c][r][1], pl:s.totals[c][r][0]};
+        const rk=normRef(r).toLowerCase(); // 归一 + 大小写不敏感，避免 `Activity feed`(ZH) vs `Activity Feed`(CSV) 不合并
+        if(!map[rk]) map[rk]={cat:c, series:{}, display:r};
+        else if(map[rk].display.length>r.length) map[rk].display=r; // 取最短/最易读的展示名
+        const cur=map[rk].series[s.date]||{am:0,pl:0};
+        cur.am+=s.totals[c][r][1]; cur.pl+=s.totals[c][r][0];
+        map[rk].series[s.date]=cur;
       }
     }
   }
@@ -1160,7 +1195,7 @@ function buildAnomalyData(){
     const vanished=!series[latestSnapD]; // 最新快照里完全不存在 = 带量退光
     const drop=peak>0?(peak-latest)/peak:0;
     const dropPl=peakPl>0?(peakPl-latestPl)/peakPl:0;
-    list.push({link:r, cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished});
+    list.push({link:map[r].display, cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished});
   }
   // 风险优先：已消失的 link 永远排最前，其余按回撤降序
   list.sort((a,b)=>{
@@ -1235,6 +1270,7 @@ function buildAnomalyHtml(){
         <input type="range" id="anomalyThreshold" min="5" max="90" step="5" value="${thr}"></label>
       <label class="an-ctl an-toggle"><input type="checkbox" id="anomalyOnly" ${only?'checked':''}> 只看异常（<span id="anOnlyCount">${flagged.length}</span>）</label>
       <span class="an-meta" id="anMeta">${STATE.snapshots.length} 个快照（${STATE.snapshots.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 ${flagged.length}</span>
+      <button class="an-rebuild-btn" onclick="rebuildAllSnapshots()" title="按当前归一字典重新合并所有快照 key（修复误判消失）">⟲ 重建快照</button>
     </div>
     <div class="an-body-grid" id="anGrid">${anomalyCardsHtml(list, dim, only)}</div>
   </div>`;
