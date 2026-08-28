@@ -161,8 +161,6 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-ctl input[type=range]{accent-color:var(--blue);width:150px}
 .an-toggle{cursor:pointer;user-select:none}
 .an-meta{font-size:12px;color:var(--muted);margin-left:auto}
-.an-rebuild-btn{margin-left:10px;padding:4px 12px;font-size:12px;border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:4px;cursor:pointer;transition:all .15s}
-.an-rebuild-btn:hover{background:#f1f5f9;border-color:var(--accent);color:var(--accent)}
 .an-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .an-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;transition:box-shadow .15s,border-color .15s}
 .an-card.flag{border-color:#fca5a5;background:#fff7f7;box-shadow:0 1px 4px rgba(239,68,68,.12)}
@@ -1098,54 +1096,90 @@ const ZH_RULES = [
   [/電子郵件\s*[-–—]\s*獨立郵件|email\s*[-–—]\s*standalone/i, 'Email – Standalone'],
   [/電子郵件\s*[-–—]\s*交易|email\s*[-–—]\s*transaction/i, 'Email – Transactional'],
   [/電子郵件|邮件|email/i, 'Email'],
-  [/應用程式\s*[-–—]\s*搜尋|app\s*[-–—]\s*search/i, 'App – Search'],
+  [/應用程式\s*[-–—]\s*搜尋|app\s*[-–—]\s*search|應用程式\s*[-–—]\s*搜尋\s*頁面|app\s*[-–—]\s*search\s*page/i, 'App – Search'],
   [/應用程式\s*[-–—]\s*已儲存|app\s*[-–—]\s*saved/i, 'App – Saved'],
   [/應用程式\s*[-–—]\s*推薦|app\s*[-–—]\s*recommended/i, 'App – Recommended'],
   [/應用程式|app/i, 'App'],
-  [/發現登陸頁面|discovery\s*landing/i, 'Discovery Landing Page'],
-  [/發現\s*[-–—]\s*篩選器|discovery\s*[-–—]\s*filter/i, 'Discovery – Filters'],
-  [/發現|discovery/i, 'Discovery'],
+  [/發現登陸頁面|discovery\s*landing|discover\s*landing/i, 'Discovery Landing Page'],
+  [/發現\s*[-–—]\s*篩選器|discovery\s*[-–—]\s*filter|discover\s*[-–—]\s*filter/i, 'Discovery – Filters'],
+  [/發現|discovery|discover/i, 'Discovery'],
   [/探索|explore/i, 'Explore'],
-  [/首頁\s*[-–—]\s*為你推薦|首页\s*[-–—]\s*为你推荐|home\s*[-–—]\s*recommended/i, 'Home – Recommended'],
-  [/首頁\s*[-–—]\s*精選專案|首页\s*[-–—]\s*精选|home\s*[-–—]\s*featured/i, 'Home – Featured'],
-  [/首頁\s*[-–—]\s*新鮮出爐|home\s*[-–—]\s*fresh/i, 'Home – Fresh'],
-  [/首頁|首页|home/i, 'Home'],
+  [/首頁\s*[-–—]\s*為你推薦|首頁\s*[-–—]\s*為你推薦\s*頁面|首页\s*[-–—]\s*为你推荐|首頁\s*[-–—]\s*為你推薦\s*頁面|homepage\s*[-–—]\s*recommended\s*for\s*you|homepage\s*[-–—]\s*recommended|home\s*[-–—]\s*recommended|homepage\s*推薦|首页推荐/i, 'Homepage – Recommended For You'],
+  [/首頁\s*[-–—]\s*精選專案|首頁\s*[-–—]\s*精選|首页\s*[-–—]\s*精选|homepage\s*[-–—]\s*featured|home\s*[-–—]\s*featured|homepage\s*精選|首页精选/i, 'Homepage – Featured Project'],
+  [/首頁\s*[-–—]\s*新鮮出爐|首页\s*[-–—]\s*新鲜出炉|homepage\s*[-–—]\s*fresh|home\s*[-–—]\s*fresh/i, 'Homepage – Fresh'],
+  [/首頁|首页|homepage|home/i, 'Homepage'],
   [/個人資料\s*[-–—]\s*使用者建立|profile\s*[-–—]\s*user\s*created/i, 'Profile – User created'],
   [/個人資料\s*[-–—]\s*支持的|profile\s*[-–—]\s*backed/i, 'Profile – Backed'],
   [/個人資料\s*[-–—]\s*儲存\s*[-–—]\s*預發佈|profile\s*[-–—]\s*saved\s*[-–—]\s*prelaunch/i, 'Profile – Saved – Prelaunch'],
   [/個人資料\s*[-–—]\s*儲存|profile\s*[-–—]\s*saved/i, 'Profile – Saved'],
-  [/個人資料|profile/i, 'Profile'],
+  [/個人資料|個人资料|profile/i, 'Profile'],
   [/推薦\s*[-–—]\s*進行中|recommendations\s*[-–—]\s*live/i, 'Recommendations – Live footer'],
   [/推薦\s*[-–—]\s*已結束|recommendations\s*[-–—]\s*ended/i, 'Recommendations – Ended footer'],
   [/推薦\s*[-–—]\s*感謝|recommendations\s*[-–—]\s*thanks/i, 'Recommendations – Thanks'],
   [/推薦|推荐|recommendations/i, 'Recommendations'],
   [/直接流量\s*[-–—]\s*無引薦|直接流量\s*[-–—]\s*无引荐|direct\s*[-–—]\s*no\s*referral/i, 'Direct – No referral info'],
-  [/kickstarter\s*發現|kickstarter\s*发现|kickstarter\s*discovery/i, 'Kickstarter Discovery'],
-  [/kickstarter\s*搜尋|kickstarter\s*搜索|kickstarter\s*search/i, 'Kickstarter Search'],
-  [/設計與技術登陸頁面|design\s*&\s*tech\s*landing/i, 'Design & Tech Landing Page'],
-  [/電子類\s*diy\s*\(發現\)|electronics\s*diy\s*\(discovery\)/i, 'Electronics DIY (Discovery)'],
-  [/android\s*深度連結|android\s*deep\s*link/i, 'Android Deep Link'],
-  [/全站導航|site\s*nav/i, 'Site nav'],
-  [/推送|push/i, 'Push'],
-  [/活動流|activity\s*feed/i, 'Activity feed'],
-  [/x（原\s*twitter）|twitter|x\s*\(formerly/i, 'X (formerly Twitter)']
+  [/kickstarter\s*發現|kickstarter\s*发现|kickstarter\s*discovery|ks\s*探索|ks\s*发现|ks\s*discovery/i, 'Kickstarter Discovery'],
+  [/kickstarter\s*搜尋|kickstarter\s*搜索|kickstarter\s*search|ks\s*搜尋|ks\s*搜索|ks\s*search/i, 'Kickstarter Search'],
+  [/設計與技術登陸頁面|design\s*&\s*tech\s*landing|设计和技术登陆页面/i, 'Design & Tech Landing Page'],
+  [/diy\s*electronics\s*\(discover\)|電子類\s*diy\s*\(發現\)|电子类\s*diy\s*\(发现\)/i, 'DIY Electronics (Discover)'],
+  [/diy\s*electronics|電子類\s*diy|电子类\s*diy/i, 'DIY Electronics (Discover)'],
+  [/android\s*深度連結|android\s*deep\s*link|安卓\s*深度链接/i, 'Android Deep Link'],
+  [/全站導航|site\s*nav|全站导航/i, 'Site nav'],
+  [/推送|push|推送\s*通知/i, 'Push'],
+  [/活動流|activity\s*feed|动态信息流|動態消息流/i, 'Activity Feed'],
+  [/x（原\s*twitter）|twitter|x\s*\(formerly|x\s*\(原/i, 'X (formerly Twitter)']
 ];
 const EN_RULES = [
+  [/^homepage\s*[-–—]\s*recommended\s*for\s*you/i, 'Homepage – Recommended For You'],
+  [/^homepage\s*[-–—]\s*recommended/i, 'Homepage – Recommended For You'],
+  [/^homepage\s*[-–—]\s*featured\s*project/i, 'Homepage – Featured Project'],
+  [/^homepage\s*[-–—]\s*featured/i, 'Homepage – Featured Project'],
+  [/^homepage\s*[-–—]\s*fresh/i, 'Homepage – Fresh'],
+  [/^homepage\s*\(/i, 'Homepage'],
+  [/^homepage\s*[-–—]/i, 'Homepage'],
+  [/^homepage\b/i, 'Homepage'],
+  [/^diy\s*electronics\s*\(/i, 'DIY Electronics (Discover)'],
+  [/^diy\s*electronics\b/i, 'DIY Electronics (Discover)'],
+  [/^activity\s*feed/i, 'Activity Feed'],
+  [/^push\b/i, 'Push'],
+  [/^kickstarter\s*discovery/i, 'Kickstarter Discovery'],
+  [/^kickstarter\s*search/i, 'Kickstarter Search'],
+  [/^kickstarter\b/i, 'Kickstarter'],
+  [/^site\s*nav/i, 'Site nav'],
+  [/^design\s*&\s*tech\s*landing/i, 'Design & Tech Landing Page'],
+  [/^design\s*&\s*tech/i, 'Design & Tech'],
+  [/^android\s*deep\s*link/i, 'Android Deep Link'],
+  [/^x\s*\(formerly/i, 'X (formerly Twitter)'],
+  [/^app\s*[-–—]\s*search/i, 'App – Search'],
+  [/^app\s*[-–—]\s*saved/i, 'App – Saved'],
+  [/^app\s*[-–—]\s*recommended/i, 'App – Recommended'],
+  [/^app\s*\(/i, 'App'],
+  [/^app\s*[-–—]/i, 'App'],
+  [/^app\b/i, 'App'],
+  [/^discovery\s*landing/i, 'Discovery Landing Page'],
+  [/^discovery\s*[-–—]\s*filter/i, 'Discovery – Filters'],
+  [/^discover\s*landing/i, 'Discovery Landing Page'],
+  [/^discover\s*[-–—]\s*filter/i, 'Discovery – Filters'],
+  [/^discovery\b/i, 'Discovery'],
+  [/^discover\b/i, 'Discovery'],
+  [/^explore\b/i, 'Explore'],
+  [/^profile\s*[-–—]\s*user\s*created/i, 'Profile – User created'],
+  [/^profile\s*[-–—]\s*backed/i, 'Profile – Backed'],
+  [/^profile\s*[-–—]\s*saved\s*[-–—]\s*prelaunch/i, 'Profile – Saved – Prelaunch'],
+  [/^profile\s*[-–—]\s*saved/i, 'Profile – Saved'],
+  [/^profile\b/i, 'Profile'],
+  [/^recommendations\s*[-–—]\s*live/i, 'Recommendations – Live footer'],
+  [/^recommendations\s*[-–—]\s*ended/i, 'Recommendations – Ended footer'],
+  [/^recommendations\s*[-–—]\s*thanks/i, 'Recommendations – Thanks'],
+  [/^recommendations\b/i, 'Recommendations'],
+  [/^direct\s*[-–—]\s*no\s*referral/i, 'Direct – No referral info'],
+  [/^direct\b/i, 'Direct – No referral info'],
   [/^email\s*[-–—]\s*automated/i, 'Email – Automated'],
   [/^email\s*[-–—]\s*project\s*update/i, 'Email – Project Update'],
   [/^email\s*[-–—]\s*standalone/i, 'Email – Standalone'],
   [/^email\s*[-–—]\s*transaction/i, 'Email – Transactional'],
-  [/^email\b/i, 'Email'],
-  [/^app\s*[-–—]\s*search/i, 'App – Search'],
-  [/^app\s*[-–—]\s*saved/i, 'App – Saved'],
-  [/^app\s*[-–—]\s*recommended/i, 'App – Recommended'],
-  [/^discovery\b/i, 'Discovery'],
-  [/^home\b/i, 'Home'],
-  [/^profile\b/i, 'Profile'],
-  [/^recommendations\b/i, 'Recommendations'],
-  [/^direct\b/i, 'Direct – No referral info'],
-  [/^kickstarter\s*discovery/i, 'Kickstarter Discovery'],
-  [/^kickstarter\s*search/i, 'Kickstarter Search']
+  [/^email\s*[-–—]\s*transactional/i, 'Email – Transactional'],
+  [/^email\b/i, 'Email']
 ];
 function normRef(ref){
   const r=(ref||'').trim();
@@ -1156,6 +1190,18 @@ function normRef(ref){
 // 把 canonical 名按本地词法统一（去除首尾空格、压缩中间空白），
 // 与 buildAnomalyData 的 toLowerCase 对齐，避免 `Activity feed`(ZH) vs `Activity Feed`(CSV) 这类大小写不一致造成跨快照不合并。
 function canonical(s){ return (s||'').replace(/\s+/g,' ').trim(); }
+// display 挑选：跨快照同名 referrer 的多种写法中，挑首字母大写的最短名（用户看着舒服）
+function pickBestDisplay(variants){
+  if(!variants||!variants.length) return '';
+  const isCap=v=>/^[A-Z一-鿿]/.test(v);
+  let best=variants[0], bestCap=isCap(variants[0]);
+  for(const v of variants){
+    const c=isCap(v);
+    if(c&&!bestCap){ best=v; bestCap=true; }
+    else if(c===bestCap && v.length<best.length) best=v;
+  }
+  return best;
+}
 // 统一的告警判定：支持 金额 / 单量 / 任一 / 两者 四种维度
 function anomalyFlag(it, thr, dim){
   const amF = it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
@@ -1176,8 +1222,8 @@ function buildAnomalyData(){
     for(const c in s.totals){
       for(const r in s.totals[c]){
         const rk=normRef(r).toLowerCase(); // 归一 + 大小写不敏感，避免 `Activity feed`(ZH) vs `Activity Feed`(CSV) 不合并
-        if(!map[rk]) map[rk]={cat:c, series:{}, display:r};
-        else if(map[rk].display.length>r.length) map[rk].display=r; // 取最短/最易读的展示名
+        if(!map[rk]) map[rk]={cat:c, series:{}, _all:[]};
+        map[rk]._all.push(r);
         const cur=map[rk].series[s.date]||{am:0,pl:0};
         cur.am+=s.totals[c][r][1]; cur.pl+=s.totals[c][r][0];
         map[rk].series[s.date]=cur;
@@ -1195,7 +1241,7 @@ function buildAnomalyData(){
     const vanished=!series[latestSnapD]; // 最新快照里完全不存在 = 带量退光
     const drop=peak>0?(peak-latest)/peak:0;
     const dropPl=peakPl>0?(peakPl-latestPl)/peakPl:0;
-    list.push({link:map[r].display, cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished});
+    list.push({link:pickBestDisplay(map[r]._all), cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished});
   }
   // 风险优先：已消失的 link 永远排最前，其余按回撤降序
   list.sort((a,b)=>{
@@ -1270,7 +1316,6 @@ function buildAnomalyHtml(){
         <input type="range" id="anomalyThreshold" min="5" max="90" step="5" value="${thr}"></label>
       <label class="an-ctl an-toggle"><input type="checkbox" id="anomalyOnly" ${only?'checked':''}> 只看异常（<span id="anOnlyCount">${flagged.length}</span>）</label>
       <span class="an-meta" id="anMeta">${STATE.snapshots.length} 个快照（${STATE.snapshots.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 ${flagged.length}</span>
-      <button class="an-rebuild-btn" onclick="rebuildAllSnapshots()" title="按当前归一字典重新合并所有快照 key（修复误判消失）">⟲ 重建快照</button>
     </div>
     <div class="an-body-grid" id="anGrid">${anomalyCardsHtml(list, dim, only)}</div>
   </div>`;
