@@ -1235,14 +1235,22 @@ function pickBestDisplay(variants){
 // 额外支持 ghost-suppression：link 自身 drop ≥ 阈值，但所属 category 整体跨 snap 稳定（catDrop < 阈值），
 // 则视为"归一漂移导致的假阳性"（典型场景：老 snap 把该 cat 所有子项合并到大类，新 snap 拆细，跨 snap 比大类 link 看似 -100%），
 // 此时不告警，由 cat 级别稳定性决定。
+// 【重要】ghost-suppression 只对"KS 站内自然"启用：该 cat 下 referrer 是 KS 内部命名（如 Profile/Discovery/Homepage），
+// 跨 snap 会因归一规则细化被重新分桶（老 snap 大类 key vs 新 snap 细分子项 key），cat-level 看是稳定的；
+// 其他 cat（众筹 PR / 非众筹 PR / KOL / EDM / 独立站 / 付费广告 / 社媒运营 / 其他）都是用户自定义 UTM/PR 追踪链接，
+// 每条 link 独立，不会跨 snap 重组，cat 整体稳定不能掩盖单条 -100% 退光。
+const GHOST_SUPPRESS_CATS = new Set(['KS 站内自然']);
 function anomalyFlag(it, thr, dim){
   const amF = it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
   const plF = it.dropPl*100>=thr && it.peakPl>=MIN_ANOMALY_PEAK_PL;
-  // Ghost-suppression：catDrop = -1 表示没数据（孤立 cat，跳过此判定）；catDrop < thr 视为 cat 稳定
+  // Ghost-suppression（仅 KS 站内自然 启用）：catDrop = -1 表示没数据（孤立 cat，跳过此判定）；catDrop < thr 视为 cat 稳定
   //   且 catDrop < thr 同时 amF/plF 触发 → 抑制（除非是真 vanished，vanished 仍照常告警）
-  const catOk = it.catDrop !== undefined && it.catDrop >= 0 && it.catDrop*100 < thr;
-  const catPlOk = it.catDropPl !== undefined && it.catDropPl >= 0 && it.catDropPl*100 < thr;
-  if(!it.vanished && ((dim==='amount' && catOk) || (dim==='vol' && catPlOk) || (dim==='either' && (catOk||catPlOk)) || (dim==='both' && catOk && catPlOk))) return false;
+  const suppressGhost = it.cat && GHOST_SUPPRESS_CATS.has(it.cat);
+  if(suppressGhost && !it.vanished){
+    const catOk = it.catDrop !== undefined && it.catDrop >= 0 && it.catDrop*100 < thr;
+    const catPlOk = it.catDropPl !== undefined && it.catDropPl >= 0 && it.catDropPl*100 < thr;
+    if((dim==='amount' && catOk) || (dim==='vol' && catPlOk) || (dim==='either' && (catOk||catPlOk)) || (dim==='both' && catOk && catPlOk)) return false;
+  }
   if(dim==='vol') return plF;
   if(dim==='either') return amF||plF;
   if(dim==='both') return amF&&plF;
