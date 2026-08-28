@@ -1299,8 +1299,8 @@ function buildAnomalyData(){
     const vanished=linkVanished && !cs.hasAtLatest;
     const drop=peak>0?(peak-latest)/peak:0;
     const dropPl=peakPl>0?(peakPl-latestPl)/peakPl:0;
-    // 把 cat-level drop 也带进 item，给 anomalyFlag 做 ghost-suppression 判定
-    list.push({link:pickBestDisplay(map[r]._all), cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished, catDrop:cs.drop||-1, catDropPl:cs.dropPl||-1, silenced:ANOMALY_EXCLUDED_CATS.has(c)});
+    // 把 cat-level drop 也带进 item（保留备用字段，cat 排除在 anomalyFlag 里做），silenced 用 map[r].cat（这里 r 是 link key）
+    list.push({link:pickBestDisplay(map[r]._all), cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished, catDrop:cs.drop||-1, catDropPl:cs.dropPl||-1, silenced:ANOMALY_EXCLUDED_CATS.has(map[r].cat)});
   }
   // 风险优先：已消失的 link 永远排最前，其余按回撤降序
   list.sort((a,b)=>{
