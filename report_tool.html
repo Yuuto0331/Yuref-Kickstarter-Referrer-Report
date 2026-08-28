@@ -1083,7 +1083,12 @@ function anomalyCard(it, flagged, dim){
 }
 function buildAnomalyHtml(){
   const list=buildAnomalyData();
-  if(!list.length) return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3><div class="desc">基于本地存储的各日期快照，对比每个 link 的历史峰值金额与最近一次快照，识别大幅回撤（疑似刷单后集体退款）。</div><div class="insight note">尚未积累足够数据：需要至少 2 次不同日期的快照才能识别回撤。多粘贴几次不同时间的 referral 导出即可。</div></div>`;
+  if(!list.length) {
+    const snaps=STATE.snapshots||[];
+    const dateList=snaps.map(s=>s.date.slice(5)).join('、')||'（无）';
+    const need=snaps.length<2;
+    return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3><div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div><div class="insight note"><b>${need?'快照不足':'当前数据无任何 link'}</b>。当前已记录快照：<b>${snaps.length}</b> 个（${dateList}）。${need?'再粘贴一份不同日期的 referral 导出即可触发识别（CSV 中最大 pledge 日期需不同）。':'可放宽阈值试试。'}</div></div>`;
+  }
   const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly, dim=STATE.anomalyDim;
   const isFlag=it=>anomalyFlag(it, thr, dim);
   const flagged=list.filter(isFlag), shown=only?flagged:list;
@@ -1101,7 +1106,7 @@ function buildAnomalyHtml(){
       <label class="an-ctl">告警阈值 <output id="anThrOut">${thr}%</output>
         <input type="range" id="anomalyThreshold" min="5" max="90" step="5" value="${thr}"></label>
       <label class="an-ctl an-toggle"><input type="checkbox" id="anomalyOnly" ${only?'checked':''}> 只看异常（<span id="anOnlyCount">${flagged.length}</span>）</label>
-      <span class="an-meta" id="anMeta">共 ${list.length} 个 link · 命中 ${flagged.length}</span>
+      <span class="an-meta" id="anMeta">${STATE.snapshots.length} 个快照（${STATE.snapshots.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 ${flagged.length}</span>
     </div>
     <div class="an-grid" id="anGrid">${cards}</div>
   </div>`;
@@ -1113,7 +1118,7 @@ function renderAnomaly(){
   const isFlag=it=>anomalyFlag(it, thr, dim);
   const flagged=list.filter(isFlag), shown=only?flagged:list;
   grid.innerHTML=shown.map(it=>anomalyCard(it, isFlag(it), dim)).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
-  const meta=document.getElementById('anMeta'); if(meta) meta.textContent='共 '+list.length+' 个 link · 命中 '+flagged.length;
+  const meta=document.getElementById('anMeta'); if(meta) meta.textContent=(STATE.snapshots||[]).length+' 个快照（'+(STATE.snapshots||[]).map(s=>s.date.slice(5)).join('、')+'） · 共 '+list.length+' 个 link · 命中 '+flagged.length;
   const oc=document.getElementById('anOnlyCount'); if(oc) oc.textContent=flagged.length;
 }
 
