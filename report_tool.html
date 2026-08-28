@@ -154,6 +154,28 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .cmp-link-row.hd .cl-sort-active{color:var(--ink)}
 .cmp-link-row.hd .cl-sort-arrow{display:inline-block;margin-left:2px;color:var(--muted);font-size:10px}
 .cmp-link-empty{color:var(--muted);font-size:12.5px;padding:8px 24px}
+/* 异常识别板块 */
+.an-controls{display:flex;flex-wrap:wrap;align-items:center;gap:18px;margin:10px 0 14px;padding:10px 12px;background:#f8fafc;border:1px solid var(--line);border-radius:10px}
+.an-ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)}
+.an-ctl output{font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+.an-ctl input[type=range]{accent-color:var(--blue);width:150px}
+.an-toggle{cursor:pointer;user-select:none}
+.an-meta{font-size:12px;color:var(--muted);margin-left:auto}
+.an-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.an-card{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#fff;transition:box-shadow .15s,border-color .15s}
+.an-card.flag{border-color:#fca5a5;background:#fff7f7;box-shadow:0 1px 4px rgba(239,68,68,.12)}
+.an-head{display:flex;align-items:center;gap:7px;margin-bottom:8px}
+.an-head .dot{width:9px;height:9px;border-radius:50%;flex:none}
+.an-link{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12px;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.an-badge{font-size:10.5px;font-weight:700;color:#fff;background:#ef4444;border-radius:5px;padding:1px 6px;flex:none}
+.an-body{display:flex;align-items:center;gap:10px}
+.an-stats{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.an-stats>div{display:flex;align-items:baseline;gap:6px;font-size:13px;font-variant-numeric:tabular-nums;color:#0f172a}
+.an-lbl{font-size:11px;color:var(--muted);min-width:28px}
+.an-sub{font-size:10.5px;color:var(--muted)}
+.an-drop b{font-size:14px}
+.an-drop b.down{color:var(--red)}
+.an-spark{flex:none;background:#fff;border:1px solid var(--line);border-radius:6px}
 .cmp-link-title{font-size:11.5px;color:#64748b;padding:6px 6px 8px 0;display:flex;align-items:center;gap:6px;font-weight:500;letter-spacing:.01em;background:transparent}
 .cmp-link-list{margin:2px 0 6px 6px;padding:2px 0 4px 14px;border-left:1px solid var(--line)}
 .cat .caret{display:inline-block;color:var(--muted);font-size:11px;margin-left:4px;transition:transform .12s}
@@ -659,7 +681,7 @@ function aggregate(rows, classifyFn){
 // ==CORE_END==
 
 // ---------- 以下为界面/渲染逻辑（依赖 DOM） ----------
-let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc' };
+let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:false };
 
 function finalClassify(ref, typ){
   if(STATE.override[ref]!==undefined) return STATE.override[ref];
@@ -962,6 +984,83 @@ function buildD2LinkTable(cat, dayA, dayB){
   return `<div class="cmp-link-rows">${rows}</div>`;
 }
 
+// == 异常识别：基于本地各日期快照，对比每个 link 历史峰值金额 vs 最近一次快照 ==
+const MIN_ANOMALY_PEAK = 50; // 过滤蚊子腿 link 的噪声（原始货币单位）
+function buildAnomalyData(){
+  const rd=STATE.agg.refDict, dates=STATE.agg.dates;
+  if(!rd||!dates||!dates.length) return [];
+  const map={}; // link -> {cat, series:{date:{am,pl}}}
+  for(const d of dates){
+    const dict=rd[d]||{};
+    for(const c in dict){ for(const r in dict[c]){ if(!map[r]) map[r]={cat:c,series:{}}; if(!map[r].series[d]) map[r].series[d]={am:0,pl:0}; map[r].series[d].am+=dict[c][r][1]; map[r].series[d].pl+=dict[c][r][0]; } }
+  }
+  const list=[];
+  for(const r in map){
+    const series=map[r].series, ds=Object.keys(series).sort();
+    if(ds.length<2) continue;
+    let peak=0, peakD=null, peakPl=0, latestD=ds[ds.length-1];
+    for(const d of ds){ if(series[d].am>peak){ peak=series[d].am; peakD=d; peakPl=series[d].pl; } }
+    const latest=series[latestD].am, latestPl=series[latestD].pl;
+    const drop=peak>0?(peak-latest)/peak:0;
+    const dropPl=peakPl>0?(peakPl-latestPl)/peakPl:0;
+    list.push({link:r, cat:map[r].cat, ds, series, peak, peakD, latest, latestD, latestPl, peakPl, drop, dropPl});
+  }
+  list.sort((a,b)=>b.drop-a.drop);
+  return list;
+}
+function anomalySpark(it, flagged){
+  const W=180,H=40,pad=5, ds=it.ds, ams=ds.map(d=>it.series[d].am);
+  const maxA=Math.max(...ams,1), minA=Math.min(...ams,0), n=ams.length;
+  const x=i=>pad+i*(W-2*pad)/(Math.max(n-1,1));
+  const y=v=>H-pad-(v-minA)/((maxA-minA)||1)*(H-2*pad);
+  const pts=ams.map((v,i)=>x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ');
+  const pi=ams.indexOf(maxA);
+  return `<svg width="${W}" height="${H}" class="an-spark"><polyline points="${pts}" fill="none" stroke="${flagged?'#ef4444':'#94a3b8'}" stroke-width="1.6"/><circle cx="${x(pi).toFixed(1)}" cy="${y(maxA).toFixed(1)}" r="2.6" fill="${flagged?'#ef4444':'#94a3b8'}"/></svg>`;
+}
+function anomalyCard(it, flagged){
+  const col=CAT_COLORS[it.cat]||'#94a3b8';
+  const pct=(it.drop*100).toFixed(0), pctPl=(it.dropPl*100).toFixed(0);
+  return `<div class="an-card ${flagged?'flag':''}">
+    <div class="an-head"><span class="dot" style="background:${col}"></span><span class="an-link" title="${escapeAttr(it.link)}">${escapeAttr(it.link)}</span>${flagged?'<span class="an-badge">异常</span>':''}</div>
+    <div class="an-body">
+      <div class="an-stats">
+        <div><span class="an-lbl">峰值</span>${fmt(it.peak)}<span class="an-sub">${it.peakD.slice(5)}</span></div>
+        <div><span class="an-lbl">当前</span>${fmt(it.latest)}<span class="an-sub">${it.latestD.slice(5)}</span></div>
+        <div class="an-drop"><span class="an-lbl">回撤</span><b class="${flagged?'down':''}">-${Math.abs(pct)}%</b><span class="an-sub">单量 -${Math.abs(pctPl)}%</span></div>
+      </div>
+      ${anomalySpark(it, flagged)}
+    </div>
+  </div>`;
+}
+function buildAnomalyHtml(){
+  const list=buildAnomalyData();
+  if(!list.length) return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3><div class="desc">基于本地存储的各日期快照，对比每个 link 的历史峰值金额与最近一次快照，识别大幅回撤（疑似刷单后集体退款）。</div><div class="insight note">尚未积累足够数据：需要至少 2 次不同日期的快照才能识别回撤。多粘贴几次不同时间的 referral 导出即可。</div></div>`;
+  const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly;
+  const isFlag=it=>it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
+  const flagged=list.filter(isFlag), shown=only?flagged:list;
+  const cards=shown.map(it=>anomalyCard(it, isFlag(it))).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
+  return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3>
+    <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值金额</b>与<b>最近一次快照</b>。金额大幅下降 = 疑似刷单后集体退款。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div>
+    <div class="an-controls">
+      <label class="an-ctl">告警阈值 <output id="anThrOut">${thr}%</output>
+        <input type="range" id="anomalyThreshold" min="5" max="90" step="5" value="${thr}"></label>
+      <label class="an-ctl an-toggle"><input type="checkbox" id="anomalyOnly" ${only?'checked':''}> 只看异常（<span id="anOnlyCount">${flagged.length}</span>）</label>
+      <span class="an-meta" id="anMeta">共 ${list.length} 个 link · 命中 ${flagged.length}</span>
+    </div>
+    <div class="an-grid" id="anGrid">${cards}</div>
+  </div>`;
+}
+function renderAnomaly(){
+  const grid=document.getElementById('anGrid'); if(!grid) return;
+  const list=buildAnomalyData();
+  const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly;
+  const isFlag=it=>it.drop*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
+  const flagged=list.filter(isFlag), shown=only?flagged:list;
+  grid.innerHTML=shown.map(it=>anomalyCard(it, isFlag(it))).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
+  const meta=document.getElementById('anMeta'); if(meta) meta.textContent='共 '+list.length+' 个 link · 命中 '+flagged.length;
+  const oc=document.getElementById('anOnlyCount'); if(oc) oc.textContent=flagged.length;
+}
+
 function renderReport(){
   const {daily,refDict,dates}=STATE.agg;
   const D=STATE.D, P=STATE.P, launch=STATE.launch;
@@ -1099,7 +1198,8 @@ function renderReport(){
   </div>
   <div class="module"><h3>区间对比 / 全期汇总</h3><div class="desc">切换不同时间窗口查看渠道变化，或查看全期累计汇总。默认展示滚动三日对比。</div>
     ${rangeCmpHtml}
-  </div>`;
+  </div>
+  ${buildAnomalyHtml()}`;
   document.getElementById('reportBody').innerHTML=html;
   STATE.html=html;
   makeSortable(document.getElementById('reportBody'));
@@ -1321,6 +1421,12 @@ document.getElementById('origCurSel').addEventListener('change',e=>{
 });
 // 汇总/明细合并表：点击渠道行展开/收起其下 referrer 明细；日期范围字段点击打开日历
 const reportBodyEl=document.getElementById('reportBody');
+reportBodyEl.addEventListener('input', e=>{
+  if(e.target.id==='anomalyThreshold'){ STATE.anomalyThreshold=+e.target.value; const o=document.getElementById('anThrOut'); if(o) o.textContent=STATE.anomalyThreshold+'%'; renderAnomaly(); }
+});
+reportBodyEl.addEventListener('change', e=>{
+  if(e.target.id==='anomalyOnly'){ STATE.anomalyOnly=e.target.checked; renderAnomaly(); }
+});
 reportBodyEl.addEventListener('click', e=>{
   const chip=e.target.closest('.chip');
   if(chip){
