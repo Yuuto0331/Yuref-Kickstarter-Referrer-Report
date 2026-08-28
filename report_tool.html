@@ -517,7 +517,7 @@ function loadOverrides(proj){ try{ return JSON.parse(localStorage.getItem(lsKey(
 function saveOverrides(proj){ try{ localStorage.setItem(lsKey(proj), JSON.stringify(STATE.override)); }catch(e){} }
 // 原始 CSV 也按项目名存一份，刷新后自动恢复报表（仍仅存于本机浏览器）
 function lsDataKey(proj){ return 'ks_ref_data_v1_'+(proj||'default'); }
-function saveData(){ try{ if(STATE.rawCsv) localStorage.setItem(lsDataKey(STATE.proj), JSON.stringify({proj:STATE.proj, csv:STATE.rawCsv, D:STATE.D, P:STATE.P, launch:STATE.launch, firstWeek:STATE.firstWeek, lastSource:STATE.lastSource, currency:STATE.cur||'USD'})); }catch(e){} }
+function saveData(){ try{ if(STATE.rawCsv) localStorage.setItem(lsDataKey(STATE.proj), JSON.stringify({proj:STATE.proj, csv:STATE.rawCsv, D:STATE.D, P:STATE.P, launch:STATE.launch, firstWeek:STATE.firstWeek, lastSource:STATE.lastSource, currency:STATE.cur||'USD', snapshots:STATE.snapshots||[]})); }catch(e){} }
 function loadSavedData(proj){ try{ return JSON.parse(localStorage.getItem(lsDataKey(proj))||'null'); }catch(e){ return null; } }
 function getProj(){ return STATE.proj||'default'; }
 // 币种：众筹项目一般为 USD / HKD；HKD 为联系汇率（7.75–7.85 钉住 USD），固定用 7.8 近似换算
@@ -683,11 +683,38 @@ function aggregate(rows, classifyFn){
 // ==CORE_END==
 
 // ---------- 以下为界面/渲染逻辑（依赖 DOM） ----------
-let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:false };
+let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:false, anomalyDim:'amount', snapshots:[] };
 
 function finalClassify(ref, typ){
   if(STATE.override[ref]!==undefined) return STATE.override[ref];
   return defaultClassify(ref, typ);
+}
+
+// 快照模型：每次 paste 一份 CSV，记录"截至 max pledge date 的每个 link 累计 [单量, 金额]"。
+// 用于异常识别：跨 paste 比较累计 → 累计下降 = 退单/刷单。
+function computeSnapshot(rows){
+  if(!rows||!rows.length) return null;
+  let maxD='';
+  const totals={};
+  for(const r of rows){
+    if(!r.date) continue;
+    if(r.date>maxD) maxD=r.date;
+    const c=finalClassify(r.ref, r.typ);
+    if(!totals[c]) totals[c]={};
+    const cur=totals[c][r.ref];
+    if(cur){ cur[0]+=r.pl; cur[1]+=r.am; }
+    else totals[c][r.ref]=[r.pl, r.am];
+  }
+  if(!maxD) return null;
+  return { date:maxD, totals };
+}
+function recordSnapshot(rows){
+  const s=computeSnapshot(rows);
+  if(!s) return;
+  const i=STATE.snapshots.findIndex(x=>x.date===s.date);
+  if(i>=0) STATE.snapshots[i]=s;
+  else STATE.snapshots.push(s);
+  STATE.snapshots.sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:0));
 }
 
 function renderMapping(){
@@ -999,12 +1026,17 @@ function anomalyFlag(it, thr, dim){
   return amF;
 }
 function buildAnomalyData(){
-  const rd=STATE.agg.refDict, dates=STATE.agg.dates;
-  if(!rd||!dates||!dates.length) return [];
+  // 用快照模型：每次 paste 一份 CSV 累计统计 → 跨 paste 对比累计曲线
+  const snaps=STATE.snapshots||[];
+  if(snaps.length<2) return [];
   const map={}; // link -> {cat, series:{date:{am,pl}}}
-  for(const d of dates){
-    const dict=rd[d]||{};
-    for(const c in dict){ for(const r in dict[c]){ if(!map[r]) map[r]={cat:c,series:{}}; if(!map[r].series[d]) map[r].series[d]={am:0,pl:0}; map[r].series[d].am+=dict[c][r][1]; map[r].series[d].pl+=dict[c][r][0]; } }
+  for(const s of snaps){
+    for(const c in s.totals){
+      for(const r in s.totals[c]){
+        if(!map[r]) map[r]={cat:c, series:{}};
+        map[r].series[s.date]={am:s.totals[c][r][1], pl:s.totals[c][r][0]};
+      }
+    }
   }
   const list=[];
   for(const r in map){
@@ -1012,7 +1044,8 @@ function buildAnomalyData(){
     if(ds.length<2) continue;
     let peak=0, peakD=null, peakPl=0, latestD=ds[ds.length-1];
     for(const d of ds){ if(series[d].am>peak){ peak=series[d].am; peakD=d; peakPl=series[d].pl; } }
-    const latest=series[latestD].am, latestPl=series[latestD].pl;
+    const latestEntry=series[latestD]||{am:0,pl:0};
+    const latest=latestEntry.am, latestPl=latestEntry.pl;
     const drop=peak>0?(peak-latest)/peak:0;
     const dropPl=peakPl>0?(peakPl-latestPl)/peakPl:0;
     list.push({link:r, cat:map[r].cat, ds, series, peak, peakD, latest, latestD, latestPl, peakPl, drop, dropPl});
@@ -1056,7 +1089,7 @@ function buildAnomalyHtml(){
   const flagged=list.filter(isFlag), shown=only?flagged:list;
   const cards=shown.map(it=>anomalyCard(it, isFlag(it), dim)).join('') || '<div class="insight note">当前筛选下无结果（可放宽阈值或取消「只看异常」）。</div>';
   return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3>
-    <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值</b>与<b>最近一次快照</b>。大幅下降 = 疑似刷单后集体退款。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div>
+    <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div>
     <div class="an-controls">
       <label class="an-ctl">告警维度
         <select id="anomalyDim">
@@ -1358,6 +1391,7 @@ function loadFile(file){
     STATE.displayCur='USD';
     STATE.override=loadOverrides(STATE.proj)||{};
     STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
+    recordSnapshot(STATE.rows);
     saveData();
     showToast('已上传 '+file.name+'，解析到 '+STATE.rows.length.toLocaleString('en-US')+' 行（'+dates[0].slice(5)+' ~ '+dates[dates.length-1].slice(5)+'）','success',4000);
     updateDataInfo(file.name);
@@ -1400,6 +1434,7 @@ function loadText(text){
   STATE.displayCur='USD';
   STATE.override=loadOverrides(STATE.proj)||{};
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
+  recordSnapshot(STATE.rows);
   saveData();
   showToast('已从粘贴文本生成报表，共 '+STATE.rows.length.toLocaleString('en-US')+' 行（'+dates[0].slice(5)+' ~ '+dates[dates.length-1].slice(5)+'）','success',4000);
   updateDataInfo('粘贴文本');
@@ -1648,7 +1683,10 @@ function restoreFrom(saved){
   STATE.lastSource=saved.lastSource||'已缓存数据';
   STATE.D=(saved.D&&dates.includes(saved.D))?saved.D:dates[dates.length-1];
   STATE.P=(saved.P&&dates.includes(saved.P))?saved.P:addDays(STATE.D,-1);
+  STATE.snapshots=Array.isArray(saved.snapshots)?saved.snapshots.slice():[];
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
+  // 迁移：旧数据无快照时，用当前 CSV 种子化第一个快照
+  if(!STATE.snapshots.length) recordSnapshot(STATE.rows);
   showResults();
   updateDataInfo();
   return true;
