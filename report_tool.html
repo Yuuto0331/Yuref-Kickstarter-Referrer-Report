@@ -708,6 +708,8 @@ function finalClassify(ref, typ){
 
 // 快照模型：每次 paste 一份 CSV，记录"截至 max pledge date 的每个 link 累计 [单量, 金额]"。
 // 用于异常识别：跨 paste 比较累计 → 累计下降 = 退单/刷单。
+// 注意：totals 的 link key 用归一 canonical 名（normRef 归并中/英文+裁剪子分类）
+// 与 buildAnomalyData 的聚合口径一致，避免跨语言同 referrer 被当成不同 link。
 function computeSnapshot(rows){
   if(!rows||!rows.length) return null;
   let maxD='';
@@ -716,10 +718,11 @@ function computeSnapshot(rows){
     if(!r.date) continue;
     if(r.date>maxD) maxD=r.date;
     const c=finalClassify(r.ref, r.typ);
+    const k=normRef(r.ref);
     if(!totals[c]) totals[c]={};
-    const cur=totals[c][r.ref];
+    const cur=totals[c][k];
     if(cur){ cur[0]+=r.pl; cur[1]+=r.am; }
-    else totals[c][r.ref]=[r.pl, r.am];
+    else totals[c][k]=[r.pl, r.am];
   }
   if(!maxD) return null;
   return { date:maxD, totals };
@@ -731,6 +734,27 @@ function recordSnapshot(rows){
   if(i>=0) STATE.snapshots[i]=s;
   else STATE.snapshots.push(s);
   STATE.snapshots.sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:0));
+}
+// 把老快照（key 为原始 ref 名）迁移到归一 canonical key，合并同一 referrer 的中/英文版本。
+// 只在 restoreFrom 末尾首次调用一次，迁移完成后置 v2 标记避免重复。
+function migrateSnapshotsToCanonical(){
+  if(STATE._snapshotsNormalized) return;
+  for(const s of STATE.snapshots){
+    const newT={};
+    for(const c in s.totals){
+      newT[c]=newT[c]||{};
+      for(const r in s.totals[c]){
+        const k=normRef(r);
+        const old=s.totals[c][r];
+        const cur=newT[c][k];
+        if(cur){ cur[0]+=old[0]; cur[1]+=old[1]; }
+        else newT[c][k]=[old[0], old[1]];
+      }
+    }
+    s.totals=newT;
+  }
+  STATE._snapshotsNormalized=true;
+  saveData();
 }
 
 function renderMapping(){
@@ -1830,6 +1854,8 @@ function restoreFrom(saved){
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
   // 迁移：旧数据无快照时，用当前 CSV 种子化第一个快照
   if(!STATE.snapshots.length) recordSnapshot(STATE.rows);
+  // 迁移：旧快照按归一 canonical 重新合并（解决中英文版本同 referrer 被当成不同 link）
+  migrateSnapshotsToCanonical();
   showResults();
   updateDataInfo();
   return true;
