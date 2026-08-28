@@ -736,9 +736,10 @@ function recordSnapshot(rows){
   STATE.snapshots.sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:0));
 }
 // 把老快照（key 为原始 ref 名）迁移到归一 canonical key，合并同一 referrer 的中/英文版本。
-// 只在 restoreFrom 末尾首次调用一次，迁移完成后置 v2 标记避免重复。
+// 每次 restoreFrom 末尾都跑（idempotent：若 key 已是 canonical 则无变更），保证：
+//   - 老用户升级后能立刻把旧 key 合并到新 dict
+//   - 字典升级后旧 key 也被重新归一
 function migrateSnapshotsToCanonical(){
-  if(STATE._snapshotsNormalized) return;
   for(const s of STATE.snapshots){
     const newT={};
     for(const c in s.totals){
@@ -753,7 +754,6 @@ function migrateSnapshotsToCanonical(){
     }
     s.totals=newT;
   }
-  STATE._snapshotsNormalized=true;
   saveData();
 }
 
@@ -1260,7 +1260,7 @@ function anomalyCardsHtml(list, dim, only){
   for(const c of catOrder){
     const items=cats[c].slice().sort(cmpRisk);
     const hitN=items.filter(isR).length;
-    const coll=STATE.anomalyCatCollapsed[c]===true;
+    const coll=STATE.anomalyCatCollapsed[c]!==false;  // 默认折叠，仅当显式设 false 才展开
     html+='<div class="an-cat'+(coll?' collapsed':'')+'">'+
       '<div class="an-cat-head" data-cat="'+escapeAttr(c)+'"><span class="caret">'+(coll?'▸':'▾')+'</span><span class="dot" style="background:'+(CAT_COLORS[c]||'#94a3b8')+'"></span><span class="an-cat-name">'+escapeHtml(c)+'</span><span class="an-cat-meta">命中 '+hitN+' / 共 '+items.length+'</span></div>'+
       (coll?'':'<div class="an-grid">'+items.map(it=>anomalyCard(it,isR(it),dim)).join('')+'</div>')+
@@ -1850,7 +1850,7 @@ function restoreFrom(saved){
   STATE.D=(saved.D&&dates.includes(saved.D))?saved.D:dates[dates.length-1];
   STATE.P=(saved.P&&dates.includes(saved.P))?saved.P:addDays(STATE.D,-1);
   STATE.snapshots=Array.isArray(saved.snapshots)?saved.snapshots.slice():[];
-  STATE.anomalyCatCollapsed={};
+  STATE.anomalyCatCollapsed={}; for(const c of CAT_ORDER) STATE.anomalyCatCollapsed[c]=true;  // 默认折叠
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
   // 迁移：旧数据无快照时，用当前 CSV 种子化第一个快照
   if(!STATE.snapshots.length) recordSnapshot(STATE.rows);
