@@ -189,6 +189,11 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-cat-meta{font-size:11.5px;color:var(--muted);margin-left:auto}
 .an-card.van{border-color:#ef4444;background:#fff5f5;box-shadow:0 1px 6px rgba(239,68,68,.18)}
 .an-badge.van-badge{background:#b91c1c}
+.an-banner.warn{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin:0 0 12px;font-size:12.5px;color:#78350f;line-height:1.55}
+.an-banner.warn b{color:#92400e}
+.an-banner.warn .an-snapline{margin-top:6px;font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:11.5px;color:#57534e}
+.an-banner.warn .an-act{margin-left:8px;border:1px solid #fcd34d;background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:6px;font-size:11.5px;cursor:pointer}
+.an-banner.warn .an-act:hover{background:#fde68a}
 .cmp-link-title{font-size:11.5px;color:#64748b;padding:6px 6px 8px 0;display:flex;align-items:center;gap:6px;font-weight:500;letter-spacing:.01em;background:transparent}
 .cmp-link-list{margin:2px 0 6px 6px;padding:2px 0 4px 14px;border-left:1px solid var(--line)}
 .cat .caret{display:inline-block;color:var(--muted);font-size:11px;margin-left:4px;transition:transform .12s}
@@ -1056,7 +1061,7 @@ function buildAnomalyData(){
     const series=map[r].series, ds=Object.keys(series).sort();
     let peak=0, peakD=null, peakPl=0;
     for(const d of ds){ if(series[d].am>peak){ peak=series[d].am; peakD=d; peakPl=series[d].pl; } }
-    if(peak<=0) continue;
+    if(peak<=0 || peak<MIN_ANOMALY_PEAK) continue; // vanished 也走阈值过滤（蚊子腿不报警）
     const latestEntry=series[latestSnapD]||{am:0,pl:0};
     const latest=latestEntry.am, latestPl=latestEntry.pl;
     const vanished=!series[latestSnapD]; // 最新快照里完全不存在 = 带量退光
@@ -1112,8 +1117,19 @@ function buildAnomalyHtml(){
   }
   const thr=STATE.anomalyThreshold, only=STATE.anomalyOnly, dim=STATE.anomalyDim;
   const flagged=list.filter(it=>it.vanished||anomalyFlag(it,thr,dim));
+  // 当「已消失」link 比例异常高时（通常是最新 CSV 不全 / 分类口径变了），顶部加 banner 提示
+  let banner='';
+  const snaps=STATE.snapshots||[];
+  const van=list.filter(it=>it.vanished);
+  if(snaps.length>=2 && van.length>=5 && van.length/Math.max(list.length,1)>=0.3){
+    const cnt=s=>Object.values(s.totals).reduce((n,c)=>n+Object.keys(c).length,0);
+    const sum=s=>Object.values(s.totals).reduce((a,c)=>a+Object.values(c).reduce((x,y)=>x+y[1],0),0);
+    const snapLines=snaps.map(s=>s.date.slice(5)+': '+cnt(s)+' link · '+fmt(sum(s))).join('  →  ');
+    banner=`<div class="an-banner warn"><b>⚠ 检测到 ${van.length} 个「已消失」link（占 ${(van.length/Math.max(list.length,1)*100).toFixed(0)}%）</b>，通常意味着<b>最新 CSV 导出不全</b>或<b>分类口径变化</b>。请核对下方快照规模（明显小于前一快照 = 新 CSV 砍了部分 referral）：<div class="an-snapline">${snapLines}</div></div>`;
+  }
   return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3>
     <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款；某 link 在最新快照<b>完全消失</b> = 带量被退光（最高风险）。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div>
+    ${banner}
     <div class="an-controls">
       <label class="an-ctl">告警维度
         <select id="anomalyDim">
