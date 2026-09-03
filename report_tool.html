@@ -163,12 +163,12 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-ctl select:focus{outline:2px solid rgba(59,130,246,.25);outline-offset:1px}
 .an-toggle{cursor:pointer;user-select:none}
 .an-meta{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap}
-.an-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:10px}
-.an-card{border:1px solid var(--line);border-radius:10px;padding:8px 11px 10px;background:#fff;transition:box-shadow .15s,border-color .15s}
+.an-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:10px}
+.an-card{border:1px solid var(--line);border-radius:10px;padding:8px 12px 9px;background:#fff;transition:box-shadow .15s,border-color .15s;min-width:0}
 .an-card.flag{border-color:#fca5a5;background:#fff7f7;box-shadow:0 1px 4px rgba(239,68,68,.12)}
 .an-card.van{border-color:#ef4444;background:#fff5f5;box-shadow:0 1px 6px rgba(239,68,68,.18)}
 .an-card.ignored{background:#fafafa;border-color:#e2e8f0;opacity:.92;box-shadow:none}
-.an-head{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.an-head{display:flex;align-items:center;gap:7px;margin-bottom:6px;min-width:0}
 .an-head .dot{width:9px;height:9px;border-radius:50%;flex:none}
 .an-link{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12.5px;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
 .an-card.ignored .an-link{color:#94a3b8;text-decoration:line-through}
@@ -178,20 +178,21 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-ignore{font-size:11px;color:#64748b;background:transparent;border:1px solid #e2e8f0;border-radius:5px;padding:1px 7px;cursor:pointer;flex:none;transition:all .12s;font-family:inherit;line-height:1.5;white-space:nowrap}
 .an-ignore:hover{background:#fff;border-color:#94a3b8;color:#334155}
 .an-card.ignored .an-ignore{color:#0f172a;border-color:#94a3b8;background:#fff}
-.an-body{display:flex;align-items:stretch;gap:10px}
+.an-body{display:flex;align-items:stretch;gap:10px;min-width:0}
 .an-bar-wrap{flex:1;min-width:0;display:flex;align-items:center}
 .an-spark{width:100%;height:46px;display:block}
-.an-stats{display:flex;flex-direction:column;gap:3px;flex:none;width:144px;font-size:12px}
-.an-stat{display:flex;align-items:baseline;gap:5px;font-variant-numeric:tabular-nums;color:#0f172a;white-space:nowrap;overflow:hidden}
-.an-stat .num{font-size:13px;font-weight:600;color:#0f172a}
+.an-stats{display:flex;flex-direction:column;gap:3px;flex:none;width:126px;font-size:12px;min-width:0}
+.an-stat{display:flex;align-items:baseline;gap:5px;color:#0f172a;white-space:nowrap;overflow:hidden;min-width:0}
+.an-stat .num{font-size:13px;font-weight:600;color:#0f172a;font-variant-numeric:tabular-nums;display:inline-flex;align-items:baseline;gap:4px;min-width:0;flex:1;overflow:hidden}
 .an-stat .num.down{color:var(--red)}
-.an-lbl{font-size:10.5px;color:var(--muted);width:28px;flex:none}
-.an-sub{font-size:10.5px;color:var(--muted);white-space:nowrap;flex:none;margin-left:auto}
-.an-drops{display:flex;flex-direction:column;gap:1px;padding-top:3px;border-top:1px dashed #e2e8f0;margin-top:3px}
-.an-dropline{display:flex;align-items:baseline;gap:5px;font-size:11.5px;color:#64748b}
+.an-stat .an-sub{font-size:10px;color:var(--muted);font-style:normal;font-weight:400;flex:none;white-space:nowrap}
+.an-lbl{font-size:10.5px;color:var(--muted);width:24px;flex:none}
+.an-drops{display:flex;flex-direction:column;gap:1px;padding-top:3px;border-top:1px dashed #e2e8f0;margin-top:3px;min-width:0}
+.an-dropline{display:flex;align-items:baseline;gap:5px;font-size:11.5px;color:#64748b;min-width:0;overflow:hidden;white-space:nowrap}
 .an-dropline b{font-size:12px;font-weight:700}
 .an-dropline b.down{color:var(--red)}
-.an-dropline .an-lbl{width:28px}
+.an-dropline .an-lbl{width:24px}
+.an-dropline b{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .an-body-grid{display:flex;flex-direction:column;gap:14px}
 .an-empty{text-align:center;padding:16px 12px;color:var(--muted);font-size:12.5px}
 .an-banner.warn{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin:0 0 12px;font-size:12.5px;color:#78350f;line-height:1.55}
@@ -1363,8 +1364,8 @@ function anomalyCard(it, flagged, dim, ignored){
     <div class="an-body">
       <div class="an-bar-wrap">${anomalyBar(it,flagged,useVol)}</div>
       <div class="an-stats">
-        <div class="an-stat"><span class="an-lbl">峰值</span><b class="num">${fmt(it.peak)}</b><span class="an-sub">${it.peakD.slice(5)}</span></div>
-        <div class="an-stat"><span class="an-lbl">当前</span><b class="num${flagged?' down':''}">${curTxt}</b><span class="an-sub">${curSub}</span></div>
+        <div class="an-stat"><span class="an-lbl">峰值</span><b class="num">${fmt(it.peak)}<i class="an-sub">${it.peakD.slice(5)}</i></b></div>
+        <div class="an-stat"><span class="an-lbl">当前</span><b class="num${flagged?' down':''}">${curTxt}${it.vanished?'':`<i class="an-sub">${curSub}</i>`}</b></div>
         <div class="an-stat an-drops">
           <span class="an-dropline"><span class="an-lbl">金额</span><b class="${amCls||'num'}">-${Math.abs(pct)}%</b></span>
           <span class="an-dropline"><span class="an-lbl">单量</span><b class="${plCls||'num'}">-${Math.abs(pctPl)}%</b></span>
