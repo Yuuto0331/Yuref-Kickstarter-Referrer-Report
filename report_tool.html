@@ -180,20 +180,29 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-card.ignored .an-ignore{color:#0f172a;border-color:#94a3b8;background:#fff}
 /* —— 命中卡片：大号降幅 + 剩余进度条 + 起跌时间线 —— */
 .an-main{margin-top:1px}
-.an-bigrow{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
-.an-cur{font-size:17px;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap}
-.an-cur.down{color:var(--red)}
-.an-dropbig{font-size:19px;font-weight:800;color:var(--red);font-variant-numeric:tabular-nums;line-height:1.15;margin-left:auto;letter-spacing:-.3px;white-space:nowrap}
+/* 「峰值 → 现在」对比块：卡片主视觉。左右两个数字块各带小标签 + 日期，中间箭头，
+   右侧大号降幅。用户第一眼要找的就是「之前出单多少、现在退到多少」，所以给它最大字号。 */
+.an-cmp{display:flex;align-items:flex-end;gap:8px;margin-bottom:7px}
+.an-cmp-item{display:flex;flex-direction:column;gap:1px;min-width:0}
+.an-cmp-lab{font-size:9.5px;color:#a8b4c4;letter-spacing:.4px;line-height:1.2;white-space:nowrap}
+.an-cmp-v{font-size:19px;font-weight:800;color:#0f172a;line-height:1.1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.an-cmp-d{font-size:10px;color:#94a3b8;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}
+.an-cmp-item.peak .an-cmp-v{font-size:15px;font-weight:600;color:#64748b}
+.an-cmp-item.now.down .an-cmp-v{color:var(--red)}
+.an-cmp-item.now.gone .an-cmp-v{color:#b91c1c}
+.an-cmp-go{flex:none;color:#cbd5e1;font-size:15px;line-height:1.1;padding-bottom:11px}
+.an-dropbig{font-size:19px;font-weight:800;color:var(--red);font-variant-numeric:tabular-nums;line-height:1.1;margin-left:auto;padding-bottom:11px;letter-spacing:-.3px;white-space:nowrap;flex:none}
 .an-dropbig.mid{color:#d97706}
 .an-dropbig.zero{color:#b91c1c}
 .an-prog{position:relative;height:9px;border-radius:5px;background:#eef2f6;overflow:hidden;box-shadow:inset 0 1px 2px rgba(15,23,42,.07)}
 .an-prog i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:#94a3b8;transition:width .25s ease}
 .an-prog.empty{background:repeating-linear-gradient(45deg,#fee2e2,#fee2e2 4px,#fff5f5 4px,#fff5f5 8px)}
-.an-prog-lab{display:flex;justify-content:space-between;gap:8px;margin-top:4px;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.an-prog-lab{display:flex;justify-content:space-between;gap:8px;margin-top:5px;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 .an-prog-lab b{color:#475569;font-weight:600}
-.an-trend{margin-top:6px;padding-top:5px;border-top:1px dashed #e2e8f0;font-size:10.5px;color:#64748b;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px;min-width:0}
-.an-trend .arw{color:#cbd5e1}
-.an-trend .at{color:#b45309;font-weight:700}
+.an-prog-lab .lost{color:#b45309}
+.an-prog-lab .lost b{color:#b45309;font-weight:700}
+.an-prog-lab .fd b{color:#b45309;font-weight:700}
+.an-prog-lab .none{color:#cbd5e1}
 .an-sub2{font-size:10.5px;color:#94a3b8;font-variant-numeric:tabular-nums;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* —— 正常 / 已忽略 link：极简单行 —— */
 .an-mini-head{font-size:11px;color:#94a3b8;font-weight:600;margin:0 0 2px;padding-left:4px}
@@ -204,7 +213,10 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-mini .an-link{font-size:11px;color:#64748b;flex:1;min-width:0}
 .an-mini.ignored .an-link{text-decoration:line-through;color:#cbd5e1}
 .an-mini-val{font-size:11px;color:#94a3b8;white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
-.an-mini-val b{color:#475569;font-weight:600}
+.an-mini-val b{color:#334155;font-weight:600}
+.an-mini-val .pk{color:#64748b;font-weight:700}
+.an-mini-val .nv{color:#334155;font-weight:700}
+.an-mini-val .arw{color:#cbd5e1;font-weight:400}
 .an-mini-val .up{color:#16a34a;font-weight:600}
 .an-mini-val .dn{color:#ef4444;font-weight:600}
 .an-mini-val span{color:#a8b4c4;margin-left:5px}
@@ -1379,14 +1391,13 @@ function anomalyCard(it, flagged, dim, ignored){
   if(it.vanished||drop>=80){ barCol='#b91c1c'; bigCls=' zero'; }
   else if(drop>=50){ barCol='#ef4444'; }
   else if(drop>=25){ barCol='#f59e0b'; bigCls=' mid'; }
-  const curTxt = it.vanished ? fmt(0) : (useVol ? String(cur) : fmt(cur)); // 已退光大字直接显示 $0，状态由徽章说明
+  const f = v=>useVol?String(v):fmt(v);              // 主维度格式化：单量不加货币符号
+  const curTxt = it.vanished ? f(0) : (useVol ? String(cur) : fmt(cur)); // 已退光大字直接显示 $0，状态由徽章说明
   const dropTxt = (drop<0.5?'':'−')+drop.toFixed(0)+'%';
   const badge = flagged ? (it.vanished?'已退光':(useVol?'异常·单量':'异常·金额')) : (ignored?'已忽略':'');
-  // 时间轴：峰值日 → 起跌日 → 最新快照日（只标日期，金额由上面大字和峰值承担，避免重复）
-  const fd = firstDropDay(it, useVol);
-  const trend = `峰值 <b>${it.peakD.slice(5)}</b>`+
-    (fd?` <span class="arw">→</span> 起跌 <span class="at">${fd.slice(5)}</span> <span class="arw">→</span> ${it.latestD.slice(5)}`
-       :` <span class="arw">→</span> ${it.latestD.slice(5)} <span class="arw">·</span> 峰值后未见明显回落`);
+  const lost = Math.max(0, peak-cur);                 // 绝对差额（退掉了多少钱 / 多少单）
+  const fd = firstDropDay(it, useVol);                // 起跌日：回答"哪天开始掉的"
+  const nowCls = it.vanished ? ' gone' : ((drop>=25)?' down':'');
   // 副行补齐另一个维度，避免切维度时丢信息
   const subTxt = useVol
     ? `金额 ${fmt(it.peak)} → ${fmt(it.latest)}`
@@ -1401,13 +1412,26 @@ function anomalyCard(it, flagged, dim, ignored){
       <button class="an-ignore" data-act="${ignored?'unignore':'ignore'}" data-key="${escapeAttr(linkKey)}" title="${ignored?'取消忽略，重新参与识别':'忽略此 link（保留显示，但不再计入异常）'}">${ignored?'↺ 取消忽略':'忽略'}</button>
     </div>
     <div class="an-main">
-      <div class="an-bigrow">
-        <b class="an-cur${(it.vanished||drop>=25)?' down':''}">${curTxt}</b>
+      <div class="an-cmp">
+        <div class="an-cmp-item peak">
+          <span class="an-cmp-lab">峰值</span>
+          <span class="an-cmp-v">${f(peak)}</span>
+          <span class="an-cmp-d">${it.peakD.slice(5)}</span>
+        </div>
+        <span class="an-cmp-go">→</span>
+        <div class="an-cmp-item now${nowCls}">
+          <span class="an-cmp-lab">现在</span>
+          <span class="an-cmp-v">${curTxt}</span>
+          <span class="an-cmp-d">${it.latestD.slice(5)}</span>
+        </div>
         <b class="an-dropbig${bigCls}">${dropTxt}</b>
       </div>
       <div class="an-prog${remain<=0.001?' empty':''}"><i style="width:${(remain*100).toFixed(1)}%;background:${barCol}"></i></div>
-      <div class="an-prog-lab"><span>剩 <b>${(remain*100).toFixed(0)}%</b></span><span>${useVol?peak:fmt(peak)}</span></div>
-      <div class="an-trend">${trend}</div>
+      <div class="an-prog-lab">
+        <span>剩 <b>${(remain*100).toFixed(0)}%</b></span>
+        <span class="lost">少了 <b>${f(lost)}</b></span>
+        <span class="${fd?'fd':'none'}">${fd?`起跌 <b>${fd.slice(5)}</b>`:'未见明显回落'}</span>
+      </div>
       <div class="an-sub2">${subTxt}</div>
     </div>
   </div>`;
@@ -1426,11 +1450,11 @@ function anomalyMiniRow(it, dim, ignored){
   // 峰值即最新（还在涨或持平）时不再重复打印两个相同的数，直接给"未见回落"。
   const linkKey = (it._allKey || (it.link||'').toLowerCase());
   let tail;
-  if(it.vanished) tail = `<b class="dn">已消失</b>`;
-  else if(Math.abs(delta)<0.5) tail = `${f(peak)} <span>未见回落</span>`;
+  if(it.vanished) tail = `<b class="pk">${f(peak)}</b> <span class="arw">→</span> <b class="dn">已消失</b>`;
+  else if(Math.abs(delta)<0.5) tail = `<b class="pk">${f(peak)}</b> <span>未见回落</span>`;
   else{
     const fd = delta<-5 ? firstDropDay(it, useVol) : null; // 只在真有回落时才补起跌日，避免行太长
-    tail = `${f(peak)} → ${f(cur)} <b class="${dCls}">${dTxt}</b>`+(fd?` <span>起跌 ${fd.slice(5)}</span>`:'');
+    tail = `<b class="pk">${f(peak)}</b> <span class="arw">→</span> <b class="${dCls||'nv'}">${f(cur)}</b> <b class="${dCls}">${dTxt}</b>`+(fd?` <span>起跌 ${fd.slice(5)}</span>`:'');
   }
   return `<div class="an-mini${ignored?' ignored':''}" data-key="${escapeAttr(linkKey)}">
     <span class="dot" style="background:${col}"></span>
