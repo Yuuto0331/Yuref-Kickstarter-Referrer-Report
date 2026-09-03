@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yuref - Kickstarter Referrer Report</title><link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiMyNTYzZWIiLz48cGF0aCBkPSJNOSAyMSBMOSAxNSBNMTYgMjEgTDE2IDExIE0yMyAyMSBMMjMgMTciIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=">
+<html lang="zh-CN" data-page-node-id="6s6PKGWE2SSPB3cZ2dtoKh"><head data-page-node-id="zbqcNDOy8CqVqYwS01neVY"><meta charset="UTF-8" data-page-node-id="iyH6E0DEONfioyyISok6LW"><meta name="viewport" content="width=device-width,initial-scale=1" data-page-node-id="3upl2AOgUw4zRcEpj7PZCV"><title>Yuref - Kickstarter Referrer Report</title><link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiMyNTYzZWIiLz48cGF0aCBkPSJNOSAyMSBMOSAxNSBNMTYgMjEgTDE2IDExIE0yMyAyMSBMMjMgMTciIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=" data-page-node-id="pdyn45gd263xXv8pV3711S">
 <style>
 :root{--bg:#f5f7fa;--panel:#fff;--ink:#1f2933;--muted:#6b7280;--line:#e5e7eb;--green:#1a7f37;--red:#c0392b;--blue:#2563eb;--shadow:0 1px 3px rgba(0,0,0,.08)}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
@@ -178,21 +178,38 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-ignore{font-size:11px;color:#64748b;background:transparent;border:1px solid #e2e8f0;border-radius:5px;padding:1px 7px;cursor:pointer;flex:none;transition:all .12s;font-family:inherit;line-height:1.5;white-space:nowrap}
 .an-ignore:hover{background:#fff;border-color:#94a3b8;color:#334155}
 .an-card.ignored .an-ignore{color:#0f172a;border-color:#94a3b8;background:#fff}
-.an-body{display:flex;align-items:stretch;gap:10px;min-width:0}
-.an-bar-wrap{flex:1;min-width:0;display:flex;align-items:center}
-.an-spark{width:100%;height:46px;display:block}
-.an-stats{display:flex;flex-direction:column;gap:3px;flex:none;width:126px;font-size:12px;min-width:0}
-.an-stat{display:flex;align-items:baseline;gap:5px;color:#0f172a;white-space:nowrap;overflow:hidden;min-width:0}
-.an-stat .num{font-size:13px;font-weight:600;color:#0f172a;font-variant-numeric:tabular-nums;display:inline-flex;align-items:baseline;gap:4px;min-width:0;flex:1;overflow:hidden}
-.an-stat .num.down{color:var(--red)}
-.an-stat .an-sub{font-size:10px;color:var(--muted);font-style:normal;font-weight:400;flex:none;white-space:nowrap}
-.an-lbl{font-size:10.5px;color:var(--muted);width:24px;flex:none}
-.an-drops{display:flex;flex-direction:column;gap:1px;padding-top:3px;border-top:1px dashed #e2e8f0;margin-top:3px;min-width:0}
-.an-dropline{display:flex;align-items:baseline;gap:5px;font-size:11.5px;color:#64748b;min-width:0;overflow:hidden;white-space:nowrap}
-.an-dropline b{font-size:12px;font-weight:700}
-.an-dropline b.down{color:var(--red)}
-.an-dropline .an-lbl{width:24px}
-.an-dropline b{min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* —— 命中卡片：大号降幅 + 剩余进度条 + 起跌时间线 —— */
+.an-main{margin-top:1px}
+.an-bigrow{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+.an-cur{font-size:17px;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;line-height:1.15;white-space:nowrap}
+.an-cur.down{color:var(--red)}
+.an-dropbig{font-size:19px;font-weight:800;color:var(--red);font-variant-numeric:tabular-nums;line-height:1.15;margin-left:auto;letter-spacing:-.3px;white-space:nowrap}
+.an-dropbig.mid{color:#d97706}
+.an-dropbig.zero{color:#b91c1c}
+.an-prog{position:relative;height:9px;border-radius:5px;background:#eef2f6;overflow:hidden;box-shadow:inset 0 1px 2px rgba(15,23,42,.07)}
+.an-prog i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:#94a3b8;transition:width .25s ease}
+.an-prog.empty{background:repeating-linear-gradient(45deg,#fee2e2,#fee2e2 4px,#fff5f5 4px,#fff5f5 8px)}
+.an-prog-lab{display:flex;justify-content:space-between;gap:8px;margin-top:4px;font-size:10.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.an-prog-lab b{color:#475569;font-weight:600}
+.an-trend{margin-top:6px;padding-top:5px;border-top:1px dashed #e2e8f0;font-size:10.5px;color:#64748b;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px;min-width:0}
+.an-trend .arw{color:#cbd5e1}
+.an-trend .at{color:#b45309;font-weight:700}
+.an-sub2{font-size:10.5px;color:#94a3b8;font-variant-numeric:tabular-nums;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* —— 正常 / 已忽略 link：极简单行 —— */
+.an-mini-head{font-size:11px;color:#94a3b8;font-weight:600;margin:0 0 2px;padding-left:4px}
+.an-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1px 12px}
+.an-mini{display:flex;align-items:center;gap:6px;padding:3px 4px;border-radius:5px;font-size:11.5px;min-width:0}
+.an-mini:hover{background:#f8fafc}
+.an-mini .dot{width:7px;height:7px;border-radius:50%;flex:none}
+.an-mini .an-link{font-size:11px;color:#64748b;flex:1;min-width:0}
+.an-mini.ignored .an-link{text-decoration:line-through;color:#cbd5e1}
+.an-mini-val{font-size:11px;color:#94a3b8;white-space:nowrap;flex:none;font-variant-numeric:tabular-nums}
+.an-mini-val b{color:#475569;font-weight:600}
+.an-mini-val .up{color:#16a34a;font-weight:600}
+.an-mini-val .dn{color:#ef4444;font-weight:600}
+.an-mini-val span{color:#a8b4c4;margin-left:5px}
+.an-mini .an-ignore{font-size:10px;padding:0 5px;border-color:transparent;color:#cbd5e1;background:transparent}
+.an-mini:hover .an-ignore{color:#64748b;border-color:#e2e8f0;background:#fff}
 .an-body-grid{display:flex;flex-direction:column;gap:14px}
 .an-section.an-risk{background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:10px 12px;box-shadow:0 1px 4px rgba(239,68,68,.06)}
 .an-sec-title{font-size:12.5px;font-weight:700;color:#b91c1c;margin:0 0 8px;display:flex;align-items:center;gap:6px}
@@ -206,7 +223,7 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-cat-name{font-weight:600;font-size:13px;color:#334155;flex:1;min-width:0}
 .an-cat-meta{font-size:11.5px;color:var(--muted);margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
 .an-cat.has-hit .an-cat-meta{color:#ef4444}
-.an-ignored-group{grid-column:1/-1;margin-top:4px;padding:10px;border:1px dashed #e2e8f0;border-radius:8px;background:#fafbfc;display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:8px}
+.an-ignored-group{grid-column:1/-1;margin-top:4px;padding:10px;border:1px dashed #e2e8f0;border-radius:8px;background:#fafbfc;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1px 12px}
 .an-ignored-head{grid-column:1/-1;font-size:11.5px;color:#64748b;font-weight:600;margin:0;display:flex;align-items:center;gap:6px}
 .an-ignored-head::before{content:'';display:inline-block;width:12px;height:1px;background:#94a3b8}
 .an-empty{text-align:center;padding:16px 12px;color:var(--muted);font-size:12.5px}
@@ -322,96 +339,96 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
 .rp-day.disabled{color:#c9cdd4;cursor:default}
 .rp-day.disabled:hover{background:transparent;color:#c9cdd4}
 </style></head>
-<body><div id="toastWrap" class="toast-wrap"></div><div id="chartTip"></div><div id="rangePicker" class="range-picker-pop hide"><div class="rp-header"><button class="rp-nav" data-dir="-1">‹</button><span class="rp-title"></span><button class="rp-nav" data-dir="1">›</button></div><div class="rp-weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="rp-days"></div></div><div class="wrap">
-<header class="app-header">
-  <div class="brand">
-    <svg class="logo" viewBox="0 0 40 40"><defs><linearGradient id="lg" x1="0" y1="0" x2="40" y2="40"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1d4ed8"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#lg)"/><path d="M11 27 L11 19 M20 27 L20 15 M29 27 L29 21" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <div>
-      <h1><strong>Yuref</strong> · Kickstarter Referrer Report</h1>
-      <div class="head-line"><p>上传 referrers CSV → 自动按口径拆分 → 即时查看渠道结果</p><div class="head-badges"><span>纯前端 · 数据不出本机</span><span>自动归类</span></div></div>
+<body data-page-node-id="gNA3CbBcCG7Nqf8WHhbTRR"><div id="toastWrap" class="toast-wrap" data-page-node-id="DEyE776Fk5vCEnLikXnv5W"></div><div id="chartTip" data-page-node-id="Dc2bRL5qbqdwmeNq3f1Pzh"></div><div id="rangePicker" class="range-picker-pop hide" data-page-node-id="7sP8kysQvUAb2T5Ah9gHSF"><div class="rp-header" data-page-node-id="IzCIXU2MaY64d0N9HZNOsM"><button class="rp-nav" data-dir="-1" data-page-node-id="lYxShCvP9FzhRwUx1QyJ1X">‹</button><span class="rp-title" data-page-node-id="wUa4nsyUuTI8IZERP3WtD4"></span><button class="rp-nav" data-dir="1" data-page-node-id="DzGeBvzKdW2jAmE3b9ubtZ">›</button></div><div class="rp-weekdays" data-page-node-id="EZZOzePtzUCZJbyDvo0OQO"><span data-page-node-id="W13VlE54Q2Jytotbqr598e">日</span><span data-page-node-id="ckZiCojlJRRhnEyRVlAJfY">一</span><span data-page-node-id="GL8Fd78tdEHM0uBzXe0W5J">二</span><span data-page-node-id="MDlimnVUVgoiJj1HFq6fal">三</span><span data-page-node-id="PvpCapJla73oPZUWgxXgx8">四</span><span data-page-node-id="A3ZTDElop4yICWeRRy58rd">五</span><span data-page-node-id="vvJ28gCGB1zXdjMhuOn4tK">六</span></div><div class="rp-days" data-page-node-id="snkD0H23jdTpMdycnqHrsR"></div></div><div class="wrap" data-page-node-id="Zf0JnNj3Ke6HAf0AJoerKx">
+<header class="app-header" data-page-node-id="k9So2OjZxzi6HGYumG6XXb">
+  <div class="brand" data-page-node-id="qqxEF585OIDRhvxgLh3ocH">
+    <svg class="logo" viewBox="0 0 40 40" data-page-node-id="HkFkvf2geCQXGv6Ko6NiJ2"><defs data-page-node-id="NClmERLqxNtLZCC3IPUon3"><linearGradient id="lg" x1="0" y1="0" x2="40" y2="40" data-page-node-id="cvWtKB03kGiwAs83NflHph"><stop offset="0%" stop-color="#3b82f6" data-page-node-id="3DPKbaAiLjoBOZ5DRF38a6"/><stop offset="100%" stop-color="#1d4ed8" data-page-node-id="zDFjijvirmIL2okxBVqO0d"/></linearGradient></defs><rect width="40" height="40" rx="10" fill="url(#lg)" data-page-node-id="DT8RcSZWCEqHHjxStE8BYl"/><path d="M11 27 L11 19 M20 27 L20 15 M29 27 L29 21" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="z1llKsXvBCJyQzUA4lbTfW"/></svg>
+    <div data-page-node-id="TYGvVdNFzxr2mHnQCHGGMK">
+      <h1 data-page-node-id="8Txdlx0eDuzK91n6EddpQm"><strong data-page-node-id="CRC0vpFZRqCSwZLElKd9Rn">Yuref</strong> · Kickstarter Referrer Report</h1>
+      <div class="head-line" data-page-node-id="Cp4hMoH5F7pYkrRlO2qXHe"><p data-page-node-id="dP3BABPGMsgC8HyEjXRQqK">上传 referrers CSV → 自动按口径拆分 → 即时查看渠道结果</p><div class="head-badges" data-page-node-id="Rq4wyPcERCqGf6DI9FtNLX"><span data-page-node-id="XtppvGO7qx41R1uT0eEs12">纯前端 · 数据不出本机</span><span data-page-node-id="ooiNDVKzLYCQzcmz9GHMTz">自动归类</span></div></div>
     </div>
   </div>
 </header>
 
-<div class="panel" id="uploadPanel">
-  <div class="upload-head">
-    <h2>① 上传数据</h2>
-    <div class="proj-group">
-      <div class="proj-switcher" id="projSwitcherTop">
-        <button class="proj-trigger" id="projTriggerTop" aria-haspopup="true" title="切换 / 管理项目">
-          <span class="proj-avatar" id="projAvatarTop">Y</span>
-          <span class="proj-name" id="projNameTop">default</span>
-          <svg class="proj-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+<div class="panel" id="uploadPanel" data-page-node-id="deU0YCVrs89TYkwsfsJKxZ">
+  <div class="upload-head" data-page-node-id="mv7L5ZeAoTSrS51qYzNs9O">
+    <h2 data-page-node-id="zFNAZPAxveAYpUG9dEdzvy">① 上传数据</h2>
+    <div class="proj-group" data-page-node-id="4puRWG6cHEMpXVzogKkw1K">
+      <div class="proj-switcher" id="projSwitcherTop" data-page-node-id="o1QHNleQGqyc4WNClDAaCX">
+        <button class="proj-trigger" id="projTriggerTop" aria-haspopup="true" title="切换 / 管理项目" data-page-node-id="oLue0t5t1mEHxrGXmE7YIZ">
+          <span class="proj-avatar" id="projAvatarTop" data-page-node-id="V0TI7wUQ6U3csKre6133Kv">Y</span>
+          <span class="proj-name" id="projNameTop" data-page-node-id="MoOHHxouxHCXEqJr5TShLV">default</span>
+          <svg class="proj-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="iN2ieLOEZ8UMaWMa7NfdsH"><path d="M6 9l6 6 6-6" data-page-node-id="RJdsPB2995LNrUIE8HbdCh"/></svg>
         </button>
-        <div class="proj-menu" id="projMenuTop">
-          <div class="proj-menu-head">我的项目</div>
-          <div class="proj-list" id="projListTop"></div>
-          <div class="proj-menu-actions">
-            <button class="proj-act" id="btnNewProjTop">＋ 新建</button>
-            <button class="proj-act" id="btnRenameProjTop">✎ 重命名</button>
-            <button class="proj-act danger" id="btnDeleteProjTop">🗑 删除</button>
+        <div class="proj-menu" id="projMenuTop" data-page-node-id="o1XyFpp8TiZSYM7TZWjwyd">
+          <div class="proj-menu-head" data-page-node-id="97tVHlUrsWLmc3u4Rd4j8W">我的项目</div>
+          <div class="proj-list" id="projListTop" data-page-node-id="eeD4cPUnFOQ9EaSNtbclcx"></div>
+          <div class="proj-menu-actions" data-page-node-id="jAVhZRzeY9KQTkmXOUrboS">
+            <button class="proj-act" id="btnNewProjTop" data-page-node-id="IuJxj4BSUSDtOBeR1NGTgQ">＋ 新建</button>
+            <button class="proj-act" id="btnRenameProjTop" data-page-node-id="xC1ChH0tml2oYV0BT6bT6T">✎ 重命名</button>
+            <button class="proj-act danger" id="btnDeleteProjTop" data-page-node-id="85Mr6LQ4kH2lfPCrbCCjb7">🗑 删除</button>
           </div>
         </div>
       </div>
-      <button class="btn ghost sm" id="btnGuide" title="查看使用说明">? 使用说明</button>
+      <button class="btn ghost sm" id="btnGuide" title="查看使用说明" data-page-node-id="mCEIvO2EcdT8WrDF3BOvs4">? 使用说明</button>
     </div>
   </div>
-  <div class="drop" id="drop">
-    <svg class="up-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    <div class="up-title">把 Kickstarter <b>referrers CSV</b> 拖到这里</div>
-    <div class="up-sub">或 <span>点击选择文件</span></div>
-    <input type="file" id="file" accept=".csv" class="hide">
+  <div class="drop" id="drop" data-page-node-id="mASua2utK6mhhV2dPvlosU">
+    <svg class="up-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="R1M360xomkelCPrBqxaUBn"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" data-page-node-id="NsCeoJ1BNd8gpcBvGnmUUO"/><polyline points="17 8 12 3 7 8" data-page-node-id="oFqIOy2pz47GYm5dafXuqH"/><line x1="12" y1="3" x2="12" y2="15" data-page-node-id="0vghGhqpM2eC488hF25wTF"/></svg>
+    <div class="up-title" data-page-node-id="irwAGLNN1aXjLQsLhR10lF">把 Kickstarter <b data-page-node-id="s2WQgwHyyfM2X5SnFHwgCS">referrers CSV</b> 拖到这里</div>
+    <div class="up-sub" data-page-node-id="R0SeD1QrrywuBfJRh6J5fq">或 <span data-page-node-id="vpUj7vclmDBh5BQjDAgQOo">点击选择文件</span></div>
+    <input type="file" id="file" accept=".csv" class="hide" data-page-node-id="Rv0Imh3xCx6br7lgJGM3VM">
   </div>
-  <div class="paste-toggle" id="pasteToggle">无法上传？粘贴 CSV 文本</div>
-  <div class="paste-area" id="pasteArea">
+  <div class="paste-toggle" id="pasteToggle" data-page-node-id="eO92xL2CVKIRkzETVfGjc0">无法上传？粘贴 CSV 文本</div>
+  <div class="paste-area" id="pasteArea" data-page-node-id="f3Tuu2V3k2etASGHGJsWwg">
     <textarea id="csvPaste" rows="5" placeholder="粘贴 KS referrers CSV 内容（含表头 Referrer,Date,Type,# of Pledges,%,Pledged）" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:Menlo,Consolas,monospace;font-size:12px;resize:vertical"></textarea>
-    <button class="btn" id="btnParse">生成报表</button>
+    <button class="btn" id="btnParse" data-page-node-id="oh1o8DJgudYslgthIIxRf2">生成报表</button>
   </div>
-  <div class="upload-note">上传后会自动生成；粘贴文本后点击「生成报表」。分析日 / 对比日 / 项目名在报表上方工具栏选择；如需调整口径，见下方「分类口径调整」。</div>
-  <div id="dataInfo" class="data-info hide"></div>
+  <div class="upload-note" data-page-node-id="vxR4WKYB3Yp9Zh5h6UQdbQ">上传后会自动生成；粘贴文本后点击「生成报表」。分析日 / 对比日 / 项目名在报表上方工具栏选择；如需调整口径，见下方「分类口径调整」。</div>
+  <div id="dataInfo" class="data-info hide" data-page-node-id="OK2QubpqBmaAxBX1JhZrg6"></div>
 </div>
 
-<div class="panel hide" id="mapPanel">
-  <h2>② 分类口径调整（可选）</h2>
-  <div class="desc" style="color:var(--muted);font-size:13px">默认规则已自动归类，只需关注标 ⚠️ 的"待确认"项；其余按类别折叠，点标题展开。改完自动保存并刷新报表。</div>
-  <div class="map-tools">
-    <input type="text" id="mapSearch" placeholder="搜索 referrer…">
-    <label class="chk"><input type="checkbox" id="mapOnlyWarn"> 仅看待确认</label>
-    <button class="btn ghost sm" id="mapExpand">全部展开</button>
-    <button class="btn ghost sm" id="mapCollapse">全部折叠</button>
+<div class="panel hide" id="mapPanel" data-page-node-id="ZIMpOxnCY8gkuzkxkNoxyg">
+  <h2 data-page-node-id="5x7c8LIwwT7exmaoHTEl0T">② 分类口径调整（可选）</h2>
+  <div class="desc" style="color:var(--muted);font-size:13px" data-page-node-id="2ZpAmEq83W4IDYUkKr8TbM">默认规则已自动归类，只需关注标 ⚠️ 的"待确认"项；其余按类别折叠，点标题展开。改完自动保存并刷新报表。</div>
+  <div class="map-tools" data-page-node-id="wEVzbAHA255yqEihxhk5rE">
+    <input type="text" id="mapSearch" placeholder="搜索 referrer…" data-page-node-id="Mm3QwiUtfaJeKlDBnN1BSA">
+    <label class="chk" data-page-node-id="NHXgBWdCBgbEIWf1Y1ZuB5"><input type="checkbox" id="mapOnlyWarn" data-page-node-id="7OE3c0CHVVToJdBTVY5EC1"> 仅看待确认</label>
+    <button class="btn ghost sm" id="mapExpand" data-page-node-id="j5vOkCupmHs5HiG6kH9r8R">全部展开</button>
+    <button class="btn ghost sm" id="mapCollapse" data-page-node-id="Der1iPLKVMIUi6fR7YZ4eC">全部折叠</button>
   </div>
-  <div id="mapList"></div>
-  <div style="margin-top:14px">
-    <button class="btn ghost" id="btnClear">重置手动归类</button>
+  <div id="mapList" data-page-node-id="CjZYej0MWNpau2EzxuXPpO"></div>
+  <div style="margin-top:14px" data-page-node-id="HU296kGCrg2x01jzDXzji0">
+    <button class="btn ghost" id="btnClear" data-page-node-id="lxQrphTu2cF75j43CDZd5U">重置手动归类</button>
   </div>
-  <div class="hint">💾 = 已记住的手动归类（存于本机浏览器，下次上传自动套用）；⚠️ = 未命中默认规则、建议手动指定。</div>
+  <div class="hint" data-page-node-id="9PbPlRf4nCLOUwCqTxGOhO">💾 = 已记住的手动归类（存于本机浏览器，下次上传自动套用）；⚠️ = 未命中默认规则、建议手动指定。</div>
 </div>
 
-<div class="panel hide" id="reportPanel">
-  <div class="rpt-toolbar">
-    <div class="rpt-dates">
-      <label>分析日<select id="selD"></select></label>
-      <label>对比日<select id="selP"></select></label>
+<div class="panel hide" id="reportPanel" data-page-node-id="QqsM2OCni4KNAGP41cBo6G">
+  <div class="rpt-toolbar" data-page-node-id="8RHS5R3eunM5rUzuSfVnp4">
+    <div class="rpt-dates" data-page-node-id="GkwS84cOsYBGCFXTgDQR54">
+      <label data-page-node-id="O2CEGYmGA9GphrqcHJBzGH">分析日<select id="selD" data-page-node-id="RFa7waAO9h3kAuvIM8riDx"></select></label>
+      <label data-page-node-id="TbYFWwNMftlJHMHeMbrdR9">对比日<select id="selP" data-page-node-id="BjNPfo7PISBXr31UHITBGE"></select></label>
     </div>
-    <div class="rpt-right">
-      <span class="proj-chip" id="projChip">default</span>
-      <label class="cur-sel" title="CSV 中金额的原始币种，按项目记忆">数据币种<select id="origCurSel"><option value="USD">USD $</option><option value="HKD">HKD HK$</option></select></label>
-      <label class="cur-sel" title="报表以哪种币种呈现，可随时切换">显示为<select id="displayCurSel"><option value="USD">美元 $</option><option value="HKD">港币 HK$</option></select></label>
-      <button class="btn ghost sm" id="btnDl">下载报表 HTML</button>
+    <div class="rpt-right" data-page-node-id="AoJngWmmaDbAgt4DSgYiJi">
+      <span class="proj-chip" id="projChip" data-page-node-id="ULyXYtzKDjPXktoGtLULSf">default</span>
+      <label class="cur-sel" title="CSV 中金额的原始币种，按项目记忆" data-page-node-id="4vN2cy61ft79rkrh2NPJSf">数据币种<select id="origCurSel" data-page-node-id="56eiZPEAoDanIzOBS7Mb7s"><option value="USD" data-page-node-id="I7zlpU6csapCpzRuLAKlai">USD $</option><option value="HKD" data-page-node-id="TtNlT3sgu5MPoD0EpFRujy">HKD HK$</option></select></label>
+      <label class="cur-sel" title="报表以哪种币种呈现，可随时切换" data-page-node-id="2YQXLzvHsmVXdvwLrGuHKU">显示为<select id="displayCurSel" data-page-node-id="zpFX6787sNMS3zJtasHHC0"><option value="USD" data-page-node-id="k8tsCI2UNDeF893RVjiA5D">美元 $</option><option value="HKD" data-page-node-id="rXCHoZTqHj9qnfCtAyVB4h">港币 HK$</option></select></label>
+      <button class="btn ghost sm" id="btnDl" data-page-node-id="pAnIM25TMFJ3iWgr8MrF4U">下载报表 HTML</button>
     </div>
   </div>
-  <div id="reportBody"></div>
+  <div id="reportBody" data-page-node-id="12m55lGor20u4k2pQeHqq3"></div>
 </div>
-<footer class="app-footer">Yuref · Kickstarter Referrer Report — 纯前端单文件工具，数据仅存于本机浏览器。<br>Developer: Theo Yan</footer>
+<footer class="app-footer" data-page-node-id="gluyBKxkDVzmd09Fis0anZ">Yuref · Kickstarter Referrer Report — 纯前端单文件工具，数据仅存于本机浏览器。<br data-page-node-id="q7tMy2XR57xdW6F1y76ZcS">Developer: Theo Yan</footer>
 </div>
 
-<div class="modal-mask" id="nameModal">
-  <div class="modal">
-    <h3 id="nameModalTitle">新建项目</h3>
-    <input id="nameInput" type="text" placeholder="输入项目名称" maxlength="40" autocomplete="off">
-    <div class="modal-actions">
-      <button class="btn ghost sm" id="nameCancel">取消</button>
-      <button class="btn sm" id="nameOk">确定</button>
+<div class="modal-mask" id="nameModal" data-page-node-id="bWDqDbVsXf3zklM3EO1DhZ">
+  <div class="modal" data-page-node-id="xXOhKJYuE8OOLoLSR3NTyG">
+    <h3 id="nameModalTitle" data-page-node-id="pqAF60r6Km1fzntvsol5FC">新建项目</h3>
+    <input id="nameInput" type="text" placeholder="输入项目名称" maxlength="40" autocomplete="off" data-page-node-id="GlwqBrio7WIBvtoHmhSC69">
+    <div class="modal-actions" data-page-node-id="sZRavTFABKA7vI7N5OmdUC">
+      <button class="btn ghost sm" id="nameCancel" data-page-node-id="fwP1GZeHOk6EDtmoiyPXci">取消</button>
+      <button class="btn sm" id="nameOk" data-page-node-id="Eu9Vo8vxM3phomE3Jaj3xR">确定</button>
     </div>
   </div>
 </div>
@@ -1330,43 +1347,50 @@ function buildAnomalyData(){
   });
   return list;
 }
-// 横向条形图：peak → current 的资金存活率。每个 snap 一根柱，peak 柱描边高亮
-// 用 SVG 画是因为它要 1) 透明可叠加 2) 鼠标悬浮看数值（未来可加 title）
-function anomalyBar(it, flagged, useVol){
-  const W=240,H=46,padL=0,padR=0,padT=8,padB=8;
+// 起跌日：峰值日之后，第一个明显低于峰值的快照日期（5% 容差，滤掉日常噪声波动）。
+// 用途是回答"从哪天开始掉的"——比逐日柱状图更直接，且不受快照数量影响。
+// 容差取 5% 的理由：净金额口径下 ±3% 以内多为汇率/退款尾数抖动，不构成趋势转折。
+function firstDropDay(it, useVol){
+  const key=useVol?'pl':'am';
+  const peak=useVol?it.peakPl:it.peak;
   const ds=it.ds.slice();
-  const ams=ds.map(d=>useVol?it.series[d].pl:it.series[d].am);
-  if(it.vanished){ ds.push(it.latestD); ams.push(0); } // 已消失：末尾补 0 柱，更直观
-  const maxA=Math.max(...ams,1);
-  const n=ams.length;
-  const slot=(W-padL-padR)/n;
-  const barW=Math.max(2, slot-3);
-  const barH=H-padT-padB;
-  const pi=ams.indexOf(maxA);
-  let bars='';
-  for(let i=0;i<n;i++){
-    const v=ams[i], h=Math.max(2, v/maxA*barH);
-    const x=padL+i*slot+(slot-barW)/2;
-    const y=padT+(barH-h);
-    const isPeak=i===pi;
-    const isLatest=i===n-1;
-    let fill='#cbd5e1', stroke='none', strokeW=0;
-    if(flagged && isPeak){ fill='#fecaca'; stroke='#ef4444'; strokeW=1.5; }
-    else if(isPeak){ fill='#cbd5e1'; stroke='#94a3b8'; strokeW=1.2; }
-    if(flagged && isLatest && v===0){ fill='#fecaca'; } // 最新一根为 0 高亮
-    bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" rx="1.5"/>`;
+  if(it.vanished) ds.push(it.latestD); // 已消失：最新快照不在 series 里，补进来参与判定
+  const pi=ds.indexOf(it.peakD);
+  if(pi<0||peak<=0) return null;
+  const tol=peak*0.95;
+  for(let i=pi+1;i<ds.length;i++){
+    const e=it.series[ds[i]];
+    if((e?e[key]:0)<tol) return ds[i];
   }
-  return `<svg width="${W}" height="${H}" class="an-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${bars}</svg>`;
+  return null;
 }
+// 命中卡片（A 样式）：当前值 + 大号降幅 + 剩余进度条 + 起跌时间线
+// 设计原则：一个卡片只回答三个问题 —— 现在还剩多少 / 掉了多少 / 从哪天开始掉的。
+// 进度条长度 = 当前/峰值（"还剩多少"），降幅大字承担"掉了多少"，底部时间线承担"哪天开始掉"。
 function anomalyCard(it, flagged, dim, ignored){
   const col=CAT_COLORS[it.cat]||'#94a3b8';
-  const pct=(it.drop*100).toFixed(0), pctPl=(it.dropPl*100).toFixed(0);
-  const useVol = dim==='vol';
-  const amCls = flagged && (dim==='amount'||dim==='either'||dim==='both') ? 'down':'';
-  const plCls = flagged && (dim==='vol'||dim==='either'||dim==='both') ? 'down':'';
-  const badge = flagged ? (it.vanished?'已消失':(dim==='vol'?'异常·单量':(dim==='amount'?'异常·金额':(dim==='both'?'异常·双':(dim==='either'?'异常':''))))) : (ignored?'已忽略':'');
-  const curTxt = it.vanished ? '已退光' : fmt(it.latest);
-  const curSub = it.vanished ? '最新快照无' : it.latestD.slice(5);
+  const useVol = dim==='vol';                       // 主维度：只有明确选单量才用单量，其余用金额
+  const peak = useVol?it.peakPl:it.peak;
+  const cur  = useVol?it.latestPl:it.latest;
+  const drop = (useVol?it.dropPl:it.drop)*100;      // 回撤百分比（相对峰值）
+  const remain = peak>0 ? Math.max(0,Math.min(1,cur/peak)) : 0;
+  // 进度条配色按回撤幅度分四档：灰(正常) → 橙(25%+) → 红(50%+) → 深红(80%+ 或已退光)
+  let barCol='#94a3b8', bigCls='';
+  if(it.vanished||drop>=80){ barCol='#b91c1c'; bigCls=' zero'; }
+  else if(drop>=50){ barCol='#ef4444'; }
+  else if(drop>=25){ barCol='#f59e0b'; bigCls=' mid'; }
+  const curTxt = it.vanished ? fmt(0) : (useVol ? String(cur) : fmt(cur)); // 已退光大字直接显示 $0，状态由徽章说明
+  const dropTxt = (drop<0.5?'':'−')+drop.toFixed(0)+'%';
+  const badge = flagged ? (it.vanished?'已退光':(useVol?'异常·单量':'异常·金额')) : (ignored?'已忽略':'');
+  // 时间轴：峰值日 → 起跌日 → 最新快照日（只标日期，金额由上面大字和峰值承担，避免重复）
+  const fd = firstDropDay(it, useVol);
+  const trend = `峰值 <b>${it.peakD.slice(5)}</b>`+
+    (fd?` <span class="arw">→</span> 起跌 <span class="at">${fd.slice(5)}</span> <span class="arw">→</span> ${it.latestD.slice(5)}`
+       :` <span class="arw">→</span> ${it.latestD.slice(5)} <span class="arw">·</span> 峰值后未见明显回落`);
+  // 副行补齐另一个维度，避免切维度时丢信息
+  const subTxt = useVol
+    ? `金额 ${fmt(it.peak)} → ${fmt(it.latest)}`
+    : `单量 ${it.peakPl} → ${it.latestPl}`;
   // link key 用于 ignore 标记（不区分大小写）
   const linkKey = (it._allKey || (it.link||'').toLowerCase());
   return `<div class="an-card${flagged?' flag':''}${it.vanished?' van':''}${ignored?' ignored':''}" data-key="${escapeAttr(linkKey)}">
@@ -1376,17 +1400,43 @@ function anomalyCard(it, flagged, dim, ignored){
       ${badge?`<span class="an-badge${it.vanished?' van-badge':''}${ignored?' ig-badge':''}">${badge}</span>`:''}
       <button class="an-ignore" data-act="${ignored?'unignore':'ignore'}" data-key="${escapeAttr(linkKey)}" title="${ignored?'取消忽略，重新参与识别':'忽略此 link（保留显示，但不再计入异常）'}">${ignored?'↺ 取消忽略':'忽略'}</button>
     </div>
-    <div class="an-body">
-      <div class="an-bar-wrap">${anomalyBar(it,flagged,useVol)}</div>
-      <div class="an-stats">
-        <div class="an-stat"><span class="an-lbl">峰值</span><b class="num">${fmt(it.peak)}<i class="an-sub">${it.peakD.slice(5)}</i></b></div>
-        <div class="an-stat"><span class="an-lbl">当前</span><b class="num${flagged?' down':''}">${curTxt}${it.vanished?'':`<i class="an-sub">${curSub}</i>`}</b></div>
-        <div class="an-stat an-drops">
-          <span class="an-dropline"><span class="an-lbl">金额</span><b class="${amCls||'num'}">-${Math.abs(pct)}%</b></span>
-          <span class="an-dropline"><span class="an-lbl">单量</span><b class="${plCls||'num'}">-${Math.abs(pctPl)}%</b></span>
-        </div>
+    <div class="an-main">
+      <div class="an-bigrow">
+        <b class="an-cur${(it.vanished||drop>=25)?' down':''}">${curTxt}</b>
+        <b class="an-dropbig${bigCls}">${dropTxt}</b>
       </div>
+      <div class="an-prog${remain<=0.001?' empty':''}"><i style="width:${(remain*100).toFixed(1)}%;background:${barCol}"></i></div>
+      <div class="an-prog-lab"><span>剩 <b>${(remain*100).toFixed(0)}%</b></span><span>${useVol?peak:fmt(peak)}</span></div>
+      <div class="an-trend">${trend}</div>
+      <div class="an-sub2">${subTxt}</div>
     </div>
+  </div>`;
+}
+// 正常 / 已忽略 link：极简单行（不画进度条），只给「峰值 → 当前」和相对变化
+function anomalyMiniRow(it, dim, ignored){
+  const col=CAT_COLORS[it.cat]||'#94a3b8';
+  const useVol = dim==='vol';
+  const peak = useVol?it.peakPl:it.peak;
+  const cur  = useVol?it.latestPl:it.latest;
+  const f = v=>useVol?String(v):fmt(v);
+  const delta = peak>0 ? (cur-peak)/peak*100 : 0;
+  const dCls = delta>0.5?'up':(delta<-0.5?'dn':'');
+  const dTxt = (delta>0.5?'+':'')+delta.toFixed(0)+'%';
+  // 极简行只回答两件事：有没有在掉 / 从哪天开始掉。
+  // 峰值即最新（还在涨或持平）时不再重复打印两个相同的数，直接给"未见回落"。
+  const linkKey = (it._allKey || (it.link||'').toLowerCase());
+  let tail;
+  if(it.vanished) tail = `<b class="dn">已消失</b>`;
+  else if(Math.abs(delta)<0.5) tail = `${f(peak)} <span>未见回落</span>`;
+  else{
+    const fd = delta<-5 ? firstDropDay(it, useVol) : null; // 只在真有回落时才补起跌日，避免行太长
+    tail = `${f(peak)} → ${f(cur)} <b class="${dCls}">${dTxt}</b>`+(fd?` <span>起跌 ${fd.slice(5)}</span>`:'');
+  }
+  return `<div class="an-mini${ignored?' ignored':''}" data-key="${escapeAttr(linkKey)}">
+    <span class="dot" style="background:${col}"></span>
+    <span class="an-link" title="${escapeAttr(it.link)}">${escapeAttr(it.link)}</span>
+    <span class="an-mini-val">${tail}</span>
+    <button class="an-ignore" data-act="${ignored?'unignore':'ignore'}" data-key="${escapeAttr(linkKey)}" title="${ignored?'取消忽略，重新参与识别':'忽略此 link'}">${ignored?'↺':'忽略'}</button>
   </div>`;
 }
 function buildAnomalyHtml(){
@@ -1442,6 +1492,9 @@ function buildAnomalyHtml(){
 //  only=false → 风险速览（置顶）+ 按分类折叠分组；展开后可见该分类下【所有】link（命中标红 / 正常平铺 / 已忽略灰显）
 function anomalyCardsHtml(list, dim, only){
   const thr=STATE.anomalyThreshold;
+  // 兜底：老存档可能没有这两个字段（本地存档是按字段 merge 的），缺了会让下面直接抛错
+  STATE.anomalyCatCollapsed = STATE.anomalyCatCollapsed||{};
+  STATE.anomalyIgnored = STATE.anomalyIgnored||[];
   // 兜底：调用方未注入 _ignored 时自己补一次（兼容 renderAnomaly 热刷新）
   if(list.length && list[0]._ignored===undefined){
     const igSet=new Set((STATE.anomalyIgnored||[]).map(s=>s.toLowerCase()));
@@ -1459,7 +1512,7 @@ function anomalyCardsHtml(list, dim, only){
 
   const ignoredBlock = n=>ignored.length
     ? `<div class="an-ignored-group"><div class="an-ignored-head">已忽略 ${ignored.length}（仍可查看统计，随时可取消忽略）</div>`+
-      ignored.slice().sort(cmpRisk).map(it=>anomalyCard(it,false,dim,true)).join('')+`</div>`
+      ignored.slice().sort(cmpRisk).map(it=>anomalyMiniRow(it,dim,true)).join('')+`</div>`
     : '';
 
   // —— 只看异常：平铺命中，底部挂已忽略 ——
@@ -1499,17 +1552,20 @@ function anomalyCardsHtml(list, dim, only){
     if(igN) metaParts.push(`已忽略 ${igN}`);
     let bodyHtml='';
     if(!coll){
-      // 展开后展示该分类下所有 link：命中标红，正常平铺；已忽略单独虚线分组
-      const normal = items.filter(it=>!it._ignored && !isR(it));
+      // 展开后展示该分类下所有 link：命中走完整卡片，正常 + 已忽略走极简单行（避免一屏上百张卡片）
       const hits   = items.filter(isR);
+      const normal = items.filter(it=>!it._ignored && !isR(it));
       const igs    = items.filter(it=>it._ignored);
-      let cards = hits.map(it=>anomalyCard(it,true,dim,false)).join('')
-                + normal.map(it=>anomalyCard(it,false,dim,false)).join('');
-      if(igs.length){
-        cards += `<div class="an-ignored-group"><div class="an-ignored-head">已忽略 ${igs.length}（仍可查看统计，随时可取消忽略）</div>`+
-                 igs.map(it=>anomalyCard(it,false,dim,true)).join('')+`</div>`;
-      }
-      bodyHtml = `<div class="an-grid" style="padding:10px 12px;gap:10px">${cards}</div>`;
+      const cardHtml = hits.length
+        ? `<div class="an-grid"${normal.length||igs.length?' style="margin-bottom:10px"':''}>${hits.map(it=>anomalyCard(it,true,dim,false)).join('')}</div>`
+        : '';
+      const miniList = normal.map(it=>anomalyMiniRow(it,dim,false))
+                     .concat(igs.map(it=>anomalyMiniRow(it,dim,true)));
+      const miniHtml = miniList.length
+        ? `<div class="an-mini-head">${hits.length?`其余正常 link（${normal.length}）`:`本分类无命中（共 ${normal.length} 个 link）`}${igs.length?` · 已忽略 ${igs.length}`:''}</div>`+
+          `<div class="an-mini-grid">${miniList.join('')}</div>`
+        : '';
+      bodyHtml = `<div style="padding:10px 12px">${cardHtml}${miniHtml}</div>`;
     }
 
     html += `<div class="an-cat${coll?' collapsed':''}${hitN?' has-hit':''}">`+
