@@ -194,6 +194,21 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-dropline .an-lbl{width:24px}
 .an-dropline b{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .an-body-grid{display:flex;flex-direction:column;gap:14px}
+.an-section.an-risk{background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:10px 12px;box-shadow:0 1px 4px rgba(239,68,68,.06)}
+.an-sec-title{font-size:12.5px;font-weight:700;color:#b91c1c;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.an-cat{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;transition:box-shadow .12s}
+.an-cat:hover{box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.an-cat-head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;user-select:none;background:#f8fafc;transition:background .12s;border-bottom:1px solid transparent}
+.an-cat:not(.collapsed) .an-cat-head{border-bottom-color:var(--line)}
+.an-cat-head:hover{background:#f1f5f9}
+.an-cat-head .caret{font-size:11px;color:var(--muted);width:12px;text-align:center;flex:none;transition:transform .15s;display:inline-block}
+.an-cat.collapsed .an-cat-head .caret{transform:rotate(-90deg)}
+.an-cat-name{font-weight:600;font-size:13px;color:#334155;flex:1;min-width:0}
+.an-cat-meta{font-size:11.5px;color:var(--muted);margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
+.an-cat.has-hit .an-cat-meta{color:#ef4444}
+.an-ignored-group{grid-column:1/-1;margin-top:4px;padding:10px;border:1px dashed #e2e8f0;border-radius:8px;background:#fafbfc;display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:8px}
+.an-ignored-head{grid-column:1/-1;font-size:11.5px;color:#64748b;font-weight:600;margin:0;display:flex;align-items:center;gap:6px}
+.an-ignored-head::before{content:'';display:inline-block;width:12px;height:1px;background:#94a3b8}
 .an-empty{text-align:center;padding:16px 12px;color:var(--muted);font-size:12.5px}
 .an-banner.warn{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin:0 0 12px;font-size:12.5px;color:#78350f;line-height:1.55}
 .an-banner.warn b{color:#92400e}
@@ -705,7 +720,7 @@ function aggregate(rows, classifyFn){
 // ==CORE_END==
 
 // ---------- 以下为界面/渲染逻辑（依赖 DOM） ----------
-let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:true, anomalyDim:'amount', snapshots:[], anomalyCatCollapsed:{}, anomalyIgnored:[], anomalyShowIgnored:true };
+let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:false, anomalyDim:'amount', snapshots:[], anomalyCatCollapsed:{}, anomalyIgnored:[], anomalyShowIgnored:true };
 
 function finalClassify(ref, typ){
   if(STATE.override[ref]!==undefined) return STATE.override[ref];
@@ -1416,23 +1431,99 @@ function buildAnomalyHtml(){
         </select></label>
       <label class="an-ctl">告警阈值 <output id="anThrOut">${thr}%</output>
         <input type="range" id="anomalyThreshold" min="5" max="90" step="5" value="${thr}"></label>
+      <label class="an-ctl an-toggle"><input type="checkbox" id="anomalyOnly" ${STATE.anomalyOnly?'checked':''}> 只看异常（<span id="anOnlyCount">${flaggedCount}</span>）</label>
       <span class="an-meta" id="anMeta">${snaps.length} 个快照（${snaps.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 <b style="color:${flaggedCount?'#ef4444':'#0f172a'};font-variant-numeric:tabular-nums">${flaggedCount}</b>${igLink?` · ${igLink}`:''}</span>
     </div>
-    <div class="an-body-grid" id="anGrid">${anomalyCardsHtml(list, dim)}</div>
+    <div class="an-body-grid" id="anGrid">${anomalyCardsHtml(list, dim, STATE.anomalyOnly)}</div>
   </div>`;
 }
-// 异常卡片内部布局：风险速览（置顶）+ 按分类折叠分组
-function anomalyCardsHtml(list, dim){
+// 异常卡片布局：
+//  only=true  → 只看命中（平铺），底部附「已忽略」分组
+//  only=false → 风险速览（置顶）+ 按分类折叠分组；展开后可见该分类下【所有】link（命中标红 / 正常平铺 / 已忽略灰显）
+function anomalyCardsHtml(list, dim, only){
   const thr=STATE.anomalyThreshold;
-  const cmpRisk=(a,b)=>{ if(a.vanished!==b.vanished) return a.vanished?-1:1; if(Math.abs(a.drop-b.drop)>1e-9) return b.drop-a.drop; return b.peak-a.peak; };
-  const risk=list.filter(it=>!it._ignored && (it.vanished||anomalyFlag(it,thr,dim))).sort(cmpRisk);
-  // 已忽略：所有被忽略的 link 都展示（包括已消失/已命中），作为"灰显卡"，让用户随时能看到被忽略的
-  const ignored=list.filter(it=>it._ignored);
+  // 兜底：调用方未注入 _ignored 时自己补一次（兼容 renderAnomaly 热刷新）
+  if(list.length && list[0]._ignored===undefined){
+    const igSet=new Set((STATE.anomalyIgnored||[]).map(s=>s.toLowerCase()));
+    for(const it of list){ it._ignored = igSet.has((it.link||'').toLowerCase()); }
+  }
+  const cmpRisk=(a,b)=>{
+    if(a.vanished!==b.vanished) return a.vanished?-1:1;
+    if(Math.abs(a.drop-b.drop)>1e-9) return b.drop-a.drop;
+    return b.peak-a.peak;
+  };
+  // 命中 = 告警成立 且 未被忽略
+  const isR = it=>!it._ignored && (it.vanished||anomalyFlag(it,thr,dim));
+  const risk = list.filter(isR).sort(cmpRisk);
+  const ignored = list.filter(it=>it._ignored);
+
+  const ignoredBlock = n=>ignored.length
+    ? `<div class="an-ignored-group"><div class="an-ignored-head">已忽略 ${ignored.length}（仍可查看统计，随时可取消忽略）</div>`+
+      ignored.slice().sort(cmpRisk).map(it=>anomalyCard(it,false,dim,true)).join('')+`</div>`
+    : '';
+
+  // —— 只看异常：平铺命中，底部挂已忽略 ——
+  if(only){
+    let h = risk.length
+      ? '<div class="an-grid">'+risk.map(it=>anomalyCard(it,true,dim,false)).join('')+'</div>'
+      : '<div class="insight note">当前筛选下无命中（可放宽阈值或取消「只看异常」）。</div>';
+    h += ignoredBlock();
+    return h;
+  }
+
+  // —— 分组视图：风险速览 + 分类折叠 ——
   let html='';
-  if(risk.length) html += '<div class="an-grid">'+risk.map(it=>anomalyCard(it,true,dim,false)).join('')+'</div>';
-  if(ignored.length) html += '<div class="an-grid" style="margin-top:8px">'+ignored.map(it=>anomalyCard(it,false,dim,true)).join('')+'</div>';
-  if(!html) return '<div class="an-empty">当前筛选下无结果（可放宽阈值）。</div>';
-  return html;
+  if(risk.length){
+    html += `<div class="an-section an-risk"><div class="an-sec-title">⚠ 风险速览（${risk.length} 个，已消失优先）</div><div class="an-grid">${
+      risk.map(it=>anomalyCard(it,true,dim,false)).join('')
+    }</div></div>`;
+  }
+
+  const cats={};
+  for(const it of list){ (cats[it.cat]=cats[it.cat]||[]).push(it); }
+  const catOrder=CAT_ORDER.filter(c=>cats[c]);
+  catOrder.sort((a,b)=>{
+    const ra=cats[a].some(isR), rb=cats[b].some(isR);
+    if(ra!==rb) return rb?1:-1;
+    return CAT_ORDER.indexOf(a)-CAT_ORDER.indexOf(b);
+  });
+
+  for(const c of catOrder){
+    const items=cats[c].slice().sort(cmpRisk);
+    const hitN=items.filter(isR).length;
+    const igN=items.filter(it=>it._ignored).length;
+    // 默认折叠：仅当显式设为 false 才展开（避免上百条 link 一次性铺开）
+    const coll = STATE.anomalyCatCollapsed[c]!==false;
+
+    const metaParts=[`命中 ${hitN} / 共 ${items.length}`];
+    if(igN) metaParts.push(`已忽略 ${igN}`);
+    let bodyHtml='';
+    if(!coll){
+      // 展开后展示该分类下所有 link：命中标红，正常平铺；已忽略单独虚线分组
+      const normal = items.filter(it=>!it._ignored && !isR(it));
+      const hits   = items.filter(isR);
+      const igs    = items.filter(it=>it._ignored);
+      let cards = hits.map(it=>anomalyCard(it,true,dim,false)).join('')
+                + normal.map(it=>anomalyCard(it,false,dim,false)).join('');
+      if(igs.length){
+        cards += `<div class="an-ignored-group"><div class="an-ignored-head">已忽略 ${igs.length}（仍可查看统计，随时可取消忽略）</div>`+
+                 igs.map(it=>anomalyCard(it,false,dim,true)).join('')+`</div>`;
+      }
+      bodyHtml = `<div class="an-grid" style="padding:10px 12px;gap:10px">${cards}</div>`;
+    }
+
+    html += `<div class="an-cat${coll?' collapsed':''}${hitN?' has-hit':''}">`+
+      `<div class="an-cat-head" data-cat="${escapeAttr(c)}" title="点击折叠/展开">`+
+        `<span class="caret">${coll?'▸':'▾'}</span>`+
+        `<span class="dot" style="background:${CAT_COLORS[c]||'#94a3b8'}"></span>`+
+        `<span class="an-cat-name">${escapeHtml(c)}</span>`+
+        `<span class="an-cat-meta">${metaParts.join(' · ')}</span>`+
+      `</div>`+
+      bodyHtml+
+      `</div>`;
+  }
+
+  return html || '<div class="insight note">当前筛选下无结果（可放宽阈值）。</div>';
 }
 function renderAnomaly(){
   const grid=document.getElementById('anGrid'); if(!grid) return;
@@ -1443,7 +1534,7 @@ function renderAnomaly(){
   const igSet=new Set((STATE.anomalyIgnored||[]).map(s=>s.toLowerCase()));
   for(const it of list){ it._ignored = igSet.has((it.link||'').toLowerCase()); }
   const flagged=list.filter(it=>!it._ignored && (it.vanished||anomalyFlag(it,thr,dim)));
-  grid.innerHTML=anomalyCardsHtml(list, dim);
+  grid.innerHTML=anomalyCardsHtml(list, dim, STATE.anomalyOnly);
   // 顶层模块可能在 0 命中时整段不渲染（buildAnomalyHtml 返回 ''），这里同步处理
   const module=document.getElementById('anomalyModule');
   if(module){
@@ -1461,6 +1552,7 @@ function renderAnomaly(){
     const igN=list.filter(it=>it._ignored).length;
     meta.innerHTML = `${snaps.length} 个快照（${snaps.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 <b style="color:${flagged.length?'#ef4444':'#0f172a'};font-variant-numeric:tabular-nums">${flagged.length}</b>${igN?` · <a href="javascript:void(0)" id="anIgClear" style="color:#64748b;text-decoration:underline;cursor:pointer" title="清空所有已忽略 link">已忽略 ${igN}</a>`:''}`;
   }
+  const oc=document.getElementById('anOnlyCount'); if(oc) oc.textContent=flagged.length;
 }
 
 function renderReport(){
@@ -1830,8 +1922,20 @@ reportBodyEl.addEventListener('input', e=>{
 });
 reportBodyEl.addEventListener('change', e=>{
   if(e.target.id==='anomalyDim'){ STATE.anomalyDim=e.target.value; renderAnomaly(); }
+  if(e.target.id==='anomalyOnly'){ STATE.anomalyOnly=e.target.checked; renderAnomaly(); }
 });
 reportBodyEl.addEventListener('click', e=>{
+  // 异常板块：分类分组折叠/展开
+  const catHead=e.target.closest('.an-cat-head'); if(catHead){
+    STATE.anomalyCatCollapsed = STATE.anomalyCatCollapsed||{};
+    const cat=catHead.dataset.cat;
+    // 默认折叠（undefined 视为折叠）：折叠→展开(false)，展开→折叠(true)
+    const nowCollapsed = STATE.anomalyCatCollapsed[cat]!==false;
+    STATE.anomalyCatCollapsed[cat] = nowCollapsed ? false : true;
+    saveData();
+    renderAnomaly();
+    return;
+  }
   // 异常板块：忽略 / 取消忽略 / 清空忽略
   const igBtn=e.target.closest('.an-ignore'); if(igBtn){
     const key=igBtn.dataset.key; const act=igBtn.dataset.act;
