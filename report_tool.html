@@ -246,6 +246,11 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-body-grid{display:flex;flex-direction:column;gap:14px}
 .an-section.an-risk{background:#fff7f7;border:1px solid #fecaca;border-radius:10px;padding:10px 12px;box-shadow:0 1px 4px rgba(239,68,68,.06)}
 .an-sec-title{font-size:12.5px;font-weight:700;color:#b91c1c;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+/* 风险速览改为轻量统计条（不再重复渲染卡片，详细卡在各分类下） */
+.an-risk-bar{display:flex;align-items:center;gap:4px 12px;flex-wrap:wrap;padding:8px 12px}
+.an-risk-bar .an-sec-title{margin:0;color:#b91c1c;white-space:nowrap}
+.an-stat-line{font-size:12px;color:#475569;font-variant-numeric:tabular-nums;white-space:nowrap}
+.an-stat-line b{color:#ef4444;font-weight:700;font-variant-numeric:tabular-nums}
 .an-cat{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;transition:box-shadow .12s}
 .an-cat:hover{box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .an-cat-head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;user-select:none;background:#f8fafc;transition:background .12s;border-bottom:1px solid transparent}
@@ -1649,15 +1654,18 @@ function anomalyCardsHtml(list, dim, only){
     return h;
   }
 
-  // —— 分组视图：风险速览 + 分类折叠 ——
+  // —— 分组视图：轻量风险统计条（不重复卡片）+ 按分类折叠分组 ——
   let html='';
   if(risk.length||waves.length){
+    const catsHit=new Set([...risk,...waves].map(it=>it.cat));
+    const all=[...risk,...waves];
+    const maxMdd = all.length ? Math.max(...all.map(it=> dim==='vol'?(it.mddPl||0):(it.mdd||0))) : 0;
     const parts=[];
-    if(risk.length) parts.push(`命中 ${risk.length}`);
-    if(waves.length) parts.push(`波动 ${waves.length}`);
-    html += `<div class="an-section an-risk"><div class="an-sec-title">⚠ 风险速览（${parts.join(' · ')}，已消失优先）</div><div class="an-grid">${
-      risk.map(cardR).join('')+waves.map(cardW).join('')
-    }</div></div>`;
+    if(risk.length) parts.push(`命中 <b>${risk.length}</b>`);
+    if(waves.length) parts.push(`波动 <b>${waves.length}</b>`);
+    parts.push(`涉及 <b>${catsHit.size}</b> 个分类`);
+    if(maxMdd>0) parts.push(`最深回撤 <b>−${(maxMdd*100).toFixed(0)}%</b>`);
+    html += `<div class="an-section an-risk an-risk-bar"><span class="an-sec-title">⚠ 风险速览</span><span class="an-stat-line">${parts.join(' · ')}</span></div>`;
   }
 
   const cats={};
@@ -1676,8 +1684,11 @@ function anomalyCardsHtml(list, dim, only){
     const hitN=items.filter(isR).length;
     const waveN=items.filter(isW).length;
     const igN=items.filter(it=>it._ignored).length;
-    // 默认折叠：仅当显式设为 false 才展开（避免上百条 link 一次性铺开）
-    const coll = STATE.anomalyCatCollapsed[c]!==false;
+    // 默认展开逻辑：未手动设置过（undefined）时，有命中/波动的分类自动展开，干净分类折叠
+    // 用户手动点过（true/false）则遵从其选择
+    let coll = STATE.anomalyCatCollapsed[c];
+    if(coll===undefined) coll = !(hitN||waveN);
+    else coll = coll!==false;
 
     const metaParts=[];
     if(hitN) metaParts.push(`命中 ${hitN}`);
@@ -2360,7 +2371,7 @@ function restoreFrom(saved){
   STATE.D=(saved.D&&dates.includes(saved.D))?saved.D:dates[dates.length-1];
   STATE.P=(saved.P&&dates.includes(saved.P))?saved.P:addDays(STATE.D,-1);
   STATE.snapshots=Array.isArray(saved.snapshots)?saved.snapshots.slice():[];
-  STATE.anomalyCatCollapsed={}; for(const c of CAT_ORDER) STATE.anomalyCatCollapsed[c]=true;  // 默认折叠
+  STATE.anomalyCatCollapsed={};  // 不预填：有没有风险的分类由 anomalyCardsHtml 动态决定默认展开/折叠
   STATE.agg=aggregate(STATE.rows.filter(r=>!r.date||r.date<=STATE.D), finalClassify);
   // 迁移：旧数据无快照时，用当前 CSV 种子化第一个快照
   if(!STATE.snapshots.length) recordSnapshot(STATE.rows);
