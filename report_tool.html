@@ -64,8 +64,10 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .share-modal-select{width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:13.5px;color:var(--fg,#0f172a);cursor:pointer;transition:border-color .15s,box-shadow .15s;margin-bottom:14px}
 .share-modal-select:hover{border-color:#94a3b8}
 .share-modal-select:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15)}
-.share-modal-actions{display:flex;align-items:center;gap:10px;padding-top:16px;border-top:1px solid #f1f5f9;margin-top:4px;flex-wrap:wrap}
-.share-modal-actions .grow{flex:1;min-width:0}
+.share-modal-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid #f1f5f9;margin-top:4px;flex-wrap:nowrap}
+.share-modal-actions .grow:empty{display:none}
+.share-modal-actions .grow{font-size:12px;color:#64748b}
+.share-modal-actions #shareHint{margin-right:auto}
 .share-modal-actions .btn{margin-top:0}
 @media (max-width:560px){.share-modal-overview{flex-direction:column}.share-modal-actions{flex-direction:column;align-items:stretch}}
 
@@ -529,7 +531,6 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
     <select id="mergeSel" class="share-modal-select"></select>
     <div class="share-modal-actions">
       <button class="btn ghost sm" id="mergeCancel">取消</button>
-      <span class="grow"></span>
       <button class="btn ghost sm" id="mergeNew">另存为新项目</button>
       <button class="btn sm" id="mergeDo">合并到所选项目</button>
     </div>
