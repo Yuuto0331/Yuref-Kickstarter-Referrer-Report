@@ -46,7 +46,28 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .modal{background:#fff;border-radius:16px;padding:22px 24px;width:340px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.25)}
 .modal h3{margin:0 0 14px;font-size:16px}
 .modal input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit}
-.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.share-modal-head{display:flex;align-items:center;gap:10px;margin:-4px 0 14px;padding-bottom:14px;border-bottom:1px solid #f1f5f9}
+.share-modal-head h3{margin:0;font-size:17px;font-weight:700;color:var(--fg,#0f172a)}
+.share-modal-head .ico{width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:17px;background:linear-gradient(135deg,#eef2ff,#dbeafe);color:#4338ca;flex-shrink:0}
+.share-modal-head .ico.merge{background:linear-gradient(135deg,#fef3c7,#fde68a);color:#b45309}
+.share-modal-overview{display:flex;gap:10px;margin:0 0 12px}
+.share-modal-info{flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:13px;color:#334155;line-height:1.55}
+.share-modal-info .label{font-size:11px;color:#64748b;font-weight:600;margin-bottom:3px;letter-spacing:.02em}
+.share-modal-info .src{font-weight:600;color:#0f172a}
+.share-modal-info .meta{margin-top:6px;display:flex;gap:10px;flex-wrap:wrap}
+.share-modal-info .meta b{color:#0f172a;font-weight:600}
+.share-modal-info .meta .pill{display:inline-flex;align-items:center;padding:1px 8px;background:#fff;border:1px solid #e2e8f0;border-radius:999px;font-size:12px;color:#475569}
+.share-modal-rule{display:flex;gap:8px;align-items:flex-start;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:9px 12px;margin:0 0 14px;font-size:12.5px;line-height:1.55;color:#92400e}
+.share-modal-rule .dot{width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-top:7px;flex-shrink:0}
+.share-modal-rule b{color:#78350f}
+.share-modal-label{display:block;font-size:12px;font-weight:600;color:#475569;margin:0 0 6px}
+.share-modal-select{width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:13.5px;color:var(--fg,#0f172a);cursor:pointer;transition:border-color .15s,box-shadow .15s;margin-bottom:14px}
+.share-modal-select:hover{border-color:#94a3b8}
+.share-modal-select:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+.share-modal-actions{display:flex;align-items:center;gap:8px;padding-top:14px;border-top:1px solid #f1f5f9;margin-top:4px}
+.share-modal-actions .grow{flex:1}
+.share-modal-actions .btn{min-width:0}
+@media (max-width:560px){.share-modal-overview{flex-direction:column}.share-modal-actions{flex-wrap:wrap}}
 
 .panel{background:var(--panel);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin:18px 0;transition:box-shadow .15s}.panel:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
 .panel h2{margin:0 0 14px;font-size:16px}.upload-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}.upload-head h2{margin:0}
@@ -474,29 +495,43 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
 </div>
 
 <div class="modal-mask" id="shareMask" data-page-node-id="ksShareMask">
-  <div class="modal" style="max-width:580px" data-page-node-id="ksShareModal">
-    <h3>🔗 复制分享链接</h3>
-    <div class="desc" id="shareNote"></div>
-    <input id="shareLink" class="share-link" readonly>
-    <div class="modal-actions">
+  <div class="modal" style="max-width:560px;padding:24px 26px" data-page-node-id="ksShareModal">
+    <div class="share-modal-head">
+      <span class="ico">🔗</span>
+      <h3>复制分享链接</h3>
+    </div>
+    <div class="share-modal-info" id="shareNote" style="margin-bottom:14px"></div>
+    <label class="share-modal-label">分享链接</label>
+    <input id="shareLink" class="share-modal-select" style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;color:#0f172a" readonly>
+    <div class="share-modal-actions">
+      <span class="grow" style="font-size:12px;color:#64748b" id="shareHint"></span>
       <button class="btn ghost sm" id="shareCopy">复制链接</button>
-      <button class="btn ghost sm" id="shareFile">下载自包含 HTML</button>
+      <button class="btn ghost sm" id="shareFile">下载 HTML</button>
       <button class="btn sm" id="shareClose">关闭</button>
     </div>
   </div>
 </div>
 
 <div class="modal-mask" id="mergeMask" data-page-node-id="ksMergeMask">
-  <div class="modal" style="max-width:540px" data-page-node-id="ksMergeModal">
-    <h3>🔀 合并 / 载入分享数据</h3>
-    <div class="desc" id="mergeNote"></div>
-    <div class="modal-actions" style="margin-top:12px;justify-content:space-between;align-items:center">
-      <select id="mergeSel" class="share-link" style="flex:1;margin-right:12px;min-width:0"></select>
-      <div style="display:flex;gap:8px;flex-shrink:0">
-        <button class="btn sm" id="mergeDo">合并到所选项目</button>
-        <button class="btn ghost sm" id="mergeNew">另存为新项目</button>
-        <button class="btn ghost sm" id="mergeCancel">取消</button>
-      </div>
+  <div class="modal" style="max-width:540px;padding:24px 26px" data-page-node-id="ksMergeModal">
+    <div class="share-modal-head">
+      <span class="ico merge">🔀</span>
+      <h3>合并 / 载入分享数据</h3>
+    </div>
+    <div class="share-modal-overview">
+      <div class="share-modal-info" id="mergeNote" style="margin:0"></div>
+    </div>
+    <div class="share-modal-rule" id="mergeRule">
+      <span class="dot"></span>
+      <span><b>合并规则：</b>同 referrer 同日期取较大（较新）累计值、其余直接并入；来源的分类/确认/设置覆盖目标。</span>
+    </div>
+    <label class="share-modal-label">合并到哪个本机项目</label>
+    <select id="mergeSel" class="share-modal-select"></select>
+    <div class="share-modal-actions">
+      <button class="btn ghost sm" id="mergeCancel">取消</button>
+      <span class="grow"></span>
+      <button class="btn ghost sm" id="mergeNew">另存为新项目</button>
+      <button class="btn sm" id="mergeDo">合并到所选项目</button>
     </div>
   </div>
 </div>
@@ -2560,7 +2595,15 @@ function _openShareDialog(payload){
   let useNew=false;
   if(defIdx<0){ const o=document.createElement('option'); o.value='__NEW__'; o.textContent='📥 新建「'+base+' · 分享」项目'; sel.appendChild(o); useNew=true; }
   sel.value = defIdx>=0 ? projs[defIdx] : '__NEW__';
-  document.getElementById('mergeNote').textContent='这份分享数据来自项目「'+escapeHtml(base)+'」（含 '+(payload.snapshots||[]).length+' 份快照）。请选择合并进哪个本机项目；合并规则：同 referrer 同日期取较大累计值，其余直接并入。';
+  const srcDays=(payload.snapshots||[]).length;
+  const srcRows=(payload.csv||'').split(/\r?\n/).filter(Boolean).length;
+  document.getElementById('mergeNote').innerHTML =
+    '<div class="label">分享数据来源</div>'+
+    '<div class="src">'+escapeHtml(base)+'</div>'+
+    '<div class="meta">'+
+      '<span class="pill">📅 '+srcDays+' 份快照</span>'+
+      '<span class="pill">📄 '+srcRows+' 行 CSV</span>'+
+    '</div>';
   document.getElementById('mergeMask').classList.add('open');
   _mergePayload=payload; _mergeUseNew=useNew;
 }
@@ -2573,7 +2616,15 @@ function openShareModal(){
     const url=location.origin+location.pathname+'#d='+_b64urlEncode(_shareEnc);
     document.getElementById('shareLink').value=url;
     const len=url.length;
-    document.getElementById('shareNote').textContent = len>8000 ? ('链接较长（'+len+' 字符），部分 IM 可能截断，建议点「下载自包含 HTML」发文件。') : ('链接已就绪（'+len+' 字符），复制发给同事，对方打开即自动载入本项目数据。');
+    document.getElementById('shareNote').innerHTML =
+      '<div class="label">分享数据来源</div>'+
+      '<div class="src">'+escapeHtml(p)+'</div>'+
+      '<div class="meta">'+
+        '<span class="pill">🔗 '+len+' 字符链接</span>'+
+        '<span class="pill">📄 '+((STATE.rawCsv||'').split(/\r?\n/).filter(Boolean).length-1)+' 行 CSV</span>'+
+        '<span class="pill">📅 '+((STATE.snapshots||[]).length)+' 份快照</span>'+
+      '</div>';
+    document.getElementById('shareHint').textContent = len>8000 ? '链接较长，部分 IM 可能截断，建议改发文件' : '复制后发同事，对方打开即自动载入';
     document.getElementById('shareMask').classList.add('open');
   }).catch(e=>{ showToast('生成分享链接失败：'+e.message,'error',4000); });
 }
