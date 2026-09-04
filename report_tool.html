@@ -64,11 +64,12 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .share-modal-select{width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:13.5px;color:var(--fg,#0f172a);cursor:pointer;transition:border-color .15s,box-shadow .15s;margin-bottom:14px}
 .share-modal-select:hover{border-color:#94a3b8}
 .share-modal-select:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15)}
-.share-modal-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-top:16px;border-top:1px solid #f1f5f9;margin-top:4px;flex-wrap:nowrap}
-.share-modal-actions .grow:empty{display:none}
-.share-modal-actions .grow{font-size:12px;color:#64748b}
-.share-modal-actions #shareHint{margin-right:auto}
+.share-modal-hint{margin:0 0 6px;font-size:12.5px;line-height:1.55;color:#64748b}
+.share-modal-hint.warn{color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 11px;margin:0 0 10px}
+.share-modal-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-top:14px;border-top:1px solid #f1f5f9;margin-top:4px;flex-wrap:nowrap}
 .share-modal-actions .btn{margin-top:0}
+.btn-link{background:none;border:none;color:#64748b;font-size:13px;font-weight:500;padding:6px 12px;border-radius:6px;cursor:pointer;transition:color .15s,background .15s}
+.btn-link:hover{color:#0f172a;background:#f1f5f9}
 @media (max-width:560px){.share-modal-overview{flex-direction:column}.share-modal-actions{flex-direction:column;align-items:stretch}}
 
 .panel{background:var(--panel);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin:18px 0;transition:box-shadow .15s}.panel:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
@@ -505,11 +506,11 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
     <div class="share-modal-info" id="shareNote" style="margin-bottom:14px"></div>
     <label class="share-modal-label">分享链接</label>
     <input id="shareLink" class="share-modal-select" style="font-family:'SF Mono',Menlo,Consolas,monospace;font-size:12.5px;color:#0f172a" readonly>
+    <div id="shareHint" class="share-modal-hint"></div>
     <div class="share-modal-actions">
-      <span class="grow" style="font-size:12px;color:#64748b" id="shareHint"></span>
-      <button class="btn ghost sm" id="shareCopy">复制链接</button>
+      <button class="btn sm" id="shareCopy">复制链接</button>
       <button class="btn ghost sm" id="shareFile">下载 HTML</button>
-      <button class="btn sm" id="shareClose">关闭</button>
+      <button class="btn-link sm" id="shareClose">关闭</button>
     </div>
   </div>
 </div>
@@ -2625,7 +2626,9 @@ function openShareModal(){
         '<span class="pill">📄 '+((STATE.rawCsv||'').split(/\r?\n/).filter(Boolean).length-1)+' 行 CSV</span>'+
         '<span class="pill">📅 '+((STATE.snapshots||[]).length)+' 份快照</span>'+
       '</div>';
-    document.getElementById('shareHint').textContent = len>8000 ? '链接较长，部分 IM 可能截断，建议改发文件' : '复制后发同事，对方打开即自动载入';
+    const h=document.getElementById('shareHint');
+    h.textContent = len>8000 ? '⚠ 链接较长（'+len.toLocaleString('en-US')+' 字符），部分 IM 可能截断，建议改发文件。' : '复制后发同事，对方打开即自动载入';
+    if(len>8000) h.classList.add('warn'); else h.classList.remove('warn');
     document.getElementById('shareMask').classList.add('open');
   }).catch(e=>{ showToast('生成分享链接失败：'+e.message,'error',4000); });
 }
