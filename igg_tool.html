@@ -328,10 +328,14 @@ td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
 
 <div class="modal-mask" id="mergeMask">
   <div class="modal" style="max-width:480px">
-    <h3>🔀 合并分享数据</h3>
+    <h3>🔀 合并 / 载入分享数据</h3>
     <div class="desc" id="mergeNote"></div>
+    <div class="merge-row">
+      <label class="merge-lbl" for="mergeTarget">合并到项目：</label>
+      <select id="mergeTarget" class="merge-sel"></select>
+    </div>
     <div class="modal-actions">
-      <button class="btn sm" id="mergeDo">合并到现有项目</button>
+      <button class="btn sm" id="mergeDo">合并到所选项目</button>
       <button class="btn ghost sm" id="mergeNew">另存为新项目</button>
       <button class="btn ghost sm" id="mergeCancel">取消</button>
     </div>
@@ -1529,7 +1533,7 @@ $('shareCopy').addEventListener('click',_copyShareLink);
 $('shareFile').addEventListener('click',_downloadSelfContained);
 $('shareClose').addEventListener('click',()=>$('shareMask').classList.remove('open'));
 $('shareMask').addEventListener('click',e=>{ if(e.target===$('shareMask')) $('shareMask').classList.remove('open'); });
-$('mergeDo').addEventListener('click',()=>{ $('mergeMask').classList.remove('open'); if(_mergePayload) _mergeSharedInto(_mergeTarget,_mergePayload); });
+$('mergeDo').addEventListener('click',()=>{ const t=$('mergeTarget').value; $('mergeMask').classList.remove('open'); if(_mergePayload){ if(t==='__NEW__') _applySharedNew(_mergePayload); else _mergeSharedInto(t,_mergePayload); } });
 $('mergeNew').addEventListener('click',()=>{ $('mergeMask').classList.remove('open'); if(_mergePayload) _applySharedNew(_mergePayload); });
 $('mergeCancel').addEventListener('click',()=>{ $('mergeMask').classList.remove('open'); _loadLastProject(); });
 $('mergeMask').addEventListener('click',e=>{ if(e.target===$('mergeMask')){ $('mergeMask').classList.remove('open'); _loadLastProject(); } });
@@ -2125,12 +2129,32 @@ function _loadLastProject(){
   if(projs.indexOf(last)<0){ projs.push(last); saveProjs(projs); }
   setProject(last);
 }
-let _mergeTarget='', _mergePayload=null;
-function _confirmMerge(targetName, payload){
-  _mergeTarget=targetName; _mergePayload=payload;
+let _mergePayload=null;
+function _openShareDialog(payload){
+  _mergePayload=payload;
+  const base=payload.proj||'共享项目';
+  const projs=loadProjs();
+  const sel=$('mergeTarget');
+  sel.innerHTML='';
+  // 默认优先级：本机原项目 > 同名分享项目 > 新建
+  let defIdx=projs.indexOf(base);
+  if(defIdx<0) defIdx=projs.indexOf(base+' · 分享');
+  if(defIdx<0){
+    const o=document.createElement('option');
+    o.value='__NEW__'; o.textContent='📥 新建「'+base+' · 分享」项目';
+    sel.appendChild(o); defIdx=0;
+  }
+  projs.forEach((p,i)=>{
+    if(p==='__NEW__') return;
+    const o=document.createElement('option');
+    o.value=p;
+    o.textContent=p + (p===base?'（本机原项目）':(p===base+' · 分享'?'（上次分享）':''));
+    sel.appendChild(o);
+    if(i===defIdx) o.selected=true;
+  });
   const srcDays=(payload.hist.snapshots||[]).length;
-  const tDays=loadHistory(targetName).snapshots.length;
-  $('mergeNote').textContent='已存在项目「'+escapeHtml(targetName)+'」（'+tDays+' 天）。这次分享数据含 '+srcDays+' 天。合并规则：相同日期的同一 link 取较大（较新）累计值，其余直接并入；来源的分类/确认/设置覆盖目标。也可选择另存为独立副本。';
+  const tDays=loadHistory(base).snapshots.length;
+  $('mergeNote').innerHTML='这份分享数据来自项目「'+escapeHtml(base)+'」（含 '+srcDays+' 天）。<b>请选择合并进哪个本机项目</b>——通常选「本机原项目」即可把同事的数据并入你自己一直在维护的账本。合并规则：相同日期的同一 link 取较大（较新）累计值，其余直接并入；来源的分类/确认/设置覆盖目标。也可另存为独立副本。';
   $('mergeMask').classList.add('open');
 }
 
@@ -2160,10 +2184,7 @@ addSnapshot('DEMO预览', base, DEMO_DATE1);
   if(sharedEnc){
     try{
       const payload=await _decodePayload(sharedEnc);
-      const base=payload.proj||'共享项目';
-      const targetName=base+' · 分享';
-      if(loadProjs().indexOf(targetName)>=0){ _confirmMerge(targetName, payload); return; }
-      _applySharedNew(payload); return;
+      _openShareDialog(payload); return;
     }catch(e){ console.error('分享解析失败',e); showToast('分享链接解析失败：'+e.message+'（已忽略，载入本机项目）','error',5000); }
   }
   _loadLastProject();
