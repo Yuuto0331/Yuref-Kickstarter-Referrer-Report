@@ -1967,6 +1967,26 @@ function _b64urlDecode(s){
   for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
   return bytes;
 }
+// 分享压缩：优先浏览器原生 deflate-raw（比自写 LZW 小约 30%），老浏览器回退 LZW
+async function _encodeShare(str){
+  const bytes=new TextEncoder().encode(str);
+  if(typeof CompressionStream!=='undefined'){
+    const cs=new CompressionStream('deflate-raw');
+    const w=cs.writable.getWriter(); w.write(bytes); w.close();
+    const ab=await new Response(cs.readable).arrayBuffer();
+    return new Uint8Array(ab);
+  }
+  return _lzwCompress(str);
+}
+async function _decodeShare(bytes){
+  if(typeof DecompressionStream!=='undefined'){
+    const ds=new DecompressionStream('deflate-raw');
+    const w=ds.writable.getWriter(); w.write(bytes); w.close();
+    const ab=await new Response(ds.readable).arrayBuffer();
+    return new TextDecoder().decode(new Uint8Array(ab));
+  }
+  return _lzwDecompress(bytes);
+}
 function _buildSharePayload(p){
   return { v:1, app:'igg-ref-tracker', kind:'share', proj:p,
     hist:loadHistory(p), override:loadOverride(p), confirmed:loadConfirmed(p),
@@ -1974,12 +1994,12 @@ function _buildSharePayload(p){
     sharedAt:new Date().toISOString() };
 }
 let _shareEnc='', _shareProj='';
-function openShareModal(){
+async function openShareModal(){
   const p=STATE.proj;
   _shareProj=p;
   const payload=_buildSharePayload(p);
   const json=JSON.stringify(payload);
-  const bytes=_lzwCompress(json);
+  const bytes=await _encodeShare(json);
   _shareEnc=_b64urlEncode(bytes);
   const url=location.origin+location.pathname+'#d='+_shareEnc;
   $('shareLink').value=url;
@@ -2012,8 +2032,8 @@ function _downloadSelfContained(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   showToast('已生成自包含 HTML，发给同事双击即可打开','success');
 }
-function _applyShared(enc){
-  const json=_lzwDecompress(_b64urlDecode(enc));
+async function _applyShared(enc){
+  const json=await _decodeShare(_b64urlDecode(enc));
   const payload=JSON.parse(json);
   if(!payload||payload.app!=='igg-ref-tracker'||payload.kind!=='share'||!payload.hist) throw new Error('不是有效的分享数据');
   const base=payload.proj||'共享项目';
@@ -2035,7 +2055,7 @@ function _applyShared(enc){
 }
 
 /* ---------- 初始化 ---------- */
-(function init(){
+(async function init(){
   bindMapPanelTools();  // 工具栏静态元素，init 一次性绑定
   const params=new URLSearchParams(location.search);
   if(params.has('demo')){
@@ -2058,7 +2078,7 @@ addSnapshot('DEMO预览', base, DEMO_DATE1);
     else if(location.hash.indexOf('#d=')===0) sharedEnc=location.hash.slice(3);
   }catch(e){}
   if(sharedEnc){
-    try{ _applyShared(sharedEnc); return; }
+    try{ await _applyShared(sharedEnc); return; }
     catch(e){ console.error('分享解析失败',e); showToast('分享链接解析失败：'+e.message+'（已忽略，载入本机项目）','error',5000); }
   }
   let last='default';
