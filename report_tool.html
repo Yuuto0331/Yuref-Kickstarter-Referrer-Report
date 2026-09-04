@@ -167,6 +167,8 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-card{border:1px solid var(--line);border-radius:10px;padding:8px 12px 9px;background:#fff;transition:box-shadow .15s,border-color .15s;min-width:0}
 .an-card.flag{border-color:#fca5a5;background:#fff7f7;box-shadow:0 1px 4px rgba(239,68,68,.12)}
 .an-card.van{border-color:#ef4444;background:#fff5f5;box-shadow:0 1px 6px rgba(239,68,68,.18)}
+/* 「波动观察」：中途回撤达阈值但最新值已回补，风险信号但不告警 —— 用琥珀色与红色告警区分 */
+.an-card.wave{border-color:#fcd34d;background:#fffdf5;box-shadow:0 1px 4px rgba(245,158,11,.10)}
 .an-card.ignored{background:#fafafa;border-color:#e2e8f0;opacity:.92;box-shadow:none}
 .an-head{display:flex;align-items:center;gap:7px;margin-bottom:6px;min-width:0}
 .an-head .dot{width:9px;height:9px;border-radius:50%;flex:none}
@@ -174,6 +176,7 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-card.ignored .an-link{color:#94a3b8;text-decoration:line-through}
 .an-badge{font-size:10px;font-weight:700;color:#fff;background:#ef4444;border-radius:5px;padding:1px 6px;flex:none;white-space:nowrap}
 .an-badge.van-badge{background:#b91c1c}
+.an-badge.wave-badge{background:#d97706}
 .an-badge.ig-badge{background:#94a3b8}
 .an-ignore{font-size:11px;color:#64748b;background:transparent;border:1px solid #e2e8f0;border-radius:5px;padding:1px 7px;cursor:pointer;flex:none;transition:all .12s;font-family:inherit;line-height:1.5;white-space:nowrap}
 .an-ignore:hover{background:#fff;border-color:#94a3b8;color:#334155}
@@ -189,10 +192,12 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-cmp-d{font-size:10px;color:#94a3b8;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums}
 .an-cmp-item.peak .an-cmp-v{font-size:15px;font-weight:600;color:#64748b}
 .an-cmp-item.now.down .an-cmp-v{color:var(--red)}
+.an-cmp-item.now.wave .an-cmp-v{color:#b45309}
 .an-cmp-item.now.gone .an-cmp-v{color:#b91c1c}
 .an-cmp-go{flex:none;color:#cbd5e1;font-size:15px;line-height:1.1;padding-bottom:11px}
 .an-dropbig{font-size:19px;font-weight:800;color:var(--red);font-variant-numeric:tabular-nums;line-height:1.1;margin-left:auto;padding-bottom:11px;letter-spacing:-.3px;white-space:nowrap;flex:none}
 .an-dropbig.mid{color:#d97706}
+.an-dropbig.wave{color:#d97706}
 .an-dropbig.zero{color:#b91c1c}
 .an-prog{position:relative;height:9px;border-radius:5px;background:#eef2f6;overflow:hidden;box-shadow:inset 0 1px 2px rgba(15,23,42,.07)}
 .an-prog i{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:#94a3b8;transition:width .25s ease}
@@ -251,6 +256,7 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-cat-name{font-weight:600;font-size:13px;color:#334155;flex:1;min-width:0}
 .an-cat-meta{font-size:11.5px;color:var(--muted);margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
 .an-cat.has-hit .an-cat-meta{color:#ef4444}
+.an-cat.has-wave .an-cat-meta{color:#b45309}
 .an-ignored-group{grid-column:1/-1;margin-top:4px;padding:10px;border:1px dashed #e2e8f0;border-radius:8px;background:#fafbfc;display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1px 12px}
 .an-ignored-head{grid-column:1/-1;font-size:11.5px;color:#64748b;font-weight:600;margin:0;display:flex;align-items:center;gap:6px}
 .an-ignored-head::before{content:'';display:inline-block;width:12px;height:1px;background:#94a3b8}
@@ -1312,6 +1318,20 @@ function anomalyFlag(it, thr, dim){
   if(dim==='both') return amF&&plF;
   return amF;
 }
+// 「波动观察」判定：中途回撤达到阈值，但最新值已回补到不再触发告警。
+// 典型场景 10w → 5w → 8w：首尾只跌 20%（低于 30% 阈值不告警），但中途真实发生过 50% 回撤。
+// 这类不当成异常告警（避免误伤正常波动），但标出来供人工判断，且可展开逐日明细看过程。
+function anomalyWaveFlag(it, thr, dim){
+  if(it.vanished) return false;                                  // 已消失走告警通道
+  if(it.cat && ANOMALY_EXCLUDED_CATS.has(it.cat)) return false;
+  if(anomalyFlag(it, thr, dim)) return false;                    // 已告警的不重复计为观察
+  const amW = (it.mdd||0)*100>=thr && it.peak>=MIN_ANOMALY_PEAK;
+  const plW = (it.mddPl||0)*100>=thr && it.peakPl>=MIN_ANOMALY_PEAK_PL;
+  if(dim==='vol') return plW;
+  if(dim==='either') return amW||plW;
+  if(dim==='both') return amW&&plW;
+  return amW;
+}
 function buildAnomalyData(){
   // 用快照模型：每次 paste 一份 CSV 累计统计 → 跨 paste 对比累计曲线
   const snaps=STATE.snapshots||[];
@@ -1365,8 +1385,25 @@ function buildAnomalyData(){
     const vanished=linkVanished && !cs.hasAtLatest;
     const drop=peak>0?(peak-latest)/peak:0;
     const dropPl=peakPl>0?(peakPl-latestPl)/peakPl:0;
+    // 最大回撤（max drawdown）：序列中相对【当时历史最高点】的最深回落幅度。
+    // 只看首尾会漏掉「10w → 5w → 8w」这类：首尾仅 −20% 不告警，但中途回撤过 50%。
+    // vanished 的 link 最新快照不在 series 里，补一行 0 参与计算（让退光那一跳算进去）。
+    const mddDs = linkVanished ? ds.concat([latestSnapD]) : ds;
+    const mddOf=key=>{
+      let rm=0, best=0, lowV=0, lowD=null, highV=0;
+      for(const d of mddDs){
+        const e=series[d], v=e?(e[key]||0):0;
+        if(v>rm) rm=v;
+        const dd=rm>0?(rm-v)/rm:0;
+        if(dd>best){ best=dd; lowV=v; lowD=d; highV=rm; }
+      }
+      return {dd:best, lowV, lowD, highV};
+    };
+    const mA=mddOf('am'), mP=mddOf('pl');
     // 把 cat-level drop 也带进 item（保留备用字段，cat 排除在 anomalyFlag 里做），silenced 用 map[r].cat（这里 r 是 link key）
-    list.push({link:pickBestDisplay(map[r]._all), cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished, catDrop:cs.drop||-1, catDropPl:cs.dropPl||-1, silenced:ANOMALY_EXCLUDED_CATS.has(map[r].cat)});
+    list.push({link:pickBestDisplay(map[r]._all), cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished, catDrop:cs.drop||-1, catDropPl:cs.dropPl||-1, silenced:ANOMALY_EXCLUDED_CATS.has(map[r].cat),
+      mdd:mA.dd, mddLowV:mA.lowV, mddLowD:mA.lowD, mddHighV:mA.highV,
+      mddPl:mP.dd, mddPlLowV:mP.lowV, mddPlHighV:mP.highV});
   }
   // 风险优先：已消失的 link 永远排最前，其余按回撤降序
   list.sort((a,b)=>{
@@ -1416,25 +1453,31 @@ function anomalyDetailHtml(it, useVol){
 // 命中卡片（A 样式）：峰值 → 现在 主视觉 + 大号降幅 + 剩余进度条 + 逐日明细（可展开）
 // 设计原则：一个卡片只回答三个问题 —— 现在还剩多少 / 掉了多少 / 从哪天开始掉的。
 // 进度条长度 = 当前/峰值（"还剩多少"），降幅大字承担"掉了多少"，底部时间线承担"哪天开始掉"。
-function anomalyCard(it, flagged, dim, ignored){
+function anomalyCard(it, flagged, dim, ignored, wave){
   const col=CAT_COLORS[it.cat]||'#94a3b8';
   const useVol = dim==='vol';                       // 主维度：只有明确选单量才用单量，其余用金额
   const peak = useVol?it.peakPl:it.peak;
   const cur  = useVol?it.latestPl:it.latest;
   const drop = (useVol?it.dropPl:it.drop)*100;      // 回撤百分比（相对峰值）
   const remain = peak>0 ? Math.max(0,Math.min(1,cur/peak)) : 0;
-  // 进度条配色按回撤幅度分四档：灰(正常) → 橙(25%+) → 红(50%+) → 深红(80%+ 或已退光)
+  // 最大回撤：中途最深的一次回落（wave 卡片的主信号，比当前 drop 更能反映真实风险）
+  const mddPct = (useVol?(it.mddPl||0):(it.mdd||0))*100;
+  const mddLowV = useVol?(it.mddPlLowV||0):(it.mddLowV||0);
+  const recovered = Math.max(0, cur-mddLowV);       // 从最低点回补了多少
+  // 进度条配色：wave 统一走琥珀（与红色告警区分）；否则按回撤幅度分四档
   let barCol='#94a3b8', bigCls='';
-  if(it.vanished||drop>=80){ barCol='#b91c1c'; bigCls=' zero'; }
+  if(wave){ barCol='#f59e0b'; bigCls=' wave'; }
+  else if(it.vanished||drop>=80){ barCol='#b91c1c'; bigCls=' zero'; }
   else if(drop>=50){ barCol='#ef4444'; }
   else if(drop>=25){ barCol='#f59e0b'; bigCls=' mid'; }
   const f = v=>useVol?String(v):fmt(v);              // 主维度格式化：单量不加货币符号
   const curTxt = it.vanished ? f(0) : (useVol ? String(cur) : fmt(cur)); // 已退光大字直接显示 $0，状态由徽章说明
   const dropTxt = (drop<0.5?'':'−')+drop.toFixed(0)+'%';
-  const badge = flagged ? (it.vanished?'已退光':(useVol?'异常·单量':'异常·金额')) : (ignored?'已忽略':'');
+  const badge = ignored ? '已忽略' : (wave ? '波动观察' : (flagged ? (it.vanished?'已退光':(useVol?'异常·单量':'异常·金额')) : ''));
+  const badgeCls = ignored?' ig-badge':(wave?' wave-badge':(it.vanished?' van-badge':''));
   const lost = Math.max(0, peak-cur);                 // 绝对差额（退掉了多少钱 / 多少单）
   const fd = firstDropDay(it, useVol);                // 起跌日：回答"哪天开始掉的"
-  const nowCls = it.vanished ? ' gone' : ((drop>=25)?' down':'');
+  const nowCls = wave ? ' wave' : (it.vanished ? ' gone' : ((drop>=25)?' down':''));
   // 副行补齐另一个维度，避免切维度时丢信息
   const subTxt = useVol
     ? `金额 ${fmt(it.peak)} → ${fmt(it.latest)}`
@@ -1443,11 +1486,11 @@ function anomalyCard(it, flagged, dim, ignored){
   const linkKey = (it._allKey || (it.link||'').toLowerCase());
   STATE.anomalyDetail = STATE.anomalyDetail||{};   // 老存档兜底
   const detOpen = STATE.anomalyDetail[linkKey]===true;
-  return `<div class="an-card${flagged?' flag':''}${it.vanished?' van':''}${ignored?' ignored':''}" data-key="${escapeAttr(linkKey)}">
+  return `<div class="an-card${wave?' wave':(flagged?' flag':'')}${it.vanished?' van':''}${ignored?' ignored':''}" data-key="${escapeAttr(linkKey)}">
     <div class="an-head">
       <span class="dot" style="background:${col}"></span>
       <span class="an-link" title="${escapeAttr(it.link)}">${escapeAttr(it.link)}</span>
-      ${badge?`<span class="an-badge${it.vanished?' van-badge':''}${ignored?' ig-badge':''}">${badge}</span>`:''}
+      ${badge?`<span class="an-badge${badgeCls?' '+badgeCls:''}">${badge}</span>`:''}
       <button class="an-det-btn${detOpen?' on':''}" data-key="${escapeAttr(linkKey)}" title="展开逐日明细：看每个快照是净增长还是净退款">${detOpen?'收起':'明细'}</button>
       <button class="an-ignore" data-act="${ignored?'unignore':'ignore'}" data-key="${escapeAttr(linkKey)}" title="${ignored?'取消忽略，重新参与识别':'忽略此 link（保留显示，但不再计入异常）'}">${ignored?'↺ 取消忽略':'忽略'}</button>
     </div>
@@ -1468,9 +1511,13 @@ function anomalyCard(it, flagged, dim, ignored){
       </div>
       <div class="an-prog${remain<=0.001?' empty':''}"><i style="width:${(remain*100).toFixed(1)}%;background:${barCol}"></i></div>
       <div class="an-prog-lab">
-        <span>剩 <b>${(remain*100).toFixed(0)}%</b></span>
-        <span class="lost">少了 <b>${f(lost)}</b></span>
-        <span class="${fd?'fd':'none'}">${fd?`起跌 <b>${fd.slice(5)}</b>`:'未见明显回落'}</span>
+        ${wave
+          ? `<span>剩 <b>${(remain*100).toFixed(0)}%</b></span>`+
+            `<span class="lost">最深回撤 <b>−${mddPct.toFixed(0)}%</b>${it.mddLowD?`（${it.mddLowD.slice(5)}）`:''}</span>`+
+            `<span class="fd">已回补 <b>+${f(recovered)}</b></span>`
+          : `<span>剩 <b>${(remain*100).toFixed(0)}%</b></span>`+
+            `<span class="lost">少了 <b>${f(lost)}</b></span>`+
+            `<span class="${fd?'fd':'none'}">${fd?`起跌 <b>${fd.slice(5)}</b>`:'未见明显回落'}</span>`}
       </div>
       <div class="an-sub2"><span>${subTxt}</span></div>
       <div class="an-det"${detOpen?'':' style="display:none"'}>${anomalyDetailHtml(it,useVol)}</div>
@@ -1519,6 +1566,8 @@ function buildAnomalyHtml(){
   // 命中 = 告警条件成立 且 未被忽略
   const flagged = list.filter(it=>!it._ignored && (it.vanished||anomalyFlag(it,thr,dim)));
   const flaggedCount = flagged.length;
+  // 波动观察 = 中途回撤达阈值、但最新值已回补到不再告警（如 10w → 5w → 8w）。不告警，单独统计
+  const waveCount = list.filter(it=>!it._ignored && anomalyWaveFlag(it,thr,dim)).length;
   // 已忽略计数（只算 link 本身没命中异常但被忽略的；命中异常但被忽略的也单独计，但优先鼓励用户取消忽略）
   const ignoredCount = list.filter(it=>it._ignored).length;
   // 当「已消失」link 比例异常高时（通常是最新 CSV 不全 / 分类口径变了），顶部加 banner 提示
@@ -1530,11 +1579,11 @@ function buildAnomalyHtml(){
     const snapLines=snaps.map(s=>s.date.slice(5)+': '+cnt(s)+' link · '+fmt(sum(s))).join('  →  ');
     banner=`<div class="an-banner warn"><b>⚠ 检测到 ${van.length} 个「已消失」link（占 ${(van.length/Math.max(list.length,1)*100).toFixed(0)}%）</b>，通常意味着<b>最新 CSV 导出不全</b>或<b>分类口径变化</b>。请核对下方快照规模（明显小于前一快照 = 新 CSV 砍了部分 referral）：<div class="an-snapline">${snapLines}</div></div>`;
   }
-  // 【核心】如果没有任何命中、也没有任何已忽略 → 整模块隐藏，不渲染
-  if(flaggedCount===0 && ignoredCount===0) return '';
+  // 【核心】如果没有命中、没有波动、也没有已忽略 → 整模块隐藏，不渲染
+  if(flaggedCount===0 && waveCount===0 && ignoredCount===0) return '';
   const igLink = ignoredCount ? `<a href="javascript:void(0)" id="anIgClear" style="color:#64748b;text-decoration:underline;cursor:pointer" title="清空所有已忽略 link">已忽略 ${ignoredCount}</a>` : '';
   return `<div class="module" id="anomalyModule"><h3>异常识别（刷单 / 退单风险）</h3>
-    <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款；某 link 在最新快照<b>完全消失</b> = 带量被退光（最高风险）。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。</div>
+    <div class="desc">基于本地各日期快照，对比每个 link 的<b>历史峰值累计</b>与<b>最近一次快照</b>。累计下降 = 疑似刷单后集体退款；某 link 在最新快照<b>完全消失</b> = 带量被退光（最高风险）。每次粘贴或上传 CSV 都会自动记录一个快照（快照日期 = CSV 中最大 pledge date）。前提：KS 导出口径为<b>净金额</b>（退款已扣减）才有效。另有<b style="color:#b45309">波动观察</b>：中途回撤达阈值但最新值已回补（如 10w → 5w → 8w，首尾只跌 20%），<b>不告警</b>但单独标出供人工判断，可展开逐日明细看过程。</div>
     ${banner}
     <div class="an-controls">
       <label class="an-ctl">告警维度
@@ -1546,8 +1595,8 @@ function buildAnomalyHtml(){
         </select></label>
       <label class="an-ctl">告警阈值 <output id="anThrOut">${thr}%</output>
         <input type="range" id="anomalyThreshold" min="5" max="90" step="5" value="${thr}"></label>
-      <label class="an-ctl an-toggle"><input type="checkbox" id="anomalyOnly" ${STATE.anomalyOnly?'checked':''}> 只看异常（<span id="anOnlyCount">${flaggedCount}</span>）</label>
-      <span class="an-meta" id="anMeta">${snaps.length} 个快照（${snaps.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 <b style="color:${flaggedCount?'#ef4444':'#0f172a'};font-variant-numeric:tabular-nums">${flaggedCount}</b>${igLink?` · ${igLink}`:''}</span>
+      <label class="an-ctl an-toggle" title="隐藏正常 link；命中（红）与波动观察（橙）都保留"><input type="checkbox" id="anomalyOnly" ${STATE.anomalyOnly?'checked':''}> 只看异常（<span id="anOnlyCount">${flaggedCount+waveCount}</span>）</label>
+      <span class="an-meta" id="anMeta">${snaps.length} 个快照（${snaps.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 <b style="color:${flaggedCount?'#ef4444':'#0f172a'};font-variant-numeric:tabular-nums">${flaggedCount}</b> · 波动 <b style="color:${waveCount?'#d97706':'#0f172a'};font-variant-numeric:tabular-nums">${waveCount}</b>${igLink?` · ${igLink}`:''}</span>
     </div>
     <div class="an-body-grid" id="anGrid">${anomalyCardsHtml(list, dim, STATE.anomalyOnly)}</div>
   </div>`;
@@ -1573,17 +1622,28 @@ function anomalyCardsHtml(list, dim, only){
   // 命中 = 告警成立 且 未被忽略
   const isR = it=>!it._ignored && (it.vanished||anomalyFlag(it,thr,dim));
   const risk = list.filter(isR).sort(cmpRisk);
+  // 波动观察 = 中途回撤达阈值但最新值已回补（未触发告警）。按回撤深度降序
+  const isW = it=>!it._ignored && anomalyWaveFlag(it,thr,dim);
+  const cmpWave=(a,b)=>{
+    const av=dim==='vol'?(a.mddPl||0):(a.mdd||0), bv=dim==='vol'?(b.mddPl||0):(b.mdd||0);
+    if(Math.abs(bv-av)>1e-9) return bv-av;
+    return b.peak-a.peak;
+  };
+  const waves = list.filter(isW).sort(cmpWave);
   const ignored = list.filter(it=>it._ignored);
+  const cardR = it=>anomalyCard(it,true,dim,false,false);      // 告警卡
+  const cardW = it=>anomalyCard(it,false,dim,false,true);      // 波动观察卡
 
   const ignoredBlock = n=>ignored.length
     ? `<div class="an-ignored-group"><div class="an-ignored-head">已忽略 ${ignored.length}（仍可查看统计，随时可取消忽略）</div>`+
       ignored.slice().sort(cmpRisk).map(it=>anomalyMiniRow(it,dim,true)).join('')+`</div>`
     : '';
 
-  // —— 只看异常：平铺命中，底部挂已忽略 ——
+  // —— 只看异常：平铺命中 + 波动观察，底部挂已忽略 ——
   if(only){
-    let h = risk.length
-      ? '<div class="an-grid">'+risk.map(it=>anomalyCard(it,true,dim,false)).join('')+'</div>'
+    const cards = risk.map(cardR).join('')+waves.map(cardW).join('');
+    let h = cards
+      ? '<div class="an-grid">'+cards+'</div>'
       : '<div class="insight note">当前筛选下无命中（可放宽阈值或取消「只看异常」）。</div>';
     h += ignoredBlock();
     return h;
@@ -1591,9 +1651,12 @@ function anomalyCardsHtml(list, dim, only){
 
   // —— 分组视图：风险速览 + 分类折叠 ——
   let html='';
-  if(risk.length){
-    html += `<div class="an-section an-risk"><div class="an-sec-title">⚠ 风险速览（${risk.length} 个，已消失优先）</div><div class="an-grid">${
-      risk.map(it=>anomalyCard(it,true,dim,false)).join('')
+  if(risk.length||waves.length){
+    const parts=[];
+    if(risk.length) parts.push(`命中 ${risk.length}`);
+    if(waves.length) parts.push(`波动 ${waves.length}`);
+    html += `<div class="an-section an-risk"><div class="an-sec-title">⚠ 风险速览（${parts.join(' · ')}，已消失优先）</div><div class="an-grid">${
+      risk.map(cardR).join('')+waves.map(cardW).join('')
     }</div></div>`;
   }
 
@@ -1601,39 +1664,48 @@ function anomalyCardsHtml(list, dim, only){
   for(const it of list){ (cats[it.cat]=cats[it.cat]||[]).push(it); }
   const catOrder=CAT_ORDER.filter(c=>cats[c]);
   catOrder.sort((a,b)=>{
-    const ra=cats[a].some(isR), rb=cats[b].some(isR);
-    if(ra!==rb) return rb?1:-1;
+    // 有命中(2) > 有波动(1) > 干净(0)，同级保持原分类顺序
+    const rank=c=>cats[c].some(isR)?2:(cats[c].some(isW)?1:0);
+    const ra=rank(a), rb=rank(b);
+    if(ra!==rb) return rb-ra;
     return CAT_ORDER.indexOf(a)-CAT_ORDER.indexOf(b);
   });
 
   for(const c of catOrder){
     const items=cats[c].slice().sort(cmpRisk);
     const hitN=items.filter(isR).length;
+    const waveN=items.filter(isW).length;
     const igN=items.filter(it=>it._ignored).length;
     // 默认折叠：仅当显式设为 false 才展开（避免上百条 link 一次性铺开）
     const coll = STATE.anomalyCatCollapsed[c]!==false;
 
-    const metaParts=[`命中 ${hitN} / 共 ${items.length}`];
+    const metaParts=[];
+    if(hitN) metaParts.push(`命中 ${hitN}`);
+    if(waveN) metaParts.push(`波动 ${waveN}`);
+    else if(!hitN) metaParts.push('无异常');
+    metaParts.push(`共 ${items.length}`);
     if(igN) metaParts.push(`已忽略 ${igN}`);
     let bodyHtml='';
     if(!coll){
-      // 展开后展示该分类下所有 link：命中走完整卡片，正常 + 已忽略走极简单行（避免一屏上百张卡片）
+      // 展开后展示该分类下所有 link：命中/波动走完整卡片，正常 + 已忽略走极简单行（避免一屏上百张卡片）
       const hits   = items.filter(isR);
-      const normal = items.filter(it=>!it._ignored && !isR(it));
+      const wavs   = items.filter(isW);
+      const normal = items.filter(it=>!it._ignored && !isR(it) && !isW(it));
       const igs    = items.filter(it=>it._ignored);
-      const cardHtml = hits.length
-        ? `<div class="an-grid"${normal.length||igs.length?' style="margin-bottom:10px"':''}>${hits.map(it=>anomalyCard(it,true,dim,false)).join('')}</div>`
+      const cardHtml = (hits.length||wavs.length)
+        ? `<div class="an-grid"${normal.length||igs.length?' style="margin-bottom:10px"':''}>${
+            hits.map(cardR).join('')+wavs.map(cardW).join('')}</div>`
         : '';
       const miniList = normal.map(it=>anomalyMiniRow(it,dim,false))
                      .concat(igs.map(it=>anomalyMiniRow(it,dim,true)));
       const miniHtml = miniList.length
-        ? `<div class="an-mini-head">${hits.length?`其余正常 link（${normal.length}）`:`本分类无命中（共 ${normal.length} 个 link）`}${igs.length?` · 已忽略 ${igs.length}`:''}</div>`+
+        ? `<div class="an-mini-head">${(hits.length||wavs.length)?`其余正常 link（${normal.length}）`:`本分类无命中（共 ${normal.length} 个 link）`}${igs.length?` · 已忽略 ${igs.length}`:''}</div>`+
           `<div class="an-mini-grid">${miniList.join('')}</div>`
         : '';
       bodyHtml = `<div style="padding:10px 12px">${cardHtml}${miniHtml}</div>`;
     }
 
-    html += `<div class="an-cat${coll?' collapsed':''}${hitN?' has-hit':''}">`+
+    html += `<div class="an-cat${coll?' collapsed':''}${hitN?' has-hit':(waveN?' has-wave':'')}">`+
       `<div class="an-cat-head" data-cat="${escapeAttr(c)}" title="点击折叠/展开">`+
         `<span class="caret">${coll?'▸':'▾'}</span>`+
         `<span class="dot" style="background:${CAT_COLORS[c]||'#94a3b8'}"></span>`+
@@ -1655,12 +1727,13 @@ function renderAnomaly(){
   const igSet=new Set((STATE.anomalyIgnored||[]).map(s=>s.toLowerCase()));
   for(const it of list){ it._ignored = igSet.has((it.link||'').toLowerCase()); }
   const flagged=list.filter(it=>!it._ignored && (it.vanished||anomalyFlag(it,thr,dim)));
+  const waveN=list.filter(it=>!it._ignored && anomalyWaveFlag(it,thr,dim)).length;
   grid.innerHTML=anomalyCardsHtml(list, dim, STATE.anomalyOnly);
   // 顶层模块可能在 0 命中时整段不渲染（buildAnomalyHtml 返回 ''），这里同步处理
   const module=document.getElementById('anomalyModule');
   if(module){
     const container=module.parentNode;
-    if(!flagged.length && !list.some(it=>it._ignored)){
+    if(!flagged.length && !waveN && !list.some(it=>it._ignored)){
       // 隐藏模块：把 module 整个从 DOM 移除（下次 renderReport 时如果还有命中会重建）
       container.removeChild(module);
       return;
@@ -1671,9 +1744,9 @@ function renderAnomaly(){
   if(meta){
     const snaps=(STATE.snapshots||[]);
     const igN=list.filter(it=>it._ignored).length;
-    meta.innerHTML = `${snaps.length} 个快照（${snaps.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 <b style="color:${flagged.length?'#ef4444':'#0f172a'};font-variant-numeric:tabular-nums">${flagged.length}</b>${igN?` · <a href="javascript:void(0)" id="anIgClear" style="color:#64748b;text-decoration:underline;cursor:pointer" title="清空所有已忽略 link">已忽略 ${igN}</a>`:''}`;
+    meta.innerHTML = `${snaps.length} 个快照（${snaps.map(s=>s.date.slice(5)).join('、')}） · 共 ${list.length} 个 link · 命中 <b style="color:${flagged.length?'#ef4444':'#0f172a'};font-variant-numeric:tabular-nums">${flagged.length}</b> · 波动 <b style="color:${waveN?'#d97706':'#0f172a'};font-variant-numeric:tabular-nums">${waveN}</b>${igN?` · <a href="javascript:void(0)" id="anIgClear" style="color:#64748b;text-decoration:underline;cursor:pointer" title="清空所有已忽略 link">已忽略 ${igN}</a>`:''}`;
   }
-  const oc=document.getElementById('anOnlyCount'); if(oc) oc.textContent=flagged.length;
+  const oc=document.getElementById('anOnlyCount'); if(oc) oc.textContent=flagged.length+waveN;
 }
 
 function renderReport(){
