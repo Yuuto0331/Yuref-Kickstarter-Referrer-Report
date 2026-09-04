@@ -203,7 +203,23 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-prog-lab .lost b{color:#b45309;font-weight:700}
 .an-prog-lab .fd b{color:#b45309;font-weight:700}
 .an-prog-lab .none{color:#cbd5e1}
-.an-sub2{font-size:10.5px;color:#94a3b8;font-variant-numeric:tabular-nums;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.an-sub2{font-size:10.5px;color:#94a3b8;font-variant-numeric:tabular-nums;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px}
+/* —— 逐日明细：每个快照的累计值 + 相对前一快照的净变化（负数 = 该期间净退款） —— */
+.an-det-btn{font-size:10px;padding:1px 6px;border:1px solid #e2e8f0;border-radius:5px;background:#fff;color:#94a3b8;cursor:pointer;flex:none;line-height:1.5}
+.an-det-btn:hover{border-color:#94a3b8;color:#475569}
+.an-det-btn.on{background:#eef2f6;border-color:#94a3b8;color:#334155}
+.an-det{margin-top:7px;padding-top:6px;border-top:1px dashed #e2e8f0}
+.an-det-note{font-size:10px;color:#a8b4c4;margin-bottom:4px}
+.an-det table{width:100%;border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums}
+.an-det th{text-align:right;font-size:9.5px;color:#a8b4c4;font-weight:600;padding:0 0 3px;letter-spacing:.3px}
+.an-det td{text-align:right;padding:2px 0;color:#475569;border-top:1px solid #f1f5f9;white-space:nowrap}
+.an-det th:first-child,.an-det td:first-child{text-align:left}
+.an-det td.d{color:#64748b}
+.an-det td.v{color:#0f172a;font-weight:600}
+.an-det td.up{color:#16a34a;font-weight:600}
+.an-det td.dn{color:#ef4444;font-weight:600}
+.an-det td.flat{color:#cbd5e1}
+.an-det td.side{color:#94a3b8}
 /* —— 正常 / 已忽略 link：极简单行 —— */
 .an-mini-head{font-size:11px;color:#94a3b8;font-weight:600;margin:0 0 2px;padding-left:4px}
 .an-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1px 12px}
@@ -749,7 +765,7 @@ function aggregate(rows, classifyFn){
 // ==CORE_END==
 
 // ---------- 以下为界面/渲染逻辑（依赖 DOM） ----------
-let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:false, anomalyDim:'amount', snapshots:[], anomalyCatCollapsed:{}, anomalyIgnored:[], anomalyShowIgnored:true };
+let STATE = { rows:null, agg:null, D:null, P:null, launch:null, firstWeek:4, override:{}, html:'', mapCollapsed:{}, rawCsv:null, cmpMode:'rolling3', cmpQuick:'r3', cmpRangeAStart:null, cmpRangeAEnd:null, cmpRangeBStart:null, cmpRangeBEnd:null, detailCollapsed:{}, cmpDetailOpen:{}, d2DetailOpen:{}, lastSource:'', cur:'USD', displayCur:'USD', cmpSortKey:{r3:'diff',rn:'diff'}, cmpSortDir:{r3:'desc',rn:'desc'}, d2SortKey:'diff', d2SortDir:'desc', anomalyThreshold:30, anomalyOnly:false, anomalyDim:'amount', snapshots:[], anomalyCatCollapsed:{}, anomalyIgnored:[], anomalyDetail:{}, anomalyShowIgnored:true };
 
 function finalClassify(ref, typ){
   if(STATE.override[ref]!==undefined) return STATE.override[ref];
@@ -1376,7 +1392,28 @@ function firstDropDay(it, useVol){
   }
   return null;
 }
-// 命中卡片（A 样式）：当前值 + 大号降幅 + 剩余进度条 + 起跌时间线
+// 逐日明细：列出每个快照的累计值，以及相对前一快照的净变化。
+// 重要口径：快照里是【累计】金额/单量，所以"净变化"是期间增量 —— 正数=期间净增（新出单 > 退款），
+// 负数=期间净退款（退单 > 新出单）。已消失的 link 会补一行最新快照（值 0），让退光那一跳可见。
+function anomalyDetailHtml(it, useVol){
+  const ds=it.ds.slice();
+  if(it.vanished) ds.push(it.latestD);
+  const k=useVol?'pl':'am', k2=useVol?'am':'pl';
+  const f=v=>useVol?String(v):fmt(v);
+  const g=v=>useVol?fmt(v):String(v);            // 副列：主维度是金额时副列是单量，反之亦然
+  let rows='', prev=null;
+  for(const d of ds){
+    const e=it.series[d], v=e?e[k]:0;
+    const dv = prev===null?null:(v-prev);
+    const cls = dv===null?'flat':(dv>0?'up':(dv<0?'dn':'flat'));
+    const txt = dv===null ? '—' : (dv===0 ? f(0) : ((dv>0?'+':'−')+f(Math.abs(dv))));
+    rows += `<tr><td class="d">${d.slice(5)}</td><td class="v">${f(v)}</td><td class="${cls}">${txt}</td><td class="side">${g(e?e[k2]:0)}</td></tr>`;
+    prev=v;
+  }
+  return `<div class="an-det-note">累计值（非当日新增）；红色 = 该期间净退款</div>`+
+    `<table><thead><tr><th>快照</th><th>${useVol?'单量':'金额'}</th><th>较前次</th><th>${useVol?'金额':'单量'}</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+// 命中卡片（A 样式）：峰值 → 现在 主视觉 + 大号降幅 + 剩余进度条 + 逐日明细（可展开）
 // 设计原则：一个卡片只回答三个问题 —— 现在还剩多少 / 掉了多少 / 从哪天开始掉的。
 // 进度条长度 = 当前/峰值（"还剩多少"），降幅大字承担"掉了多少"，底部时间线承担"哪天开始掉"。
 function anomalyCard(it, flagged, dim, ignored){
@@ -1404,11 +1441,14 @@ function anomalyCard(it, flagged, dim, ignored){
     : `单量 ${it.peakPl} → ${it.latestPl}`;
   // link key 用于 ignore 标记（不区分大小写）
   const linkKey = (it._allKey || (it.link||'').toLowerCase());
+  STATE.anomalyDetail = STATE.anomalyDetail||{};   // 老存档兜底
+  const detOpen = STATE.anomalyDetail[linkKey]===true;
   return `<div class="an-card${flagged?' flag':''}${it.vanished?' van':''}${ignored?' ignored':''}" data-key="${escapeAttr(linkKey)}">
     <div class="an-head">
       <span class="dot" style="background:${col}"></span>
       <span class="an-link" title="${escapeAttr(it.link)}">${escapeAttr(it.link)}</span>
       ${badge?`<span class="an-badge${it.vanished?' van-badge':''}${ignored?' ig-badge':''}">${badge}</span>`:''}
+      <button class="an-det-btn${detOpen?' on':''}" data-key="${escapeAttr(linkKey)}" title="展开逐日明细：看每个快照是净增长还是净退款">${detOpen?'收起':'明细'}</button>
       <button class="an-ignore" data-act="${ignored?'unignore':'ignore'}" data-key="${escapeAttr(linkKey)}" title="${ignored?'取消忽略，重新参与识别':'忽略此 link（保留显示，但不再计入异常）'}">${ignored?'↺ 取消忽略':'忽略'}</button>
     </div>
     <div class="an-main">
@@ -1432,7 +1472,8 @@ function anomalyCard(it, flagged, dim, ignored){
         <span class="lost">少了 <b>${f(lost)}</b></span>
         <span class="${fd?'fd':'none'}">${fd?`起跌 <b>${fd.slice(5)}</b>`:'未见明显回落'}</span>
       </div>
-      <div class="an-sub2">${subTxt}</div>
+      <div class="an-sub2"><span>${subTxt}</span></div>
+      <div class="an-det"${detOpen?'':' style="display:none"'}>${anomalyDetailHtml(it,useVol)}</div>
     </div>
   </div>`;
 }
@@ -2005,6 +2046,19 @@ reportBodyEl.addEventListener('change', e=>{
   if(e.target.id==='anomalyOnly'){ STATE.anomalyOnly=e.target.checked; renderAnomaly(); }
 });
 reportBodyEl.addEventListener('click', e=>{
+  // 异常板块：逐日明细展开/收起（明细始终渲染在 DOM 里，只切 display，避免整块重绘）
+  const detBtn=e.target.closest('.an-det-btn'); if(detBtn){
+    STATE.anomalyDetail = STATE.anomalyDetail||{};
+    const key=detBtn.dataset.key;
+    const open = !(STATE.anomalyDetail[key]===true);
+    STATE.anomalyDetail[key] = open;
+    const box=detBtn.closest('.an-card').querySelector('.an-det');
+    if(box) box.style.display = open?'':'none';
+    detBtn.textContent = open?'收起':'明细';
+    detBtn.classList.toggle('on', open);
+    saveData();
+    return;
+  }
   // 异常板块：分类分组折叠/展开
   const catHead=e.target.closest('.an-cat-head'); if(catHead){
     STATE.anomalyCatCollapsed = STATE.anomalyCatCollapsed||{};
