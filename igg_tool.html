@@ -326,6 +326,18 @@ td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
   </div>
 </div>
 
+<div class="modal-mask" id="mergeMask">
+  <div class="modal" style="max-width:480px">
+    <h3>🔀 合并分享数据</h3>
+    <div class="desc" id="mergeNote"></div>
+    <div class="modal-actions">
+      <button class="btn sm" id="mergeDo">合并到现有项目</button>
+      <button class="btn ghost sm" id="mergeNew">另存为新项目</button>
+      <button class="btn ghost sm" id="mergeCancel">取消</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast" data-page-node-id="BXtfT1v1BtKfTY2Sf5C70v"></div>
 <div id="chartTip" data-page-node-id="P2nCibDdN97tzj5XbfAk3p"></div>
 
@@ -1517,6 +1529,10 @@ $('shareCopy').addEventListener('click',_copyShareLink);
 $('shareFile').addEventListener('click',_downloadSelfContained);
 $('shareClose').addEventListener('click',()=>$('shareMask').classList.remove('open'));
 $('shareMask').addEventListener('click',e=>{ if(e.target===$('shareMask')) $('shareMask').classList.remove('open'); });
+$('mergeDo').addEventListener('click',()=>{ $('mergeMask').classList.remove('open'); if(_mergePayload) _mergeSharedInto(_mergeTarget,_mergePayload); });
+$('mergeNew').addEventListener('click',()=>{ $('mergeMask').classList.remove('open'); if(_mergePayload) _applySharedNew(_mergePayload); });
+$('mergeCancel').addEventListener('click',()=>{ $('mergeMask').classList.remove('open'); _loadLastProject(); });
+$('mergeMask').addEventListener('click',e=>{ if(e.target===$('mergeMask')){ $('mergeMask').classList.remove('open'); _loadLastProject(); } });
 $('btnImportBackup').addEventListener('click',()=>$('fileBackup').click());
 $('fileBackup').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -2032,14 +2048,13 @@ function _downloadSelfContained(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   showToast('已生成自包含 HTML，发给同事双击即可打开','success');
 }
-async function _applyShared(enc){
+async function _decodePayload(enc){
   const json=await _decodeShare(_b64urlDecode(enc));
   const payload=JSON.parse(json);
   if(!payload||payload.app!=='igg-ref-tracker'||payload.kind!=='share'||!payload.hist) throw new Error('不是有效的分享数据');
-  const base=payload.proj||'共享项目';
-  const projs=loadProjs();
-  let name=base+' · 分享', i=1;
-  while(projs.indexOf(name)>=0){ name=base+' · 分享 '+i; i++; }
+  return payload;
+}
+function _persistShared(name, payload){
   try{
     localStorage.setItem(LS_HIST+name, JSON.stringify(payload.hist));
     localStorage.setItem(LS_OVR+name, JSON.stringify(payload.override||{}));
@@ -2049,9 +2064,74 @@ async function _applyShared(enc){
     if(payload.boardOnly) localStorage.setItem(LS_BOARD_ONLY+name, payload.boardOnly);
     if(payload.compareN) localStorage.setItem(LS_CMP+name, payload.compareN);
   }catch(e){ throw new Error('本地保存失败：'+e.message); }
+}
+function _applySharedNew(payload){
+  const base=payload.proj||'共享项目';
+  const projs=loadProjs();
+  let name=base+' · 分享', i=1;
+  while(projs.indexOf(name)>=0){ name=base+' · 分享 '+i; i++; }
+  _persistShared(name, payload);
   const merged=[...new Set([...projs, name])]; saveProjs(merged);
   setProject(name);
   showToast('已从分享链接载入项目「'+name+'」','success',4000);
+}
+function _mergeSharedInto(targetName, payload){
+  const tHist=loadHistory(targetName);
+  const tMap=new Map(tHist.snapshots.map(s=>[s.date, s]));
+  const srcSnaps=payload.hist.snapshots||[];
+  let addedDays=0, mergedDays=0, addedLinks=0;
+  for(const ss of srcSnaps){
+    const t=tMap.get(ss.date);
+    if(!t){
+      tMap.set(ss.date, JSON.parse(JSON.stringify(ss)));
+      addedDays++; addedLinks+=Object.keys(ss.links||{}).length;
+    } else {
+      mergedDays++;
+      const tLinks=t.links||{};
+      for(const [ref,val] of Object.entries(ss.links||{})){
+        if(!(ref in tLinks)){ tLinks[ref]=val; addedLinks++; }
+        else {
+          const tv=tLinks[ref]||{};
+          tLinks[ref]={
+            status: val.status!==undefined?val.status:tv.status,
+            orders: Math.max(Number(tv.orders||0), Number(val.orders||0)),
+            total: Math.max(Number(tv.total||0), Number(val.total||0)),
+            dTotal: Math.max(Number(tv.dTotal||0), Number(val.dTotal||0))
+          };
+        }
+      }
+    }
+  }
+  const tOvr=loadOverride(targetName), tConf=loadConfirmed(targetName);
+  const mergedHist={ snapshots: Array.from(tMap.values()).sort((a,b)=>a.date<b.date?-1:1) };
+  _persistShared(targetName, {
+    proj: targetName, hist: mergedHist,
+    override: Object.assign({}, tOvr, payload.override||{}),
+    confirmed: Object.assign({}, tConf, payload.confirmed||{}),
+    currency: payload.currency||loadCurrency(targetName),
+    boardWeek: payload.boardWeek||loadBoardWeek(targetName),
+    boardOnly: payload.boardOnly||loadBoardOnly(targetName),
+    compareN: payload.compareN||loadCompareN(targetName)
+  });
+  const projs=loadProjs();
+  if(projs.indexOf(targetName)<0) saveProjs([...new Set([...projs, targetName])]);
+  setProject(targetName);
+  showToast('已合并到「'+targetName+'」：新增 '+addedDays+' 天 / '+addedLinks+' 个 link，合并 '+mergedDays+' 天','success',5000);
+}
+function _loadLastProject(){
+  let last='default';
+  try{ last=localStorage.getItem(LS_LAST)||'default'; }catch(e){}
+  const projs=loadProjs();
+  if(projs.indexOf(last)<0){ projs.push(last); saveProjs(projs); }
+  setProject(last);
+}
+let _mergeTarget='', _mergePayload=null;
+function _confirmMerge(targetName, payload){
+  _mergeTarget=targetName; _mergePayload=payload;
+  const srcDays=(payload.hist.snapshots||[]).length;
+  const tDays=loadHistory(targetName).snapshots.length;
+  $('mergeNote').textContent='已存在项目「'+escapeHtml(targetName)+'」（'+tDays+' 天）。这次分享数据含 '+srcDays+' 天。合并规则：相同日期的同一 link 取较大（较新）累计值，其余直接并入；来源的分类/确认/设置覆盖目标。也可选择另存为独立副本。';
+  $('mergeMask').classList.add('open');
 }
 
 /* ---------- 初始化 ---------- */
@@ -2078,14 +2158,15 @@ addSnapshot('DEMO预览', base, DEMO_DATE1);
     else if(location.hash.indexOf('#d=')===0) sharedEnc=location.hash.slice(3);
   }catch(e){}
   if(sharedEnc){
-    try{ await _applyShared(sharedEnc); return; }
-    catch(e){ console.error('分享解析失败',e); showToast('分享链接解析失败：'+e.message+'（已忽略，载入本机项目）','error',5000); }
+    try{
+      const payload=await _decodePayload(sharedEnc);
+      const base=payload.proj||'共享项目';
+      const targetName=base+' · 分享';
+      if(loadProjs().indexOf(targetName)>=0){ _confirmMerge(targetName, payload); return; }
+      _applySharedNew(payload); return;
+    }catch(e){ console.error('分享解析失败',e); showToast('分享链接解析失败：'+e.message+'（已忽略，载入本机项目）','error',5000); }
   }
-  let last='default';
-  try{ last=localStorage.getItem(LS_LAST)||'default'; }catch(e){}
-  const projs=loadProjs();
-  if(projs.indexOf(last)<0){ projs.push(last); saveProjs(projs); }
-  setProject(last);
+  _loadLastProject();
 })();
 </script>
 </body></html>
