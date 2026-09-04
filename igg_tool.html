@@ -51,6 +51,10 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .share-link{width:100%;box-sizing:border-box;font-family:Menlo,Consolas,monospace;font-size:11px;padding:9px 11px;margin:12px 0 4px;border:1px solid var(--line);border-radius:9px;background:#f8fafc;color:#334155;resize:none}
 .panel{background:var(--panel);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin:18px 0;transition:box-shadow .15s}
 .panel h2{margin:0 0 14px;font-size:16px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin:0 0 14px}
+.panel-head h2{margin:0}
+.head-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.head-tools .btn.ghost{margin-left:0}
 .desc{color:var(--muted);font-size:13px;margin-bottom:10px;line-height:1.6}
 .btn{display:inline-block;padding:10px 18px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;box-shadow:0 2px 8px rgba(235,20,120,.22)}
 .btn:hover{filter:brightness(1.06);box-shadow:0 3px 10px rgba(235,20,120,.28)}
@@ -229,7 +233,6 @@ td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
     </div>
     <div class="head-badges" data-page-node-id="82ssUA7wK0lptgO5hnNqcX">
       <span data-page-node-id="8Q6rBDSWHgPR10h1sI1HsK">纯前端 · 单文件</span>
-      <button class="btn ghost sm" id="btnShare" title="把当前项目数据压缩成链接，发给同事打开即自动载入" data-page-node-id="uIZHTBHrjtpI3lXmgfCvJD">🔗 复制分享链接</button>
       <div class="proj-switcher" data-page-node-id="ucigraWyrMZoe26FfERESV">
         <div class="proj-trigger" id="projTrigger" data-page-node-id="guhoTG7EXr7HpyT4fb8gyo">
           <span class="proj-avatar" id="projAvatar" style="background:var(--accent)" data-page-node-id="sCURu2cwE77Jcu5eAX8zbU">D</span>
@@ -250,14 +253,19 @@ td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
   </header>
 
   <div class="panel" data-page-node-id="tOV6vbcW4qh1FWT11H2e3k">
-    <h2 data-page-node-id="iXCeMNS70pvWUEkA1RDr2m">① 粘贴 Referral Links 数据</h2>
+    <div class="panel-head">
+      <h2 data-page-node-id="iXCeMNS70pvWUEkA1RDr2m">① 粘贴 Referral Links 数据</h2>
+      <div class="head-tools">
+        <button class="btn ghost sm" id="btnExportBackup" title="打包所有项目的快照/分类/确认/设置到一个 JSON 文件" data-page-node-id="mZ9puDh26B8uEuXDFYGfjK">📤 导出备份</button>
+        <button class="btn ghost sm" id="btnImportBackup" title="从备份 JSON 恢复（同名项目会被覆盖）" data-page-node-id="GEIgEYGqHqFc6DEMHZ3RR2">📥 导入备份</button>
+        <button class="btn ghost sm" id="btnShare" title="把当前项目数据压缩成链接，发给同事打开即自动载入" data-page-node-id="uIZHTBHrjtpI3lXmgfCvJD">🔗 复制分享链接</button>
+      </div>
+    </div>
     <div class="desc" data-page-node-id="qgqL4yXw4MkHBwvC41Qj4O">从 IGG 后台 Referral links 页面（<code data-page-node-id="mW4HiAOoYWiWxETEzwYNvr">Project · Referral links</code>）全选复制所有内容（含 Copy link、Deactivate 等也一并复制没事，工具会自动忽略），粘贴到下方文本框，点击「解析并保存今日快照」。</div>
     <textarea id="iggPaste" rows="9" placeholder="粘贴 IGG 后台的 referral links 表格内容（含表头 Display name、Status、New orders、1 day、7 days、Income、Total）"></textarea>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap" data-page-node-id="Gqw3eXa2Rkl5ndqMuNFKMA">
       <button class="btn" id="btnParse" data-page-node-id="GYSLFZWh9HSlQJdbMagP9p">解析并保存今日快照</button>
       <button class="btn ghost sm" id="btnClear" data-page-node-id="CzFK1YUMQlgRCrXF7jtkfa">清空历史快照</button>
-      <button class="btn ghost sm" id="btnExportBackup" title="打包所有项目的快照/分类/确认/设置到一个 JSON 文件" data-page-node-id="mZ9puDh26B8uEuXDFYGfjK">📤 导出备份</button>
-      <button class="btn ghost sm" id="btnImportBackup" title="从备份 JSON 恢复（同名项目会被覆盖）" data-page-node-id="GEIgEYGqHqFc6DEMHZ3RR2">📥 导入备份</button>
       <input type="file" id="fileBackup" accept=".json,application/json" style="display:none" data-page-node-id="NS7DY0UTaJIP4dpHCoPeUj">
     </div>
     <div class="hint" data-page-node-id="lgSoz5sRzE5mx8Gt7poilA">说明：IGG 不提供按日明细，所有数字均为累计值。工具靠「每天粘贴一次、与上次快照对比差值」来算出当日新增。建议每天固定时间（如上午）粘贴一次，连续粘贴即可在看板里看到「哪一天哪个 link 有出单」。</div>
