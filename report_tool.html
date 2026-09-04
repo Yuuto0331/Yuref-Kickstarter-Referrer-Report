@@ -410,6 +410,7 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
         </div>
       </div>
       <button class="btn ghost sm" id="btnGuide" title="查看使用说明" data-page-node-id="mCEIvO2EcdT8WrDF3BOvs4">? 使用说明</button>
+      <button class="btn ghost sm" id="btnShare" title="把当前项目数据压缩成链接，发给同事打开即自动载入" data-page-node-id="ksShareBtn">🔗 复制分享链接</button>
     </div>
   </div>
   <div class="drop" id="drop" data-page-node-id="mASua2utK6mhhV2dPvlosU">
@@ -2382,17 +2383,27 @@ function restoreFrom(saved){
   return true;
 }
 // 刷新后自动恢复上次浏览的项目与报表（数据仅存于本机浏览器）
-try{
-  const lp=localStorage.getItem(LS_LAST);
-  renderProjMenu();
-  if(lp){
-    STATE.proj=lp;
-    const saved=loadSavedData(lp);
-    if(saved&&saved.csv){ restoreFrom(saved); showToast('已恢复项目「'+lp+'」的上一次数据（'+STATE.rows.length.toLocaleString('en-US')+' 行）','info',4000); }
-  } else {
-    renderGuide();
+(async function _boot(){
+  // 分享链接自动载入：优先 location.hash(#d=...)，其次自包含 HTML 注入的 window.__SHARED__
+  const _hash=location.hash||'';
+  const _hm=_hash.match(/[#&]d=([^&]+)/);
+  const _enc = _hm ? _hm[1] : (window.__SHARED__ && window.__SHARED__.enc ? window.__SHARED__.enc : null);
+  if(_enc){
+    try{ const payload=await _decodePayload(_enc); _openShareDialog(payload); }
+    catch(e){ console.error('分享解析失败',e); showToast('分享链接解析失败：'+e.message+'（已忽略，载入本机项目）','error',5000); }
   }
-}catch(e){}
+  try{
+    const lp=localStorage.getItem(LS_LAST);
+    renderProjMenu();
+    if(lp){
+      STATE.proj=lp;
+      const saved=loadSavedData(lp);
+      if(saved&&saved.csv){ restoreFrom(saved); showToast('已恢复项目「'+lp+'」的上一次数据（'+STATE.rows.length.toLocaleString('en-US')+' 行）','info',4000); }
+    } else {
+      renderGuide();
+    }
+  }catch(e){}
+})();
 document.getElementById('pasteToggle').addEventListener('click',()=>{
   const pa=document.getElementById('pasteArea');
   pa.classList.toggle('open');
@@ -2448,5 +2459,114 @@ document.getElementById('btnDl').addEventListener('click',()=>{
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='ks-channel-report-'+STATE.D+'.html'; a.click();
   showToast('报表下载已开始','info',1500);
 });
+// ============ 分享链接 + 合并（适配 KS 数据模型：rawCsv + snapshots + override） ============
+let _shareEnc=null, _mergePayload=null, _mergeUseNew=false;
+function _b64urlEncode(bytes){ let bin=''; for(let i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]); return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function _b64urlDecode(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; const bin=atob(s); const bytes=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i); return bytes; }
+function _lzwCompress(str){ const bytes=new TextEncoder().encode(str); const dict=new Map(); for(let i=0;i<256;i++) dict.set(String.fromCharCode(i),i); let ds=256,cur='',out=[]; const p=c=>{out.push((c>>8)&0xff,c&0xff)}; for(let i=0;i<bytes.length;i++){ const ch=String.fromCharCode(bytes[i]),comb=cur+ch; if(dict.has(comb)) cur=comb; else { p(dict.get(cur)); if(ds<65536) dict.set(comb,ds++); cur=ch; } } if(cur!=='') p(dict.get(cur)); return new Uint8Array(out); }
+function _lzwDecompress(bytes){ const arr=Array.from(bytes); const dict=[]; for(let i=0;i<256;i++) dict.push(String.fromCharCode(i)); if(!arr.length) return ''; let ds=256,cur=String.fromCharCode(arr[0]),res=cur; for(let i=1;i<arr.length;i++){ const code=arr[i]; const next=code<256?String.fromCharCode(code):dict[code]; if(next===undefined) break; res+=next; dict[ds++]=cur+next[0]; cur=next; } return res; }
+async function _encodeShare(str){ const bytes=new TextEncoder().encode(str); if(typeof CompressionStream!=='undefined'){ const cs=new CompressionStream('deflate-raw'); const w=cs.writable.getWriter(); w.write(bytes); w.close(); const ab=await new Response(cs.readable).arrayBuffer(); return new Uint8Array(ab); } return _lzwCompress(str); }
+async function _decodeShare(bytes){ if(typeof DecompressionStream!=='undefined'){ const ds=new DecompressionStream('deflate-raw'); const w=ds.writable.getWriter(); w.write(bytes); w.close(); const ab=await new Response(ds.readable).arrayBuffer(); return new TextDecoder().decode(new Uint8Array(ab)); } return _lzwDecompress(bytes); }
+function _buildKsPayload(p){
+  const saved=loadSavedData(p)||{};
+  return { v:1, app:'ks-ref-tracker', kind:'share', proj:STATE.proj,
+    csv: saved.csv||STATE.rawCsv||'', D:STATE.D, P:STATE.P, launch:STATE.launch, firstWeek:STATE.firstWeek,
+    currency:STATE.cur||'USD', snapshots:STATE.snapshots||[], override:loadOverrides(p)||{} };
+}
+async function _decodePayload(enc){
+  const json=await _decodeShare(_b64urlDecode(enc));
+  const payload=JSON.parse(json);
+  if(!payload||payload.app!=='ks-ref-tracker'||payload.kind!=='share') throw new Error('不是有效的 KS 分享数据');
+  return payload;
+}
+function rowsToCSV(rows){
+  const head='Referrer,Date,Type,# of Pledges,Pledged';
+  const lines=[head];
+  for(const r of rows||[]){
+    const esc=s=>String(s).includes(',')?('"'+String(s).replace(/"/g,'""')+'"'):s;
+    lines.push([esc(r.ref),esc(r.date),esc(r.typ||''),r.pl||0,r.am||0].join(','));
+  }
+  return lines.join('\n');
+}
+function mergeSharedRows(tRows, sRows){
+  const map=new Map();
+  const put=(r)=>{ const k=normRef(r.ref)+'|'+(r.date||''); const ex=map.get(k); if(!ex){ map.set(k,{ref:r.ref,date:r.date,typ:r.typ,pl:r.pl,am:r.am}); } else { ex.pl=Math.max(ex.pl,r.pl); ex.am=Math.max(ex.am,r.am); ex.typ=r.typ; } };
+  (tRows||[]).forEach(put); (sRows||[]).forEach(put);
+  return Array.from(map.values());
+}
+function mergeSnapshots(tSnaps, sSnaps){
+  const map=new Map();
+  const put=(s)=>{ if(!s||!s.date) return; let t=map.get(s.date); if(!t){ t={date:s.date,totals:{}}; map.set(s.date,t); } for(const c in s.totals){ t.totals[c]=t.totals[c]||{}; for(const r in s.totals[c]){ const k=normRef(r).toLowerCase(); const v=s.totals[c][r]; const cur=t.totals[c][k]; if(cur){ cur[0]=Math.max(cur[0],v[0]); cur[1]=Math.max(cur[1],v[1]); } else t.totals[c][k]=[v[0],v[1]]; } } };
+  (tSnaps||[]).forEach(put); (sSnaps||[]).forEach(put);
+  return Array.from(map.values()).sort((a,b)=>a.date<b.date?-1:(a.date>b.date?1:0));
+}
+function _applySharedNew(payload){
+  const base=payload.proj||'共享项目';
+  let name=base+' · 分享', i=1; const projs=listProjNames();
+  while(projs.indexOf(name)>=0){ name=base+' · 分享 '+i; i++; }
+  const out={ proj:name, csv:payload.csv||'', D:payload.D||null, P:payload.P||null, launch:payload.launch||null, firstWeek:payload.firstWeek||null, snapshots:payload.snapshots||[], currency:payload.currency||'USD' };
+  localStorage.setItem(lsDataKey(name), JSON.stringify(out));
+  localStorage.setItem(lsKey(name), JSON.stringify(payload.override||{}));
+  setProject(name);
+  showToast('已从分享链接载入项目「'+name+'」','success',4000);
+}
+function mergeSharedInto(target, payload){
+  const tSaved=loadSavedData(target)||{proj:target,csv:'',snapshots:[]};
+  const tRows=parseCSV(tSaved.csv||'');
+  const sRows=parseCSV(payload.csv||'');
+  const mergedCsv=rowsToCSV(mergeSharedRows(tRows,sRows));
+  const mergedSnaps=mergeSnapshots(tSaved.snapshots||[], payload.snapshots||[]);
+  const out={ proj:target, csv:mergedCsv, D:payload.D||tSaved.D, P:payload.P||tSaved.P, launch:payload.launch||tSaved.launch, firstWeek:payload.firstWeek||tSaved.firstWeek||4, snapshots:mergedSnaps, currency:payload.currency||tSaved.currency||'USD' };
+  localStorage.setItem(lsDataKey(target), JSON.stringify(out));
+  const tOvr=loadOverrides(target)||{};
+  localStorage.setItem(lsKey(target), JSON.stringify(Object.assign({}, tOvr, payload.override||{})));
+  setProject(target);
+  showToast('已将分享数据合并进「'+target+'」','success',4000);
+}
+function _openShareDialog(payload){
+  const base=payload.proj||'共享项目';
+  const projs=listProjNames();
+  const sel=document.getElementById('mergeSel'); sel.innerHTML='';
+  let defIdx=-1;
+  projs.forEach((p,i)=>{ const o=document.createElement('option'); o.value=p; o.textContent=p+(p===base?'（本机原项目）':(p===base+' · 分享'?'（上次分享）':'')); sel.appendChild(o); if(p===base) defIdx=i; });
+  let useNew=false;
+  if(defIdx<0){ const o=document.createElement('option'); o.value='__NEW__'; o.textContent='📥 新建「'+base+' · 分享」项目'; sel.appendChild(o); useNew=true; }
+  sel.value = defIdx>=0 ? projs[defIdx] : '__NEW__';
+  document.getElementById('mergeNote').textContent='这份分享数据来自项目「'+escapeHtml(base)+'」（含 '+(payload.snapshots||[]).length+' 份快照）。请选择合并进哪个本机项目；合并规则：同 referrer 同日期取较大累计值，其余直接并入。';
+  document.getElementById('mergeMask').classList.add('open');
+  _mergePayload=payload; _mergeUseNew=useNew;
+}
+function openShareModal(){
+  const p=STATE.proj;
+  const payload=_buildKsPayload(p);
+  const json=JSON.stringify(payload);
+  _encodeShare(json).then(bytes=>{
+    _shareEnc=bytes;
+    const url=location.origin+location.pathname+'#d='+_b64urlEncode(_shareEnc);
+    document.getElementById('shareLink').value=url;
+    const len=url.length;
+    document.getElementById('shareNote').textContent = len>8000 ? ('链接较长（'+len+' 字符），部分 IM 可能截断，建议点「下载自包含 HTML」发文件。') : ('链接已就绪（'+len+' 字符），复制发给同事，对方打开即自动载入本项目数据。');
+    document.getElementById('shareMask').classList.add('open');
+  }).catch(e=>{ showToast('生成分享链接失败：'+e.message,'error',4000); });
+}
+function _copyShareLink(){ const i=document.getElementById('shareLink'); i.select(); try{ navigator.clipboard.writeText(i.value); }catch(e){ document.execCommand('copy'); } showToast('分享链接已复制','success',2500); }
+function _downloadSelfContained(){
+  if(!_shareEnc){ showToast('请先生成分享链接','info',2000); return; }
+  const html=document.documentElement.outerHTML;
+  const inj='<script>window.__SHARED__='+JSON.stringify({enc:_b64urlEncode(_shareEnc)})+'<\/script>';
+  const newHtml=html.replace(/<head[^>]*>/i, m=>m+inj);
+  const blob=new Blob([newHtml],{type:'text/html'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='KS_Referrer_Report_分享.html'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  showToast('已生成自包含 HTML，双击即用','success',3000);
+}
+document.getElementById('btnShare').addEventListener('click', openShareModal);
+document.getElementById('shareClose').addEventListener('click',()=>document.getElementById('shareMask').classList.remove('open'));
+document.getElementById('shareMask').addEventListener('click',e=>{ if(e.target.id==='shareMask') document.getElementById('shareMask').classList.remove('open'); });
+document.getElementById('shareCopy').addEventListener('click', _copyShareLink);
+document.getElementById('shareFile').addEventListener('click', _downloadSelfContained);
+document.getElementById('mergeDo').addEventListener('click',()=>{ document.getElementById('mergeMask').classList.remove('open'); if(_mergeUseNew){ _applySharedNew(_mergePayload); } else { const v=document.getElementById('mergeSel').value; if(v) mergeSharedInto(v,_mergePayload); } });
+document.getElementById('mergeNew').addEventListener('click',()=>{ document.getElementById('mergeMask').classList.remove('open'); _applySharedNew(_mergePayload); });
+document.getElementById('mergeCancel').addEventListener('click',()=>{ document.getElementById('mergeMask').classList.remove('open'); });
 initRangePicker();
 </script></body></html>
