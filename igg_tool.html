@@ -47,6 +47,7 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .modal h3{margin:0 0 14px;font-size:16px}
 .modal input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:14px;font-family:inherit}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.share-link{width:100%;box-sizing:border-box;font-family:Menlo,Consolas,monospace;font-size:11px;padding:9px 11px;margin:12px 0 4px;border:1px solid var(--line);border-radius:9px;background:#f8fafc;color:#334155;resize:none}
 .panel{background:var(--panel);border-radius:14px;padding:20px 24px;box-shadow:var(--shadow);margin:18px 0;transition:box-shadow .15s}
 .panel h2{margin:0 0 14px;font-size:16px}
 .desc{color:var(--muted);font-size:13px;margin-bottom:10px;line-height:1.6}
@@ -255,6 +256,7 @@ td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
       <button class="btn ghost sm" id="btnClear">清空历史快照</button>
       <button class="btn ghost sm" id="btnExportBackup" title="打包所有项目的快照/分类/确认/设置到一个 JSON 文件">📤 导出备份</button>
       <button class="btn ghost sm" id="btnImportBackup" title="从备份 JSON 恢复（同名项目会被覆盖）">📥 导入备份</button>
+      <button class="btn ghost sm" id="btnShare" title="把当前项目数据压缩成链接，发给同事打开即自动载入">🔗 复制分享链接</button>
       <input type="file" id="fileBackup" accept=".json,application/json" style="display:none">
     </div>
     <div class="hint">说明：IGG 不提供按日明细，所有数字均为累计值。工具靠「每天粘贴一次、与上次快照对比差值」来算出当日新增。建议每天固定时间（如上午）粘贴一次，连续粘贴即可在看板里看到「哪一天哪个 link 有出单」。</div>
@@ -298,6 +300,19 @@ td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
     <div class="modal-actions">
       <button class="btn ghost sm" id="modalCancel">取消</button>
       <button class="btn sm" id="modalOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="shareMask">
+  <div class="modal" style="max-width:560px">
+    <h3>🔗 分享链接</h3>
+    <div class="desc" id="shareNote"></div>
+    <input id="shareLink" class="share-link" readonly>
+    <div class="modal-actions">
+      <button class="btn ghost sm" id="shareCopy">复制链接</button>
+      <button class="btn ghost sm" id="shareFile">下载自包含 HTML</button>
+      <button class="btn sm" id="shareClose">关闭</button>
     </div>
   </div>
 </div>
@@ -1488,6 +1503,11 @@ function importBackup(file){
   reader.readAsText(file);
 }
 $('btnExportBackup').addEventListener('click',exportBackup);
+$('btnShare').addEventListener('click',openShareModal);
+$('shareCopy').addEventListener('click',_copyShareLink);
+$('shareFile').addEventListener('click',_downloadSelfContained);
+$('shareClose').addEventListener('click',()=>$('shareMask').classList.remove('open'));
+$('shareMask').addEventListener('click',e=>{ if(e.target===$('shareMask')) $('shareMask').classList.remove('open'); });
 $('btnImportBackup').addEventListener('click',()=>$('fileBackup').click());
 $('fileBackup').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
@@ -1892,8 +1912,122 @@ function buildDemoTomorrow(base){
   return out;
 }
 
+/* ---------- 分享链接（LZW 压缩 + base64url，零外部依赖） ---------- */
+function _lzwCompress(str){
+  const bytes=new TextEncoder().encode(str);
+  const dict=new Map();
+  for(let i=0;i<256;i++) dict.set(String.fromCharCode(i), i);
+  let dictSize=256, cur='', out=[];
+  const push16=c=>{ out.push((c>>8)&0xff, c&0xff); };
+  for(let i=0;i<bytes.length;i++){
+    const ch=String.fromCharCode(bytes[i]), comb=cur+ch;
+    if(dict.has(comb)) cur=comb;
+    else { push16(dict.get(cur)); if(dictSize<65536) dict.set(comb, dictSize++); cur=ch; }
+  }
+  if(cur!=='') push16(dict.get(cur));
+  return out;
+}
+function _lzwDecompress(bytes){
+  const dict=[];
+  for(let i=0;i<256;i++) dict[i]=String.fromCharCode(i);
+  let dictSize=256, prev=null, pos=0, out=[];
+  const read16=()=>{ if(pos+2>bytes.length) return -1; const c=(bytes[pos]<<8)|bytes[pos+1]; pos+=2; return c; };
+  while(true){
+    const code=read16();
+    if(code===-1) break;
+    let entry;
+    if(code<256) entry=String.fromCharCode(code);
+    else if(code===dictSize && prev!==null) entry=prev+prev.charAt(0);
+    else entry=dict[code];
+    if(entry===undefined) break;
+    for(let i=0;i<entry.length;i++) out.push(entry.charCodeAt(i));
+    if(prev!==null && dictSize<65536) dict[dictSize++]=prev+entry.charAt(0);
+    prev=entry;
+  }
+  return new TextDecoder().decode(Uint8Array.from(out));
+}
+function _b64urlEncode(bytes){
+  let bin='';
+  for(let i=0;i<bytes.length;i++) bin+=String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function _b64urlDecode(s){
+  s=s.replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length%4) s+='=';
+  const bin=atob(s), bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return bytes;
+}
+function _buildSharePayload(p){
+  return { v:1, app:'igg-ref-tracker', kind:'share', proj:p,
+    hist:loadHistory(p), override:loadOverride(p), confirmed:loadConfirmed(p),
+    currency:loadCurrency(p), boardWeek:loadBoardWeek(p), boardOnly:loadBoardOnly(p), compareN:loadCompareN(p),
+    sharedAt:new Date().toISOString() };
+}
+let _shareEnc='', _shareProj='';
+function openShareModal(){
+  const p=STATE.proj;
+  _shareProj=p;
+  const payload=_buildSharePayload(p);
+  const json=JSON.stringify(payload);
+  const bytes=_lzwCompress(json);
+  _shareEnc=_b64urlEncode(bytes);
+  const url=location.origin+location.pathname+'#d='+_shareEnc;
+  $('shareLink').value=url;
+  const kb=(new Blob([json]).size/1024).toFixed(0);
+  let note='已把项目「'+escapeHtml(p)+'」的全部快照/分类/设置压缩成链接（原始 '+kb+' KB → 链接 '+url.length+' 字符）。同事打开即自动载入。';
+  if(url.length>8000) note+=' ⚠ 链接较长，部分聊天软件可能截断；建议点「下载自包含 HTML」发文件，或用「📤 导出备份」发 JSON。';
+  $('shareNote').textContent=note;
+  $('shareMask').classList.add('open');
+}
+function _copyShareLink(){
+  const url=$('shareLink').value;
+  const done=()=>showToast('已复制分享链接','success');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(()=>_fallbackCopy(url,done));
+  } else _fallbackCopy(url,done);
+}
+function _fallbackCopy(text,cb){
+  const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); cb&&cb(); }catch(e){ showToast('复制失败，请手动选择链接复制','error'); }
+  document.body.removeChild(ta);
+}
+function _downloadSelfContained(){
+  const html=document.documentElement.outerHTML;
+  const inject='<script>window.__SHARED__='+JSON.stringify({enc:_shareEnc})+'<\/script>';
+  const newHtml=html.replace(/<head[^>]*>/i, m=>m+inject);
+  const blob=new Blob([newHtml],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='igg_tool_'+(STATE.proj||'shared')+'_'+todayStr()+'.html';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('已生成自包含 HTML，发给同事双击即可打开','success');
+}
+function _applyShared(enc){
+  const json=_lzwDecompress(_b64urlDecode(enc));
+  const payload=JSON.parse(json);
+  if(!payload||payload.app!=='igg-ref-tracker'||payload.kind!=='share'||!payload.hist) throw new Error('不是有效的分享数据');
+  const base=payload.proj||'共享项目';
+  const projs=loadProjs();
+  let name=base+' · 分享', i=1;
+  while(projs.indexOf(name)>=0){ name=base+' · 分享 '+i; i++; }
+  try{
+    localStorage.setItem(LS_HIST+name, JSON.stringify(payload.hist));
+    localStorage.setItem(LS_OVR+name, JSON.stringify(payload.override||{}));
+    localStorage.setItem(LS_CONF+name, JSON.stringify(payload.confirmed||{}));
+    if(payload.currency) localStorage.setItem(LS_CUR+name, payload.currency);
+    if(payload.boardWeek) localStorage.setItem(LS_BOARD_WEEK+name, payload.boardWeek);
+    if(payload.boardOnly) localStorage.setItem(LS_BOARD_ONLY+name, payload.boardOnly);
+    if(payload.compareN) localStorage.setItem(LS_CMP+name, payload.compareN);
+  }catch(e){ throw new Error('本地保存失败：'+e.message); }
+  const merged=[...new Set([...projs, name])]; saveProjs(merged);
+  setProject(name);
+  showToast('已从分享链接载入项目「'+name+'」','success',4000);
+}
+
 /* ---------- 初始化 ---------- */
 (function init(){
+  bindMapPanelTools();  // 工具栏静态元素，init 一次性绑定
   const params=new URLSearchParams(location.search);
   if(params.has('demo')){
     STATE.proj='DEMO预览';
@@ -1903,17 +2037,25 @@ addSnapshot('DEMO预览', base, DEMO_DATE1);
     addSnapshot('DEMO预览', buildDemoTomorrow(base), DEMO_DATE2);
     saveCurrency('DEMO预览','HKD');
   }
-  bindMapPanelTools();  // 工具栏静态元素，init 一次性绑定
   setProject('DEMO预览');
     document.body.insertAdjacentHTML('afterbegin','<div class="demo-banner">🧪 <b>演示模式</b>：已加载「今天('+DEMO_DATE1.slice(5)+') + 明天('+DEMO_DATE2.slice(5)+')」模拟快照，可直观看到次日粘贴后的报表与每日看板呈现。数据存于独立的「DEMO预览」项目，<b>不影响</b>你的真实项目。去掉网址后的 ?demo 即回到正常模式。<button class="x" onclick="location.search=\'\'">退出演示</button></div>');
     showToast('演示模式：模拟次日粘贴效果（今天+明天两份快照）','info',5000);
     return;
   }
+  // 分享链接 / 自包含文件：自动载入（优先于本机项目）
+  let sharedEnc=null;
+  try{
+    if(window.__SHARED__ && window.__SHARED__.enc) sharedEnc=window.__SHARED__.enc;
+    else if(location.hash.indexOf('#d=')===0) sharedEnc=location.hash.slice(3);
+  }catch(e){}
+  if(sharedEnc){
+    try{ _applyShared(sharedEnc); return; }
+    catch(e){ console.error('分享解析失败',e); showToast('分享链接解析失败：'+e.message+'（已忽略，载入本机项目）','error',5000); }
+  }
   let last='default';
   try{ last=localStorage.getItem(LS_LAST)||'default'; }catch(e){}
   const projs=loadProjs();
   if(projs.indexOf(last)<0){ projs.push(last); saveProjs(projs); }
-  bindMapPanelTools();  // 工具栏静态元素，init 一次性绑定
   setProject(last);
 })();
 </script>
