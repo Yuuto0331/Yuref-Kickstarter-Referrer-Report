@@ -472,6 +472,34 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
     </div>
   </div>
 </div>
+
+<div class="modal-mask" id="shareMask" data-page-node-id="ksShareMask">
+  <div class="modal" style="max-width:580px" data-page-node-id="ksShareModal">
+    <h3>🔗 复制分享链接</h3>
+    <div class="desc" id="shareNote"></div>
+    <input id="shareLink" class="share-link" readonly>
+    <div class="modal-actions">
+      <button class="btn ghost sm" id="shareCopy">复制链接</button>
+      <button class="btn ghost sm" id="shareFile">下载自包含 HTML</button>
+      <button class="btn sm" id="shareClose">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="mergeMask" data-page-node-id="ksMergeMask">
+  <div class="modal" style="max-width:540px" data-page-node-id="ksMergeModal">
+    <h3>🔀 合并 / 载入分享数据</h3>
+    <div class="desc" id="mergeNote"></div>
+    <div class="modal-actions" style="margin-top:12px;justify-content:space-between;align-items:center">
+      <select id="mergeSel" class="share-link" style="flex:1;margin-right:12px;min-width:0"></select>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <button class="btn sm" id="mergeDo">合并到所选项目</button>
+        <button class="btn ghost sm" id="mergeNew">另存为新项目</button>
+        <button class="btn ghost sm" id="mergeCancel">取消</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
 // ==CORE_START==
 const CAT_ORDER = ['付费广告','KS 站内自然','独立站','Kickbooster','众筹 PR','非众筹 PR','KOL','社媒运营','EDM','其他'];
