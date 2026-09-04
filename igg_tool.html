@@ -2138,19 +2138,21 @@ function _openShareDialog(payload){
   sel.innerHTML='';
   // 默认优先级：本机原项目 > 同名分享项目 > 新建
   let defIdx=projs.indexOf(base);
+  let useNew=false;
   if(defIdx<0) defIdx=projs.indexOf(base+' · 分享');
-  if(defIdx<0){
+  if(defIdx<0){ useNew=true; }
+  if(useNew){
     const o=document.createElement('option');
     o.value='__NEW__'; o.textContent='📥 新建「'+base+' · 分享」项目';
-    sel.appendChild(o); defIdx=0;
+    o.selected=true;
+    sel.appendChild(o);
   }
   projs.forEach((p,i)=>{
-    if(p==='__NEW__') return;
     const o=document.createElement('option');
     o.value=p;
     o.textContent=p + (p===base?'（本机原项目）':(p===base+' · 分享'?'（上次分享）':''));
     sel.appendChild(o);
-    if(i===defIdx) o.selected=true;
+    if(!useNew && i===defIdx) o.selected=true;
   });
   const srcDays=(payload.hist.snapshots||[]).length;
   const tDays=loadHistory(base).snapshots.length;
