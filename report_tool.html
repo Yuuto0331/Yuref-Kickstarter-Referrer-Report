@@ -249,6 +249,8 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-det td.dn{color:#ef4444;font-weight:600}
 .an-det td.flat{color:#cbd5e1}
 .an-det td.side{color:#94a3b8}
+.an-det td.d.zero-day{position:relative}
+.an-det td.d.zero-day::after{content:' ⬇ 清零';font-size:9px;color:#dc2626;font-weight:700;margin-left:5px;letter-spacing:.3px;background:#fee2e2;padding:0 4px;border-radius:3px;vertical-align:middle;white-space:nowrap}
 /* —— 正常 / 已忽略 link：极简单行 —— */
 .an-mini-head{font-size:11px;color:#94a3b8;font-weight:600;margin:0 0 2px;padding-left:4px}
 .an-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1px 12px}
@@ -1471,8 +1473,15 @@ function buildAnomalyData(){
       return {dd:best, lowV, lowD, highV};
     };
     const mA=mddOf('am'), mP=mddOf('pl');
-    // 把 cat-level drop 也带进 item（保留备用字段，cat 排除在 anomalyFlag 里做），silenced 用 map[r].cat（这里 r 是 link key）
-    list.push({link:pickBestDisplay(map[r]._all), cat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished, catDrop:cs.drop||-1, catDropPl:cs.dropPl||-1, silenced:ANOMALY_EXCLUDED_CATS.has(map[r].cat),
+    // 用户手动归类覆盖：异常卡的分按用户最终定的 cat（面板① 改过的 link 也跟过来）
+    let finalCat = map[r].cat;
+    for(const orig of map[r]._all){
+      if(STATE.override && STATE.override[orig] !== undefined){ finalCat = STATE.override[orig]; break; }
+    }
+    // silenced 同样跟 override 走（用户把它从"非众筹 PR"挪到"其他"就不再豁免）
+    const silenced = ANOMALY_EXCLUDED_CATS.has(finalCat);
+    // 把 cat-level drop 也带进 item（保留备用字段，cat 排除在 anomalyFlag 里做），silenced 用 finalCat
+    list.push({link:pickBestDisplay(map[r]._all), cat:finalCat, _origCat:map[r].cat, ds, series, peak, peakD, latest, latestD:latestSnapD, latestPl, peakPl, drop, dropPl, vanished, catDrop:cs.drop||-1, catDropPl:cs.dropPl||-1, silenced,
       mdd:mA.dd, mddLowV:mA.lowV, mddLowD:mA.lowD, mddHighV:mA.highV,
       mddPl:mP.dd, mddPlLowV:mP.lowV, mddPlHighV:mP.highV});
   }
@@ -1504,22 +1513,29 @@ function firstDropDay(it, useVol){
 // 重要口径：快照里是【累计】金额/单量，所以"净变化"是期间增量 —— 正数=期间净增（新出单 > 退款），
 // 负数=期间净退款（退单 > 新出单）。已消失的 link 会补一行最新快照（值 0），让退光那一跳可见。
 function anomalyDetailHtml(it, useVol){
-  const ds=it.ds.slice();
+  const ds=it.series?Object.keys(it.series).sort():it.ds.slice();
   if(it.vanished) ds.push(it.latestD);
   const k=useVol?'pl':'am', k2=useVol?'am':'pl';
   const f=v=>useVol?String(v):fmt(v);
   const g=v=>useVol?fmt(v):String(v);            // 副列：主维度是金额时副列是单量，反之亦然
-  let rows='', prev=null;
+  // 找首次清零日（第一行不算——开始就不叫清零；后续行 v===0 且 prev>0 才算真清零）
+  let zeroIdx=-1;
+  let rows='', prev=null, rowIdx=0;
   for(const d of ds){
-    const e=it.series[d], v=e?e[k]:0;
+    const e=it.series?it.series[d]:null, v=e?e[k]:0;
+    if(zeroIdx<0 && rowIdx>0 && prev!==null && prev>0 && v===0) zeroIdx=rowIdx;
     const dv = prev===null?null:(v-prev);
     const cls = dv===null?'flat':(dv>0?'up':(dv<0?'dn':'flat'));
     const txt = dv===null ? '—' : (dv===0 ? f(0) : ((dv>0?'+':'−')+f(Math.abs(dv))));
-    rows += `<tr><td class="d">${d.slice(5)}</td><td class="v">${f(v)}</td><td class="${cls}">${txt}</td><td class="side">${g(e?e[k2]:0)}</td></tr>`;
+    const dCls = rowIdx===zeroIdx?'d zero-day':'d';
+    rows += `<tr><td class="${dCls}">${d.slice(5)}</td><td class="v">${f(v)}</td><td class="${cls}">${txt}</td><td class="side">${g(e?e[k2]:0)}</td></tr>`;
     prev=v;
+    rowIdx++;
   }
-  return `<div class="an-det-note">累计值（非当日新增）；红色 = 该期间净退款</div>`+
-    `<table><thead><tr><th>快照</th><th>${useVol?'单量':'金额'}</th><th>较前次</th><th>${useVol?'金额':'单量'}</th></tr></thead><tbody>${rows}</tbody></table>`;
+  // .an-det-note 末尾追加"首次清零日: MM-DD"（仅当真有清零行）
+  const noteTail = zeroIdx>=0 ? ` · <span style="color:#dc2626;font-weight:600">首次清零日 ${ds[zeroIdx].slice(5)}</span>` : '';
+  return `<div class="an-det-note">累计值（非当日新增）；红色 = 该期间净退款${noteTail}</div>`+
+    `<table style="border-collapse:collapse;line-height:1.1"><thead><tr><th>快照</th><th>${useVol?'单量':'金额'}</th><th>较前次</th><th>${useVol?'金额':'单量'}</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 // 命中卡片（A 样式）：峰值 → 现在 主视觉 + 大号降幅 + 剩余进度条 + 逐日明细（可展开）
 // 设计原则：一个卡片只回答三个问题 —— 现在还剩多少 / 掉了多少 / 从哪天开始掉的。
