@@ -243,20 +243,22 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-det-btn{font-size:10px;padding:1px 6px;border:1px solid #e2e8f0;border-radius:5px;background:#fff;color:#94a3b8;cursor:pointer;flex:none;line-height:1.5}
 .an-det-btn:hover{border-color:#94a3b8;color:#475569}
 .an-det-btn.on{background:#eef2f6;border-color:#94a3b8;color:#334155}
+.an-det-grid{display:grid;grid-template-columns:18% 27% 35% 20%;gap:0;width:100%}
+.an-det-grid .row{display:grid;grid-template-columns:subgrid;grid-column:1/-1;font-size:10.5px;font-variant-numeric:tabular-nums;line-height:1.1}
+.an-det-grid .row.head{font-size:9.5px;color:#a8b4c4;font-weight:600;line-height:1.1;padding:0 0 2px;letter-spacing:.3px}
+.an-det-grid .row.head>span{text-align:right;font-weight:600}
+.an-det-grid .row.head>span:first-child{text-align:left}
+.an-det-grid .row>span{text-align:right;padding:1px 0 1px 2px;color:#475569;border-top:1px solid #f8fafc;line-height:1.1;min-width:0;overflow:hidden;text-overflow:clip;white-space:nowrap}
+.an-det-grid .row>span:first-child{text-align:left;color:#64748b}
+.an-det-grid .row>span.v{color:#0f172a;font-weight:600}
+.an-det-grid .row>span.up{color:#16a34a;font-weight:600}
+.an-det-grid .row>span.dn{color:#ef4444;font-weight:600}
+.an-det-grid .row>span.flat{color:#cbd5e1}
+.an-det-grid .row>span.side{color:#94a3b8}
+.an-det-grid .row>span.d.zero-day{position:relative}
+.an-det-grid .row>span.d.zero-day::after{content:' ⬇ 清零';font-size:9px;color:#dc2626;font-weight:700;margin-left:5px;letter-spacing:.3px;background:#fee2e2;padding:0 4px;border-radius:3px;vertical-align:middle;white-space:nowrap}
 .an-det{margin-top:7px;padding:5px 8px 4px;border-top:1px dashed #e2e8f0;background:#fff;border-radius:6px;max-width:100%;overflow:hidden;display:block}
 .an-det-note{font-size:10px;color:#a8b4c4;margin-bottom:4px}
-.an-det table{table-layout:fixed;width:100%;border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums;line-height:1.1}
-.an-det th{text-align:right;font-size:9.5px;color:#a8b4c4;font-weight:600;padding:0 0 2px;letter-spacing:.3px;line-height:1.1}
-.an-det td{text-align:right;padding:1px 0;color:#475569;border-top:1px solid #f8fafc;line-height:1.1;overflow:hidden;text-overflow:clip;max-width:0;min-width:0}
-.an-det th:first-child,.an-det td:first-child{text-align:left}
-.an-det td.d{color:#64748b}
-.an-det td.v{color:#0f172a;font-weight:600}
-.an-det td.up{color:#16a34a;font-weight:600}
-.an-det td.dn{color:#ef4444;font-weight:600}
-.an-det td.flat{color:#cbd5e1}
-.an-det td.side{color:#94a3b8}
-.an-det td.d.zero-day{position:relative}
-.an-det td.d.zero-day::after{content:' ⬇ 清零';font-size:9px;color:#dc2626;font-weight:700;margin-left:5px;letter-spacing:.3px;background:#fee2e2;padding:0 4px;border-radius:3px;vertical-align:middle;white-space:nowrap}
 /* —— 正常 / 已忽略 link：极简单行 —— */
 .an-mini-head{font-size:11px;color:#94a3b8;font-weight:600;margin:0 0 2px;padding-left:4px}
 .an-mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1px 12px}
@@ -548,7 +550,7 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
 <script>
 // ==BUILD_MARKER_START==
 // 构建版本号：每次推送请手动递增，用于判断用户浏览器是否拿到最新代码
-const __BUILD__ = '2026-09-07h';
+const __BUILD__ = '2026-09-07i';
 // ==BUILD_MARKER_END==
 // 版本自检：绕过缓存拉取线上的 __BUILD__，与本地比对，不一致就提示强制刷新
 (function(){
@@ -1593,17 +1595,18 @@ function anomalyDetailHtml(it, useVol){
     const cls = dv===null?'flat':(dv>0?'up':(dv<0?'dn':'flat'));
     const txt = dv===null ? '—' : (dv===0 ? f(0) : ((dv>0?'+':'−')+f(Math.abs(dv))));
     const dCls = rowIdx===zeroIdx?'d zero-day':'d';
-    rows += `<tr><td class="${dCls}">${d.slice(5)}</td><td class="v">${f(v)}</td><td class="${cls}">${txt}</td><td class="side">${g(e?e[k2]:0)}</td></tr>`;
+    rows += `<div class="row"><span class="${dCls}">${d.slice(5)}</span><span class="v">${f(v)}</span><span class="${cls}">${txt}</span><span class="side">${g(e?e[k2]:0)}</span></div>`;
     prev=v;
     rowIdx++;
   }
   // .an-det-note 末尾追加"首次清零日: MM-DD"（仅当真有清零行）
   const noteTail = zeroIdx>=0 ? ` · <span style="color:#dc2626;font-weight:600">首次清零日 ${ds[zeroIdx].slice(5)}</span>` : '';
-  return `<div class="an-det-note">累计值（非当日新增）；红色 = 该期间净退款${noteTail}</div>`+
-    `<table style="border-collapse:collapse;line-height:1.1">`+
-    `<colgroup><col width=\"68\"><col width=\"108\"><col width=\"148\"><col width=\"80\"></colgroup>`+
-    `<thead><tr><th>快照</th><th>${useVol?'单量':'金额'}</th><th>较前次</th><th>${useVol?'金额':'单量'}</th></tr></thead>`+
-    `<tbody>${rows}</tbody></table>`;
+  return `<div class="an-det-note">累计值（非当日新增）；红色 = 该期间净退款${noteTail}}</div>`+
+    `<div class="an-det-grid">`+
+      `<div class="row head"><span>快照</span><span>${useVol?'单量':'金额'}</span><span>较前次</span><span>${useVol?'金额':'单量'}</span></div>`+
+      `${rows}`+
+    `</div>`;
+}
 }
 // 命中卡片（A 样式）：峰值 → 现在 主视觉 + 大号降幅 + 剩余进度条 + 逐日明细（可展开）
 // 设计原则：一个卡片只回答三个问题 —— 现在还剩多少 / 掉了多少 / 从哪天开始掉的。
