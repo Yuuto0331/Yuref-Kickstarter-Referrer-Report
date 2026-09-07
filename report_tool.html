@@ -1465,6 +1465,14 @@ function buildAnomalyData(){
   // 用快照模型：每次 paste 一份 CSV 累计统计 → 跨 paste 对比累计曲线
   const snaps=STATE.snapshots||[];
   if(snaps.length<2) return [];
+  // 归一化 override lookup：panel① 存的是 CSV 原始 ref（可能带空格/不同大小写），
+  // 而 map 的 key 是 normRef(ref).toLowerCase()，直接查会 miss。归一化一次，后续 O(1) 查。
+  const normOvr={};
+  if(STATE.override){
+    for(const k in STATE.override){
+      normOvr[normRef(k).toLowerCase()] = STATE.override[k];
+    }
+  }
   const snapDates=snaps.map(s=>s.date).sort();
   const latestSnapD=snapDates[snapDates.length-1]; // 全局最新快照日期
   const map={}; // link -> {cat, series:{date:{am,pl}}}
@@ -1530,10 +1538,8 @@ function buildAnomalyData(){
     };
     const mA=mddOf('am'), mP=mddOf('pl');
     // 用户手动归类覆盖：异常卡的分按用户最终定的 cat（面板① 改过的 link 也跟过来）
-    let finalCat = map[r].cat;
-    for(const orig of map[r]._all){
-      if(STATE.override && STATE.override[orig] !== undefined){ finalCat = STATE.override[orig]; break; }
-    }
+    // 用归一化 key 查 normOvr，兼容 panel① 存原始 ref、snapshot 用 normRef 之间的格式差异
+    const finalCat = normOvr[r] || map[r].cat;
     // silenced 同样跟 override 走（用户把它从"非众筹 PR"挪到"其他"就不再豁免）
     const silenced = ANOMALY_EXCLUDED_CATS.has(finalCat);
     // 把 cat-level drop 也带进 item（保留备用字段，cat 排除在 anomalyFlag 里做），silenced 用 finalCat
@@ -1570,7 +1576,10 @@ function firstDropDay(it, useVol){
 // 负数=期间净退款（退单 > 新出单）。已消失的 link 会补一行最新快照（值 0），让退光那一跳可见。
 function anomalyDetailHtml(it, useVol){
   const ds=it.series?Object.keys(it.series).sort():it.ds.slice();
-  if(it.vanished) ds.push(it.latestD);
+  // 不依赖 it.vanished 决定补不补最后一天：只要 latestD 不在 ds 里就补一行 0
+  // （fix: 之前 it.vanished 要求 cat-level 整体消失才算，单 link 退光但 cat 还在的 case
+  // 不会触发，导致 detail 不渲染最后一天 0 行、零日标注也漏了）
+  if(it.latestD && ds[ds.length-1] !== it.latestD) ds.push(it.latestD);
   const k=useVol?'pl':'am', k2=useVol?'am':'pl';
   const f=v=>useVol?String(v):fmt(v);
   const g=v=>useVol?fmt(v):String(v);            // 副列：主维度是金额时副列是单量，反之亦然
