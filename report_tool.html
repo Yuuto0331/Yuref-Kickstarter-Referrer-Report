@@ -548,7 +548,7 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
 <script>
 // ==BUILD_MARKER_START==
 // 构建版本号：每次推送请手动递增，用于判断用户浏览器是否拿到最新代码
-const __BUILD__ = '2026-09-07e';
+const __BUILD__ = '2026-09-07f';
 // ==BUILD_MARKER_END==
 // 版本自检：绕过缓存拉取线上的 __BUILD__，与本地比对，不一致就提示强制刷新
 (function(){
@@ -1600,7 +1600,15 @@ function anomalyDetailHtml(it, useVol){
   // .an-det-note 末尾追加"首次清零日: MM-DD"（仅当真有清零行）
   const noteTail = zeroIdx>=0 ? ` · <span style="color:#dc2626;font-weight:600">首次清零日 ${ds[zeroIdx].slice(5)}</span>` : '';
   return `<div class="an-det-note">累计值（非当日新增）；红色 = 该期间净退款${noteTail}</div>`+
-    `<table style="border-collapse:collapse;line-height:1.1;table-layout:fixed;width:100%"><colgroup><col style="width:18%"><col style="width:27%"><col style="width:35%"><col style="width:20%"></colgroup><thead><tr><th>快照</th><th>${useVol?'单量':'金额'}</th><th>较前次</th><th>${useVol?'金额':'单量'}</th></tr></thead><tbody>${rows}</tbody></table>`;
+    `<table style="border-collapse:collapse;line-height:1.1;width:100%;table-layout:fixed">`+
+    `<colgroup><col><col><col><col></colgroup>`+
+    `<thead><tr>`+
+      `<th style="width:18%">快照</th>`+
+      `<th style="width:26%">${useVol?'单量':'金额'}</th>`+
+      `<th style="width:36%">较前次</th>`+
+      `<th style="width:20%">${useVol?'金额':'单量'}</th>`+
+    `</tr></thead>`+
+    `<tbody>${rows}</tbody></table>`;
 }
 // 命中卡片（A 样式）：峰值 → 现在 主视觉 + 大号降幅 + 剩余进度条 + 逐日明细（可展开）
 // 设计原则：一个卡片只回答三个问题 —— 现在还剩多少 / 掉了多少 / 从哪天开始掉的。
