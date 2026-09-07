@@ -245,9 +245,9 @@ tr.cmp-cat .caret-sm{font-size:11px;display:inline-block;transition:transform .1
 .an-det-btn.on{background:#eef2f6;border-color:#94a3b8;color:#334155}
 .an-det{margin-top:7px;padding:5px 8px 4px;border-top:1px dashed #e2e8f0;background:#fff;border-radius:6px}
 .an-det-note{font-size:10px;color:#a8b4c4;margin-bottom:4px}
-.an-det table{width:100%;border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums;line-height:1.1}
+.an-det table{table-layout:fixed;width:100%;border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums;line-height:1.1}
 .an-det th{text-align:right;font-size:9.5px;color:#a8b4c4;font-weight:600;padding:0 0 2px;letter-spacing:.3px;line-height:1.1}
-.an-det td{text-align:right;padding:1px 0;color:#475569;border-top:1px solid #f8fafc;white-space:nowrap;line-height:1.1}
+.an-det td{text-align:right;padding:1px 0 1px 4px;color:#475569;border-top:1px solid #f8fafc;line-height:1.1;overflow:hidden;text-overflow:clip;white-space:nowrap;max-width:0}
 .an-det th:first-child,.an-det td:first-child{text-align:left}
 .an-det td.d{color:#64748b}
 .an-det td.v{color:#0f172a;font-weight:600}
@@ -548,7 +548,7 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
 <script>
 // ==BUILD_MARKER_START==
 // 构建版本号：每次推送请手动递增，用于判断用户浏览器是否拿到最新代码
-const __BUILD__ = '2026-09-07f';
+const __BUILD__ = '2026-09-07g';
 // ==BUILD_MARKER_END==
 // 版本自检：绕过缓存拉取线上的 __BUILD__，与本地比对，不一致就提示强制刷新
 (function(){
@@ -1600,14 +1600,9 @@ function anomalyDetailHtml(it, useVol){
   // .an-det-note 末尾追加"首次清零日: MM-DD"（仅当真有清零行）
   const noteTail = zeroIdx>=0 ? ` · <span style="color:#dc2626;font-weight:600">首次清零日 ${ds[zeroIdx].slice(5)}</span>` : '';
   return `<div class="an-det-note">累计值（非当日新增）；红色 = 该期间净退款${noteTail}</div>`+
-    `<table style="border-collapse:collapse;line-height:1.1;width:100%;table-layout:fixed">`+
-    `<colgroup><col><col><col><col></colgroup>`+
-    `<thead><tr>`+
-      `<th style="width:18%">快照</th>`+
-      `<th style="width:26%">${useVol?'单量':'金额'}</th>`+
-      `<th style="width:36%">较前次</th>`+
-      `<th style="width:20%">${useVol?'金额':'单量'}</th>`+
-    `</tr></thead>`+
+    `<table style="border-collapse:collapse;line-height:1.1">`+
+    `<colgroup><col width=\"68\"><col width=\"108\"><col width=\"148\"><col width=\"80\"></colgroup>`+
+    `<thead><tr><th>快照</th><th>${useVol?'单量':'金额'}</th><th>较前次</th><th>${useVol?'金额':'单量'}</th></tr></thead>`+
     `<tbody>${rows}</tbody></table>`;
 }
 // 命中卡片（A 样式）：峰值 → 现在 主视觉 + 大号降幅 + 剩余进度条 + 逐日明细（可展开）
