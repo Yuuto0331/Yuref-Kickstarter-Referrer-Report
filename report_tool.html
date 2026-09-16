@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-page-node-id="6s6PKGWE2SSPB3cZ2dtoKh"><head data-page-node-id="zbqcNDOy8CqVqYwS01neVY"><meta charset="UTF-8" data-page-node-id="iyH6E0DEONfioyyISok6LW"><meta name="viewport" content="width=device-width,initial-scale=1" data-page-node-id="3upl2AOgUw4zRcEpj7PZCV"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><title>Yuref - Kickstarter Referrer Report</title><link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiMyNTYzZWIiLz48cGF0aCBkPSJNOSAyMSBMOSAxNSBNMTYgMjEgTDE2IDExIE0yMyAyMSBMMjMgMTciIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=" data-page-node-id="pdyn45gd263xXv8pV3711S">
+<html lang="zh-CN" data-page-node-id="6s6PKGWE2SSPB3cZ2dtoKh"><head data-page-node-id="zbqcNDOy8CqVqYwS01neVY"><meta charset="UTF-8" data-page-node-id="iyH6E0DEONfioyyISok6LW"><meta name="viewport" content="width=device-width,initial-scale=1" data-page-node-id="3upl2AOgUw4zRcEpj7PZCV"><meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"><meta http-equiv="Pragma" content="no-cache"><meta http-equiv="Expires" content="0"><title>Yuref - Kickstarter Referrer Report</title><meta name="description" content="上传 Kickstarter Referrers 导出 CSV，自动按渠道口径拆分汇总，即时查看出单渠道结构与异常识别。纯前端单文件工具，数据不出本机。"><meta property="og:title" content="Yuref - Kickstarter Referrer Report"><meta property="og:description" content="上传 KS Referrers CSV，自动按渠道口径拆分汇总，即时查看渠道结果与异常识别。纯前端工具，数据不出本机。"><meta property="og:type" content="website"><meta property="og:url" content="https://yuuto0331.github.io/Yuref-Kickstarter-Referrer-Report/report_tool.html"><link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiMyNTYzZWIiLz48cGF0aCBkPSJNOSAyMSBMOSAxNSBNMTYgMjEgTDE2IDExIE0yMyAyMSBMMjMgMTciIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=" data-page-node-id="pdyn45gd263xXv8pV3711S">
 <style>
 :root{--bg:#f5f7fa;--panel:#fff;--ink:#1f2933;--muted:#6b7280;--line:#e5e7eb;--green:#1a7f37;--red:#c0392b;--blue:#2563eb;--shadow:0 1px 3px rgba(0,0,0,.08)}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
@@ -553,7 +553,7 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
 // 构建版本号：游戏/软件式语义版本号（vMAJOR.MINOR），直观易懂，不泄露日期或 commit
 // 用途：自检对比判断用户浏览器是否拿到最新代码；显示在底部 footer
 // 纪律：每次推送请手动递增 minor（v1.0 → v1.1 → v2.0），避免远端/本地版本号相同误判"已最新"
-const __BUILD__ = 'v1.0';
+const __BUILD__ = 'v1.1';
 // ==BUILD_MARKER_END==
 // 版本自检：绕过缓存拉取线上的 __BUILD__，与本地比对，不一致就提示强制刷新
 (function(){
