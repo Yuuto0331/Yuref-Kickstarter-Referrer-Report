@@ -254,18 +254,20 @@ td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
 
   <div class="panel" data-page-node-id="tOV6vbcW4qh1FWT11H2e3k">
     <div class="panel-head">
-      <h2 data-page-node-id="iXCeMNS70pvWUEkA1RDr2m">① 粘贴 GA4 流量获取数据</h2>
+      <h2 data-page-node-id="iXCeMNS70pvWUEkA1RDr2m">① 粘贴 / 上传 GA4 流量获取数据</h2>
       <div class="head-tools">
         <button class="btn ghost sm" id="btnExportBackup" title="打包所有项目的快照/分类/确认/设置到一个 JSON 文件" data-page-node-id="mZ9puDh26B8uEuXDFYGfjK">📤 导出备份</button>
         <button class="btn ghost sm" id="btnImportBackup" title="从备份 JSON 恢复（同名项目会被覆盖）" data-page-node-id="GEIgEYGqHqFc6DEMHZ3RR2">📥 导入备份</button>
         <button class="btn ghost sm" id="btnShare" title="把当前项目数据压缩成链接，发给同事打开即自动载入" data-page-node-id="uIZHTBHrjtpI3lXmgfCvJD">🔗 复制分享链接</button>
       </div>
     </div>
-    <div class="desc" data-page-node-id="qgqL4yXw4MkHBwvC41Qj4O">从 GA4（账户 makuake / 属性 makuake.com）「獲得トラフィック → トラフィック獲得：セッションのキャンペーン」报告，复制表格或下载 CSV，粘贴到下方文本框，点击「解析并保存今日快照」。工具会自动跳过 GA4 导出顶部以 <code>#</code> 开头的元信息行。</div>
+    <div class="desc" data-page-node-id="qgqL4yXw4MkHBwvC41Qj4O">从 GA4（账户 makuake / 属性 makuake.com）「獲得トラフィック → トラフィック獲得：セッションのキャンペーン」报告，复制表格粘贴到下方文本框，或点「📁 上传文件」直接选 GA4 导出的 CSV / TSV，点击「解析并保存今日快照」。工具会自动跳过 GA4 导出顶部以 <code>#</code> 开头的元信息行。</div>
     <textarea id="iggPaste" rows="9" placeholder="粘贴 GA4 的「セッションのキャンペーン」报告（含表头：セッションのキャンペーン / セッション / キーイベント / 合計収益）。支持 TSV 复制或 CSV 上传。"></textarea>
     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap" data-page-node-id="Gqw3eXa2Rkl5ndqMuNFKMA">
       <button class="btn" id="btnParse" data-page-node-id="GYSLFZWh9HSlQJdbMagP9p">解析并保存今日快照</button>
+      <label class="btn ghost sm" for="fileGA4" title="上传 GA4 导出的 CSV / TSV 文件（自动读取并解析）">📁 上传文件</label>
       <button class="btn ghost sm" id="btnClear" data-page-node-id="CzFK1YUMQlgRCrXF7jtkfa">清空历史快照</button>
+      <input type="file" id="fileGA4" accept=".csv,.tsv,text/csv,text/tab-separated-values" style="display:none" data-page-node-id="GA4up">
       <input type="file" id="fileBackup" accept=".json,application/json" style="display:none" data-page-node-id="NS7DY0UTaJIP4dpHCoPeUj">
     </div>
     <div class="hint" data-page-node-id="lgSoz5sRzE5mx8Gt7poilA">说明：GA4 报告为累计数据。为让「本次新增」准确反映每日增量，请在 GA4 中将日期范围起点固定为项目上线日、终点设为当天，每天导出一份（终点每日滚动）。工具靠「每天粘贴一次、与上次快照对比差值」算出当日新增。建议每天固定时间粘贴一次，连续粘贴即可在看板里看到「哪一天哪个 campaign 有新增收益」。</div>
@@ -1464,6 +1466,19 @@ $('btnParse').addEventListener('click',()=>{
   let msg='已保存今日快照，共 '+names.length+' 个 campaign（历史第 '+STATE.history.snapshots.length+' 次）';
   if(curChanged) msg+=' · 已自动识别币种 '+detected+'（右上角可切换显示币种）';
   showToast(msg,'success',4200);
+});
+$('fileGA4').addEventListener('change',e=>{
+  const f=e.target.files && e.target.files[0];
+  if(!f){ return; }
+  const reader=new FileReader();
+  reader.onload=()=>{
+    $('iggPaste').value=String(reader.result||'');
+    showToast('已读取文件「'+f.name+'」，自动解析中…','info',2200);
+    setTimeout(()=>$('btnParse').click(), 60);
+  };
+  reader.onerror=()=>{ showToast('文件读取失败，请重试或改用粘贴','error',3000); };
+  reader.readAsText(f);
+  e.target.value=''; // 允许重新选择同一文件再次触发
 });
 $('btnClear').addEventListener('click',()=>{
   if(!confirm('确认清空「'+STATE.proj+'」的全部历史快照？此操作不可恢复。')) return;
