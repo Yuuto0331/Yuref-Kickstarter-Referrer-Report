@@ -18,7 +18,7 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .proj-group{display:flex;align-items:center;gap:10px}
 .proj-switcher{position:relative}
 .proj-trigger{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;transition:.15s;font-family:inherit}
-.proj-trigger:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(235,20,120,.12)}
+.proj-trigger:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(242,92,26,.12)}
 .proj-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex:none}
 .proj-name{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--ink)}
 .proj-caret{width:16px;height:16px;color:var(--muted);flex:none}
@@ -56,14 +56,24 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .head-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .head-tools .btn.ghost{margin-left:0}
 .desc{color:var(--muted);font-size:13px;margin-bottom:10px;line-height:1.6}
-.btn{display:inline-block;padding:10px 18px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;box-shadow:0 2px 8px rgba(235,20,120,.22)}
-.btn:hover{filter:brightness(1.06);box-shadow:0 3px 10px rgba(235,20,120,.28)}
+.btn{display:inline-block;padding:10px 18px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;box-shadow:0 2px 8px rgba(242,92,26,.22)}
+.btn:hover{filter:brightness(1.06);box-shadow:0 3px 10px rgba(242,92,26,.28)}
 .btn:active{transform:translateY(1px)}.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.ghost{background:#eef2f7;color:var(--ink);transition:.15s;margin-left:8px}.btn.ghost:hover{background:#e2e8f0;box-shadow:none}
 .btn.sm{padding:6px 12px;font-size:12px;margin-top:0}
-select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(235,20,120,.15)}
+select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(242,92,26,.15)}
 textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:Menlo,Consolas,monospace;font-size:12px;resize:vertical;line-height:1.5}
 .hint{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.6;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+.drop{border:2px dashed #cbd5e1;border-radius:16px;padding:38px 28px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:#fafbfc;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:4px}
+.drop.hover,.drop:hover{border-color:var(--accent);background:linear-gradient(135deg,#fff3ec,#fdf8f5);color:var(--accent)}
+.drop b{color:var(--ink)}
+.up-icon{width:46px;height:46px;margin-bottom:12px;color:var(--accent);opacity:.9}
+.up-title{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.up-sub{font-size:13px;color:var(--muted)}
+.paste-toggle{text-align:center;margin:14px 0 0;font-size:13px;color:var(--accent);cursor:pointer;font-weight:500}
+.paste-toggle:hover{text-decoration:underline}
+.paste-area{display:none;margin-top:12px}
+.paste-area.open{display:block}
 .data-info{margin-top:12px;padding:10px 14px;background:#f8fafc;border:1px solid var(--line);border-radius:8px;font-size:13px;color:#374151;display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .data-info .meta{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px;flex-wrap:wrap}
 .data-info b{color:var(--ink);font-weight:600}
@@ -76,7 +86,7 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;
 .module .desc{color:var(--muted);font-size:13px;margin-bottom:14px}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 18px}
 .kpi{position:relative;background:linear-gradient(135deg,#fdeef5,#fff5fa);border:1px solid #fbd0e3;border-radius:14px;padding:14px 16px 14px 18px;box-shadow:var(--shadow);border-left:4px solid var(--accent);transition:transform .18s ease,box-shadow .18s ease;overflow:hidden}
-.kpi:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(235,20,120,.14)}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(242,92,26,.14)}
 .kpi .l{font-size:12px;color:#d2491f;margin-bottom:4px;letter-spacing:.02em}
 .kpi .v{font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}
 .kpi .sub{font-size:11px;color:var(--muted);margin-top:4px}
@@ -208,7 +218,7 @@ td:first-child{position:sticky;left:0;z-index:1;background:#fff}
 #chartTip b{display:block;margin-bottom:3px;font-size:13px}
 /* 看板 NEW 角标（link 首次出现的列） */
 .new-badge{position:absolute;top:-1px;right:-1px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:0 0 0 6px;line-height:1.3;letter-spacing:.3px;pointer-events:none}
-td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
+td.cell-new{outline:1px dashed rgba(242,92,26,.35);outline-offset:-2px}
 /* 引导面板 */
 .guide{background:linear-gradient(135deg,#fafbfc,#fff5fa);border:1px solid var(--line);border-radius:16px;padding:30px 32px;box-shadow:var(--shadow)}
 .guide h3{margin:0 0 4px;font-size:18px;padding-left:0}.guide h3::before{display:none}
@@ -254,22 +264,29 @@ td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
 
   <div class="panel" data-page-node-id="tOV6vbcW4qh1FWT11H2e3k">
     <div class="panel-head">
-      <h2 data-page-node-id="iXCeMNS70pvWUEkA1RDr2m">① 粘贴 / 上传 GA4 流量获取数据</h2>
+      <h2 data-page-node-id="iXCeMNS70pvWUEkA1RDr2m">ⓘ 上传数据</h2>
       <div class="head-tools">
         <button class="btn ghost sm" id="btnExportBackup" title="打包所有项目的快照/分类/确认/设置到一个 JSON 文件" data-page-node-id="mZ9puDh26B8uEuXDFYGfjK">📤 导出备份</button>
         <button class="btn ghost sm" id="btnImportBackup" title="从备份 JSON 恢复（同名项目会被覆盖）" data-page-node-id="GEIgEYGqHqFc6DEMHZ3RR2">📥 导入备份</button>
         <button class="btn ghost sm" id="btnShare" title="把当前项目数据压缩成链接，发给同事打开即自动载入" data-page-node-id="uIZHTBHrjtpI3lXmgfCvJD">🔗 复制分享链接</button>
       </div>
     </div>
-    <div class="desc" data-page-node-id="qgqL4yXw4MkHBwvC41Qj4O">从 GA4（账户 makuake / 属性 makuake.com）「獲得トラフィック → トラフィック獲得：セッションのキャンペーン」报告，复制表格粘贴到下方文本框，或点「📁 上传文件」直接选 GA4 导出的 CSV / TSV，点击「解析并保存今日快照」。工具会自动跳过 GA4 导出顶部以 <code>#</code> 开头的元信息行。</div>
-    <textarea id="iggPaste" rows="9" placeholder="粘贴 GA4 的「セッションのキャンペーン」报告（含表头：セッションのキャンペーン / セッション / キーイベント / 合計収益）。支持 TSV 复制或 CSV 上传。"></textarea>
-    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap" data-page-node-id="Gqw3eXa2Rkl5ndqMuNFKMA">
-      <button class="btn" id="btnParse" data-page-node-id="GYSLFZWh9HSlQJdbMagP9p">解析并保存今日快照</button>
-      <label class="btn ghost sm" for="fileGA4" title="上传 GA4 导出的 CSV / TSV 文件（自动读取并解析）">📁 上传文件</label>
-      <button class="btn ghost sm" id="btnClear" data-page-node-id="CzFK1YUMQlgRCrXF7jtkfa">清空历史快照</button>
+    <div class="desc" data-page-node-id="qgqL4yXw4MkHBwvC41Qj4O">从 GA4（账户 makuake / 属性 makuake.com）「獲得トラフィック → トラフィック獲得：セッションのキャンペーン」报告下载 CSV 拖入下方区域即可，自动跳过 GA4 导出顶部以 <code>#</code> 开头的元信息行并解析。</div>
+    <div class="drop" id="drop" data-page-node-id="GA4drop">
+      <svg class="up-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="GA4upIcon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" data-page-node-id="GA4upPath1"/><polyline points="17 8 12 3 7 8" data-page-node-id="GA4upPath2"/><line x1="12" y1="3" x2="12" y2="15" data-page-node-id="GA4upPath3"/></svg>
+      <div class="up-title" data-page-node-id="GA4upTitle">把 GA4 导出的 <b>CSV / TSV</b> 拖到这里</div>
+      <div class="up-sub" data-page-node-id="GA4upSub">或 <span data-page-node-id="GA4upClick">点击选择文件</span></div>
       <input type="file" id="fileGA4" accept=".csv,.tsv,text/csv,text/tab-separated-values" style="display:none" data-page-node-id="GA4up">
-      <input type="file" id="fileBackup" accept=".json,application/json" style="display:none" data-page-node-id="NS7DY0UTaJIP4dpHCoPeUj">
     </div>
+    <div class="paste-toggle" id="pasteToggle" data-page-node-id="GA4pasteToggle">无法上传？粘贴 GA4 文本</div>
+    <div class="paste-area" id="pasteArea" data-page-node-id="GA4pasteArea">
+      <textarea id="iggPaste" rows="9" placeholder="粘贴 GA4 的「セッションのキャンペーン」报告（含表头：セッションのキャンペーン / セッション / キーイベント / 合計収益）。支持 TSV 复制或 CSV 文本。"></textarea>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap" data-page-node-id="Gqw3eXa2Rkl5ndqMuNFKMA">
+        <button class="btn" id="btnParse" data-page-node-id="GYSLFZWh9HSlQJdbMagP9p">解析并保存今日快照</button>
+        <button class="btn ghost sm" id="btnClear" data-page-node-id="CzFK1YUMQlgRCrXF7jtkfa">清空历史快照</button>
+      </div>
+    </div>
+    <input type="file" id="fileBackup" accept=".json,application/json" style="display:none" data-page-node-id="NS7DY0UTaJIP4dpHCoPeUj">
     <div class="hint" data-page-node-id="lgSoz5sRzE5mx8Gt7poilA">说明：GA4 报告为累计数据。为让「本次新增」准确反映每日增量，请在 GA4 中将日期范围起点固定为项目上线日、终点设为当天，每天导出一份（终点每日滚动）。工具靠「每天粘贴一次、与上次快照对比差值」算出当日新增。建议每天固定时间粘贴一次，连续粘贴即可在看板里看到「哪一天哪个 campaign 有新增收益」。</div>
   </div>
 
@@ -649,7 +666,7 @@ function syncCurrencyUI(){
 }
 function renderReport(){
   const body=$('reportBody'); const mp=$('mapPanel'); const h=STATE.history;
-  if(!h||!h.snapshots.length){ body.innerHTML='<div class="guide"><h3>开始追踪你的 Makuake 流量获取渠道</h3><p class="lead">三步即可：粘贴 GA4 数据 →（可选）调整分类 → 查看渠道汇总与每日新增看板。</p><ol><li><div><b>粘贴 GA4 报告</b>：从 GA4「トラフィック獲得：セッションのキャンペーン」复制表格或下载 CSV，粘贴到上方文本框，点「解析并保存今日快照」。</div></li><li><div><b>（可选）调整分类口径</b>：关注标 ⚠️ 的「待确认」项，按需指定渠道；其余默认已自动归类。</div></li><li><div><b>每日粘贴一次</b>：连续粘贴后，看板会显示「哪天哪个 campaign 有新增收益」，自然周汇总展示每周趋势。</div></li></ol><div class="g-note">🔒 数据仅存于本机浏览器，不会上传服务器。可访问 <code>?demo</code> 预览演示效果。</div></div>'; if(mp) mp.classList.add('hide'); return; }
+  if(!h||!h.snapshots.length){ body.innerHTML='<div class="guide"><h3>开始追踪你的 Makuake 流量获取渠道</h3><p class="lead">三步即可：粘贴 GA4 数据 →（可选）调整分类 → 查看渠道汇总与每日新增看板。</p><ol><li><div><b>上传 GA4 报告</b>：从 GA4「トラフィック獲得：セッションのキャンペーン」下载 CSV 拖入上传区（或点「无法上传？粘贴 GA4 文本」手动粘贴），自动解析并保存今日快照。</div></li><li><div><b>（可选）调整分类口径</b>：关注标 ⚠️ 的「待确认」项，按需指定渠道；其余默认已自动归类。</div></li><li><div><b>每日上传一次</b>：连续上传后，看板会显示「哪天哪个 campaign 有新增收益」，自然周汇总展示每周趋势。</div></li></ol><div class="g-note">🔒 数据仅存于本机浏览器，不会上传服务器。可访问 <code>?demo</code> 预览演示效果。</div></div>'; if(mp) mp.classList.add('hide'); return; }
   if(mp) mp.classList.remove('hide');
   const snap=h.snapshots[h.snapshots.length-1];
   const links=Object.keys(snap.links).map(n=>({name:n, ...snap.links[n]}));
@@ -1467,8 +1484,7 @@ $('btnParse').addEventListener('click',()=>{
   if(curChanged) msg+=' · 已自动识别币种 '+detected+'（右上角可切换显示币种）';
   showToast(msg,'success',4200);
 });
-$('fileGA4').addEventListener('change',e=>{
-  const f=e.target.files && e.target.files[0];
+function loadGA4File(f){
   if(!f){ return; }
   const reader=new FileReader();
   reader.onload=()=>{
@@ -1478,7 +1494,23 @@ $('fileGA4').addEventListener('change',e=>{
   };
   reader.onerror=()=>{ showToast('文件读取失败，请重试或改用粘贴','error',3000); };
   reader.readAsText(f);
+}
+$('fileGA4').addEventListener('change',e=>{
+  const f=e.target.files && e.target.files[0];
+  loadGA4File(f);
   e.target.value=''; // 允许重新选择同一文件再次触发
+});
+// 拖拽上传区（对齐 KS 版交互）
+const ga4Drop=$('drop');
+$('drop').addEventListener('click',()=>$('fileGA4').click());
+['dragover','dragenter'].forEach(ev=>ga4Drop.addEventListener(ev,e=>{e.preventDefault();ga4Drop.classList.add('hover');}));
+['dragleave','drop'].forEach(ev=>ga4Drop.addEventListener(ev,e=>{e.preventDefault();ga4Drop.classList.remove('hover');}));
+ga4Drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files && e.dataTransfer.files[0]; if(f) loadGA4File(f); });
+$('pasteToggle').addEventListener('click',()=>{
+  const pa=$('pasteArea');
+  pa.classList.toggle('open');
+  $('pasteToggle').textContent=pa.classList.contains('open')?'收起粘贴区':'无法上传？粘贴 GA4 文本';
+  if(pa.classList.contains('open')) $('iggPaste').focus();
 });
 $('btnClear').addEventListener('click',()=>{
   if(!confirm('确认清空「'+STATE.proj+'」的全部历史快照？此操作不可恢复。')) return;
