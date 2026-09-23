@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN" data-page-node-id="90QG4L8t6C3GT6zpWi5D7p"><head data-page-node-id="Pv3xVInqf1LtRBCZairTjJ"><meta charset="UTF-8" data-page-node-id="D56Rb3gvHoFKbltX3bw4aK"><meta name="viewport" content="width=device-width,initial-scale=1" data-page-node-id="fKiOFcRWJwxSl6it9JxGO3"><title>Yuref - Makuake Traffic Report</title><link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTUiIGZpbGw9IiNlYjE0NzgiLz48cGF0aCBkPSJNOSAyMSBMOSAxNSBNMTYgMjEgTDE2IDExIE0yMyAyMSBMMjMgMTciIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIzIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=" data-page-node-id="D3L6kZuPMn3ymW4mnL2dLo">
 <style>
-:root{--bg:#f5f7fa;--panel:#fff;--ink:#1f2933;--muted:#6b7280;--line:#e5e7eb;--green:#1a7f37;--red:#c0392b;--accent:#f25c1a;--accent2:#f2784a;--shadow:0 1px 3px rgba(0,0,0,.08)}
+:root{--bg:#f5f7fa;--panel:#fff;--ink:#1f2933;--muted:#6b7280;--line:#e5e7eb;--green:#1a7f37;--red:#c0392b;--accent:#fe2278;--accent2:#ff5da3;--shadow:0 1px 3px rgba(0,0,0,.08)}
 *{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
 .wrap{max-width:1180px;margin:0 auto;padding:24px 28px 60px}
 header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;font-size:13px}
@@ -18,7 +18,7 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .proj-group{display:flex;align-items:center;gap:10px}
 .proj-switcher{position:relative}
 .proj-trigger{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;transition:.15s;font-family:inherit}
-.proj-trigger:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(242,92,26,.12)}
+.proj-trigger:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(254,34,120,.12)}
 .proj-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex:none}
 .proj-name{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600;color:var(--ink)}
 .proj-caret{width:16px;height:16px;color:var(--muted);flex:none}
@@ -56,16 +56,16 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .head-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .head-tools .btn.ghost{margin-left:0}
 .desc{color:var(--muted);font-size:13px;margin-bottom:10px;line-height:1.6}
-.btn{display:inline-block;padding:10px 18px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;box-shadow:0 2px 8px rgba(242,92,26,.22)}
-.btn:hover{filter:brightness(1.06);box-shadow:0 3px 10px rgba(242,92,26,.28)}
+.btn{display:inline-block;padding:10px 18px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;box-shadow:0 2px 8px rgba(254,34,120,.22)}
+.btn:hover{filter:brightness(1.06);box-shadow:0 3px 10px rgba(254,34,120,.28)}
 .btn:active{transform:translateY(1px)}.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.ghost{background:#eef2f7;color:var(--ink);transition:.15s;margin-left:8px}.btn.ghost:hover{background:#e2e8f0;box-shadow:none}
 .btn.sm{padding:6px 12px;font-size:12px;margin-top:0}
-select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(242,92,26,.15)}
+select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(254,34,120,.15)}
 textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:Menlo,Consolas,monospace;font-size:12px;resize:vertical;line-height:1.5}
 .hint{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.6;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:9px 12px}
 .drop{border:2px dashed #cbd5e1;border-radius:16px;padding:38px 28px;text-align:center;color:var(--muted);cursor:pointer;transition:.15s;background:#fafbfc;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:4px}
-.drop.hover,.drop:hover{border-color:var(--accent);background:linear-gradient(135deg,#fff3ec,#fdf8f5);color:var(--accent)}
+.drop.hover,.drop:hover{border-color:var(--accent);background:linear-gradient(135deg,#fff0f6,#fef5f9);color:var(--accent)}
 .drop b{color:var(--ink)}
 .up-icon{width:46px;height:46px;margin-bottom:12px;color:var(--accent);opacity:.9}
 .up-title{font-size:16px;font-weight:600;color:var(--ink);margin-bottom:4px}
@@ -86,7 +86,7 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;
 .module .desc{color:var(--muted);font-size:13px;margin-bottom:14px}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:0 0 18px}
 .kpi{position:relative;background:linear-gradient(135deg,#fdeef5,#fff5fa);border:1px solid #fbd0e3;border-radius:14px;padding:14px 16px 14px 18px;box-shadow:var(--shadow);border-left:4px solid var(--accent);transition:transform .18s ease,box-shadow .18s ease;overflow:hidden}
-.kpi:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(242,92,26,.14)}
+.kpi:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(254,34,120,.14)}
 .kpi .l{font-size:12px;color:#d2491f;margin-bottom:4px;letter-spacing:.02em}
 .kpi .v{font-size:22px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}
 .kpi .sub{font-size:11px;color:var(--muted);margin-top:4px}
@@ -218,7 +218,7 @@ td:first-child{position:sticky;left:0;z-index:1;background:#fff}
 #chartTip b{display:block;margin-bottom:3px;font-size:13px}
 /* 看板 NEW 角标（link 首次出现的列） */
 .new-badge{position:absolute;top:-1px;right:-1px;background:var(--accent);color:#fff;font-size:9px;font-weight:700;padding:1px 4px;border-radius:0 0 0 6px;line-height:1.3;letter-spacing:.3px;pointer-events:none}
-td.cell-new{outline:1px dashed rgba(242,92,26,.35);outline-offset:-2px}
+td.cell-new{outline:1px dashed rgba(254,34,120,.35);outline-offset:-2px}
 /* 引导面板 */
 .guide{background:linear-gradient(135deg,#fafbfc,#fff5fa);border:1px solid var(--line);border-radius:16px;padding:30px 32px;box-shadow:var(--shadow)}
 .guide h3{margin:0 0 4px;font-size:18px;padding-left:0}.guide h3::before{display:none}
@@ -235,7 +235,7 @@ td.cell-new{outline:1px dashed rgba(242,92,26,.35);outline-offset:-2px}
 <div class="wrap" data-page-node-id="OwcD2HFOribn8UUGCU75vm">
   <header class="app-header" data-page-node-id="ernoX51HEXsMaY6YN7hLX6">
     <div class="brand" data-page-node-id="tZfoTpQ6pnyr0fkqptMRf4">
-      <svg class="logo" viewBox="0 0 32 32" data-page-node-id="KXxNRkzfS0LvnEqFamColS"><circle cx="16" cy="16" r="15" fill="#f25c1a" data-page-node-id="uthjPtGzzt9W7iGCnksSYy"/><path d="M9 21 L9 15 M16 21 L16 11 M23 21 L23 17" stroke="#fff" stroke-width="3" stroke-linecap="round" data-page-node-id="URDOhCRxEek6xLopaIpRIG"/></svg>
+      <svg class="logo" viewBox="0 0 32 32" data-page-node-id="KXxNRkzfS0LvnEqFamColS"><circle cx="16" cy="16" r="15" fill="#fe2278" data-page-node-id="uthjPtGzzt9W7iGCnksSYy"/><path d="M9 21 L9 15 M16 21 L16 11 M23 21 L23 17" stroke="#fff" stroke-width="3" stroke-linecap="round" data-page-node-id="URDOhCRxEek6xLopaIpRIG"/></svg>
       <div data-page-node-id="SaePiqyd4CTDE8jtsM2cGv">
         <h1 data-page-node-id="Nqaj82x90Eq5X3KMlQMbtX">Makuake <strong data-page-node-id="eqsWjKydbKHx55Hnf0WG3t">Traffic Report</strong></h1>
         <p class="head-line" data-page-node-id="23CqGlYpGBYeabeDGu6glJ">Makuake 流量获取渠道追踪（GA4 累计数据 · 快照对比增量）</p>
@@ -883,13 +883,13 @@ function svgStackedIGG(weekly, labels){
     const cx=centers[i], x=cx-barW/2, v=weekTotals[i], h=v/yMax*ch, y=H-M.b-h;
     const top3=CAT_ORDER.map(c=>({c,v:weekly[i][c]||0})).filter(o=>o.v>0).sort((a,b)=>b.v-a.v).slice(0,3).map(o=>`${o.c} ${fmt(o.v)}`).join(' · ');
     const tip=`${labels[i]} 总额：${fmt(v)}${top3?'\n Top3：'+top3:''}`;
-    rects+=`<g data-tip="${escapeAttr(tip)}"><path d="${topRound(x,y,barW,h,7)}" fill="url(#weekBarIGG)"/></g>`;
+    rects+=`<g data-tip="${escapeAttr(tip)}"><path d="${topRound(x,y,barW,h,7)}" fill="url(#weekBarMakuake)"/></g>`;
     if(h>2) rects+=`<text x="${cx.toFixed(1)}" y="${(y-8).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">${fmtTick(v)}</text>`;
   }
   let lab='';
   for(let i=0;i<n;i++){ const cx=centers[i]; lab+=`<text x="${cx}" y="${H-M.b+20}" text-anchor="middle" font-size="12.5" font-weight="600" fill="#475569">${escapeAttr(labels[i])}</text>`; }
   const axis=`<line x1="${M.l}" y1="${M.t}" x2="${M.l}" y2="${H-M.b}" stroke="#cbd5e1" stroke-width="1.2"/><line x1="${M.l}" y1="${H-M.b}" x2="${W-M.r}" y2="${H-M.b}" stroke="#cbd5e1" stroke-width="1.2"/>`;
-  return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet"><defs><linearGradient id="weekBarIGG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb070"/><stop offset="1" stop-color="#f25c1a"/></linearGradient></defs>${grid}${rects}${axis}${lab}</svg>`;
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMid meet"><defs><linearGradient id="weekBarMakuake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb3d6"/><stop offset="1" stop-color="#fe2278"/></linearGradient></defs>${grid}${rects}${axis}${lab}</svg>`;
 }
 function weekCardIGG(label, dict){
   const tot=Object.values(dict).reduce((a,b)=>a+b,0);
@@ -1049,7 +1049,7 @@ function renderCompareModule(h){
   const groupW=innerW/cats.length;
   const barW=Math.max(8, (groupW-10)/2);
   const yScale=v=>padT+innerH-(v/max)*innerH;
-  const ACCENT=(getComputedStyle&&getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())||'#f25c1a';
+  const ACCENT=(getComputedStyle&&getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())||'#fe2278';
   const MUTED='#9ca3af';
   const ticks=5;
   let svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;max-height:340px">';
