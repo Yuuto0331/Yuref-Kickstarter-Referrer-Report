@@ -277,7 +277,7 @@ td.cell-new{outline:1px dashed rgba(247,198,0,.40);outline-offset:-2px}
       <svg class="up-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="GA4upIcon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" data-page-node-id="GA4upPath1"/><polyline points="17 8 12 3 7 8" data-page-node-id="GA4upPath2"/><line x1="12" y1="3" x2="12" y2="15" data-page-node-id="GA4upPath3"/></svg>
       <div class="up-title" data-page-node-id="GA4upTitle">把 GA4 导出的 <b>CSV / TSV</b> 拖到这里</div>
       <div class="up-sub" data-page-node-id="GA4upSub">或 <span data-page-node-id="GA4upClick">点击选择文件</span></div>
-      <input type="file" id="fileGA4" accept=".csv,.tsv,text/csv,text/tab-separated-values" style="display:none" data-page-node-id="GA4up">
+      <input type="file" id="fileGA4" accept=".csv,.tsv,.xlsx,.xlsm,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" data-page-node-id="GA4up">
     </div>
     <div class="paste-toggle" id="pasteToggle" data-page-node-id="GA4pasteToggle">无法上传？粘贴 GA4 文本</div>
     <div class="paste-area" id="pasteArea" data-page-node-id="GA4pasteArea">
@@ -423,7 +423,7 @@ function parseMoney(s){
 // GA4 数值（CSV 无千分位、纯浮点如 145917360.00068 / 349.0）：直接剥掉货币符号与引号后转 parseFloat
 function parseNum(s){
   if(s==null) return 0;
-  const t=String(s).replace(/[^\d.\-]/g,'');
+  const t=String(s).replace(/[^\d.eE+-]/g,''); // 保留科学计数法 e/E（Excel 大金额如 1.45E8）
   if(!t) return 0;
   const v=parseFloat(t);
   return Number.isFinite(v) ? v : 0;
@@ -457,11 +457,17 @@ const CAT_COLORS = {
 /* GA4 默认渠道组（带括号）与日本 campaign 命名 → 渠道归类 */
 function classify(name){
   const raw=String(name||'').trim(); const n=raw.toLowerCase();
-  // GA4 默认渠道组（dimension 值带括号）
+  // —— 来源/媒介型（GA4「セッションの参照元 / メディア」）——
+  if(/\(not set\)/i.test(raw)) return 'その他';
+  if(/\(none\)/i.test(raw) || /\(direct\)/i.test(raw)) return '直接';
+  if(/\/\s*organic\b/i.test(n) || /\(organic\)/i.test(raw)) return '自然検索';
+  if(/\/\s*referral\b/i.test(n) || /\(referral\)/i.test(raw)) return '紹介';
+  if(/\bline\b/i.test(n) || /mk_line/i.test(n)) return 'LINE';
+  if(/\/\s*(cpc|ppc|paid|ads|sem|adword|display|video)\b/i.test(n) || /_ad[s]?_/i.test(n)) return '付费广告';
+  // —— キャンペーン型（原有规则，兼容旧粘贴）——
   if(raw==='(direct)') return '直接';
   if(raw==='(organic)') return '自然検索';
   if(raw==='(referral)') return '紹介';
-  if(raw==='(not set)') return 'その他';
   // 付费广告：Google Ads / Display&PMax / Criteo / 代理投放系列 GOC_launch_*
   if(/^gad[_-]|^gdn[_-]|^criteo/i.test(n)) return '付费广告';
   if(/^goc_launch/i.test(n)) return '付费广告';
@@ -506,7 +512,7 @@ function parseGA4(text){
     if(!ln.trim() || ln.trim().startsWith('#')) continue;
     const d = ln.includes('\t') ? '\t' : ',';
     const cells=_splitGA4Line(ln, d).map(c=>c.trim());
-    if(cells.some(c=>/セッションのキャンペーン|session campaign/i.test(c))){ headerIdx=i; headerCells=cells; delim=d; break; }
+    if(cells.some(c=>/セッション\s*の?\s*(参照元|キャンペーン)|session\s*(source|campaign|medium)/i.test(c))){ headerIdx=i; headerCells=cells; delim=d; break; }
   }
   if(headerIdx<0){ // 退化：第一个非注释行当表头
     for(let i=0;i<lines.length;i++){ const ln=lines[i]; if(!ln.trim()||ln.trim().startsWith('#')) continue; const d=ln.includes('\t')?'	':','; headerIdx=i; headerCells=_splitGA4Line(ln,d).map(c=>c.trim()); delim=d; break; }
@@ -514,7 +520,7 @@ function parseGA4(text){
   if(headerIdx<0) return {};
   const idx={};
   headerCells.forEach((h,i)=>{ const k=h.toLowerCase();
-    if(/セッションのキャンペーン|session campaign/.test(h)) idx.campaign=i;
+    if(/セッション\s*の?\s*(参照元|キャンペーン)|session\s*(source|campaign|medium)/i.test(h)) idx.campaign=i;
     else if(/^セッション$|^sessions$/.test(k)) idx.sessions=i;
     else if(/^キーイベント$|^key events$/i.test(h)) idx.key=i; // 排除「セッション キーイベント率」
     else if(/合計収益|total revenue/.test(h)) idx.revenue=i;
@@ -532,6 +538,96 @@ function parseGA4(text){
   }
   console.log('[GA4] parsed:', Object.keys(out).length, 'campaigns');
   return out;
+}
+
+/* ---------- 浏览器内直接解析 Excel(.xlsx)：ZIP+deflate-raw 解压 + 极简 XML 提取，零 CDN ---------- */
+function colToIdx(letters){ let n=0; for(const ch of letters) n=n*26+(ch.charCodeAt(0)-64); return n-1; }
+function _xmlDec(s){ return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&'); }
+async function readXLSX(arrayBuffer){
+  const buf=new Uint8Array(arrayBuffer);
+  const dv=new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let eocd=-1;
+  for(let i=buf.length-22;i>=0;i--){ if(buf[i]===0x50&&buf[i+1]===0x4b&&buf[i+2]===0x05&&buf[i+3]===0x06){ eocd=i; break; } }
+  if(eocd<0) throw new Error('不是有效的 xlsx/ZIP 文件');
+  const cdCount=dv.getUint16(eocd+10,true);
+  const cdOff=dv.getUint32(eocd+16,true);
+  const entries=[];
+  let p=cdOff;
+  for(let n=0;n<cdCount;n++){
+    if(dv.getUint32(p,true)!==0x02014b50) break;
+    const method=dv.getUint16(p+10,true);
+    const compSize=dv.getUint32(p+20,true);
+    const nameLen=dv.getUint16(p+28,true);
+    const extraLen=dv.getUint16(p+30,true);
+    const commLen=dv.getUint16(p+32,true);
+    const lho=dv.getUint32(p+42,true);
+    const name=new TextDecoder().decode(buf.subarray(p+46,p+46+nameLen));
+    entries.push({name,method,compSize,lho});
+    p+=46+nameLen+extraLen+commLen;
+  }
+  async function getEntry(name){
+    const e=entries.find(x=>x.name===name); if(!e) return null;
+    const ldv=new DataView(buf.buffer, buf.byteOffset+e.lho, buf.byteLength-(buf.byteOffset+e.lho));
+    const ln=ldv.getUint16(26,true), le=ldv.getUint16(28,true);
+    const start=e.lho+30+ln+le;
+    const comp=buf.subarray(start, start+e.compSize);
+    if(e.method===0) return comp;
+    if(e.method===8){
+      const ds=new DecompressionStream('deflate-raw');
+      const stream=new Blob([comp]).stream().pipeThrough(ds);
+      const ab=await new Response(stream).arrayBuffer();
+      return new Uint8Array(ab);
+    }
+    throw new Error('不支持的压缩方式 '+e.method);
+  }
+  // sharedStrings
+  const ssXml=await getEntry('xl/sharedStrings.xml');
+  const ss=[];
+  if(ssXml){
+    const s=_xmlDec(new TextDecoder().decode(ssXml));
+    const siRe=/<si\b[^>]*>([\s\S]*?)<\/si>/g; let m;
+    while((m=siRe.exec(s))){
+      const tRe=/<t\b[^>]*>([\s\S]*?)<\/t>/g; let t, txt='';
+      while((t=tRe.exec(m[1]))) txt+=_xmlDec(t[1]);
+      ss.push(txt);
+    }
+  }
+  const sheetName=entries.map(e=>e.name).find(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n)) || entries.map(e=>e.name).find(n=>/sheet\d+\.xml$/.test(n));
+  if(!sheetName) throw new Error('xlsx 内找不到工作表');
+  const shXml=await getEntry(sheetName);
+  const sh=_xmlDec(new TextDecoder().decode(shXml));
+  const rowRe=/<row\b[^>]*>([\s\S]*?)<\/row>/g;
+  const out=[]; let rm;
+  while((rm=rowRe.exec(sh))){
+    const rowXml=rm[1];
+    const cells=[];
+    const cRe=/<c\b([^>]*)>([\s\S]*?)<\/c>/g; let cm;
+    while((cm=cRe.exec(rowXml))){
+      const attrs=cm[1], content=cm[2];
+      const rM=/r="([A-Z]+)\d*"/.exec(attrs), tM=/t="([^"]*)"/.exec(attrs);
+      const col=rM?colToIdx(rM[1]):-1;
+      const t=tM?tM[1]:'';
+      let val='';
+      if(t==='s'){ const vm=/<v>([\s\S]*?)<\/v>/.exec(content); if(vm) val=ss[parseInt(vm[1],10)]||''; }
+      else if(t==='inlineStr'){ const tm=/<t\b[^>]*>([\s\S]*?)<\/t>/g; let x; while((x=tm.exec(content))) val+=_xmlDec(x[1]); }
+      else if(t==='str'){ const vm=/<v>([\s\S]*?)<\/v>/.exec(content); if(vm) val=_xmlDec(vm[1]); }
+      else { const vm=/<v>([\s\S]*?)<\/v>/.exec(content); if(vm) val=vm[1]; }
+      if(col>=0) cells[col]=val;
+    }
+    let maxCol=0; cells.forEach((c,i)=>{ if(c!==undefined) maxCol=i; });
+    const row=[]; for(let i=0;i<=maxCol;i++) row.push(cells[i]||'');
+    out.push(row.join('\t'));
+  }
+  return out.join('\n');
+}
+// 从 GA4 导出注释行提取快照日期（終了日=报告终点，用于每日增量对比）
+function extractGA4EndDate(text){
+  const lines=String(text||'').split(/\r?\n/);
+  for(const ln of lines){
+    const m=ln.match(/終了日[:\s]*(\d{8})/i) || ln.match(/end date[:\s]*(\d{8})/i);
+    if(m){ const d=m[1]; return d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8); }
+  }
+  return null;
 }
 
 /* ---------- 存储 ---------- */
@@ -1472,12 +1568,17 @@ $('btnParse').addEventListener('click',()=>{
   if(!txt.trim()){ showToast('请先粘贴 GA4 数据','error'); return; }
   const rows=parseGA4(txt);
   const names=Object.keys(rows);
-  if(!names.length){ showToast('未解析到 campaign 数据，请检查粘贴内容（需含表头「セッションのキャンペーン」）','error',3500); return; }
+  if(!names.length){
+    const firstLine=(txt.split(/\r?\n/).find(l=>l.trim()&&!l.trim().startsWith('#'))||'(空)').replace(/\s+/g,' ').slice(0,60);
+    showToast('未解析到 campaign 数据。收到首行：「'+firstLine+'」——需含表头「セッションのキャンペーン」，建议直接拖入 GA4 下载的 CSV 文件','error',6000);
+    return;
+  }
   // Makuake GA4 收益均为 JPY，默认币种 JPY（若粘贴文本含 $ 符号则按符号识别）
   const detected=detectCurrency(txt);
   const curChanged = detected!==STATE.cur;
   STATE.cur=detected; saveCurrency(STATE.proj, STATE.cur);
-  STATE.history=addSnapshot(STATE.proj, rows);
+  const snapDate=extractGA4EndDate(txt);
+  STATE.history=addSnapshot(STATE.proj, rows, snapDate);
   $('rptToolbar').classList.remove('hide');
   updateDataInfo(); renderReport(); syncCurrencyUI();
   const prevN=STATE.history.snapshots.length-1;
@@ -1487,9 +1588,29 @@ $('btnParse').addEventListener('click',()=>{
 });
 function loadGA4File(f){
   if(!f){ return; }
+  if(/\.(xlsx|xlsm)$/i.test(f.name)){
+    const reader=new FileReader();
+    reader.onload=async()=>{
+      try{
+        const tsv=await readXLSX(reader.result);
+        const rowsN=tsv?tsv.split(/\n/).length:0;
+        $('iggPaste').value=tsv;
+        showToast('已读取 Excel「'+f.name+'」（'+rowsN+' 行），自动解析中…','info',2200);
+        setTimeout(()=>$('btnParse').click(), 60);
+      }catch(e){ showToast('Excel 解析失败：'+e.message+'（请确认是 GA4 导出的 .xlsx）','error',5000); }
+    };
+    reader.onerror=()=>{ showToast('文件读取失败，请重试或改用粘贴','error',3000); };
+    reader.readAsArrayBuffer(f);
+    return;
+  }
+  if(/\.xls$/i.test(f.name)){ showToast('旧版 .xls 不支持：请用 Excel「另存为 .xlsx」或直接复制表格内容粘贴','error',5000); return; }
   const reader=new FileReader();
   reader.onload=()=>{
-    $('iggPaste').value=String(reader.result||'');
+    const txt=String(reader.result||'');
+    if(txt.slice(0,2)==='PK' || /[\x00-\x08\x0e-\x1f]/.test(txt.slice(0,512))){
+      showToast('文件不是纯文本 CSV/TSV（可能是 Excel 格式）：请另存为 CSV 后再拖入，或复制表格文本粘贴','error',5000); return;
+    }
+    $('iggPaste').value=txt;
     showToast('已读取文件「'+f.name+'」，自动解析中…','info',2200);
     setTimeout(()=>$('btnParse').click(), 60);
   };
