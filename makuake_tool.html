@@ -449,37 +449,37 @@ function escapeAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replac
 function showToast(msg,type,duration){ type=type||'info'; duration=duration||2600; const t=$('toast'); t.textContent=msg; t.className='toast show '+type; clearTimeout(t._t); t._t=setTimeout(()=>{ t.className='toast '+type; },duration); }
 
 /* ---------- 分类预设（Makuake / GA4 流量获取报告，日本渠道口径） ---------- */
-const CAT_ORDER = ['付费广告','LINE','クーポン','プラットフォーム','直接','自然検索','紹介','その他'];
+const CAT_ORDER = ['付费广告','LINE','优惠券','平台','直接','自然搜索','引荐','其他'];
 const CAT_COLORS = {
-  '付费广告':'#E8743B','LINE':'#06C755','クーポン':'#F5B50A','プラットフォーム':'#8E44AD',
-  '直接':'#5B6770','自然検索':'#2E86C1','紹介':'#17BECF','その他':'#95A5A6'
+  '付费广告':'#E8743B','LINE':'#06C755','优惠券':'#F5B50A','平台':'#8E44AD',
+  '直接':'#5B6770','自然搜索':'#2E86C1','引荐':'#17BECF','其他':'#95A5A6'
 };
 /* GA4 默认渠道组（带括号）与日本 campaign 命名 → 渠道归类 */
 function classify(name){
   const raw=String(name||'').trim(); const n=raw.toLowerCase();
   // —— 来源/媒介型（GA4「セッションの参照元 / メディア」）——
-  if(/\(not set\)/i.test(raw)) return 'その他';
+  if(/\(not set\)/i.test(raw)) return '其他';
   if(/\(none\)/i.test(raw) || /\(direct\)/i.test(raw)) return '直接';
-  if(/\/\s*organic\b/i.test(n) || /\(organic\)/i.test(raw)) return '自然検索';
-  if(/\/\s*referral\b/i.test(n) || /\(referral\)/i.test(raw)) return '紹介';
+  if(/\/\s*organic\b/i.test(n) || /\(organic\)/i.test(raw)) return '自然搜索';
+  if(/\/\s*referral\b/i.test(n) || /\(referral\)/i.test(raw)) return '引荐';
   if(/\bline\b/i.test(n) || /mk_line/i.test(n)) return 'LINE';
   if(/\/\s*(cpc|ppc|paid|ads|sem|adword|display|video)\b/i.test(n) || /_ad[s]?_/i.test(n)) return '付费广告';
   // —— キャンペーン型（原有规则，兼容旧粘贴）——
   if(raw==='(direct)') return '直接';
-  if(raw==='(organic)') return '自然検索';
-  if(raw==='(referral)') return '紹介';
+  if(raw==='(organic)') return '自然搜索';
+  if(raw==='(referral)') return '引荐';
   // 付费广告：Google Ads / Display&PMax / Criteo / 代理投放系列 GOC_launch_*
   if(/^gad[_-]|^gdn[_-]|^criteo/i.test(n)) return '付费广告';
   if(/^goc_launch/i.test(n)) return '付费广告';
   if(/[-_]ads([-_]|$)/i.test(n) || /^ads[-_]/i.test(n) || /_ad_/i.test(n)) return '付费广告';
   if(/_rt_|_ig_|_fb_|_youtube_/i.test(n)) return '付费广告'; // 代理社媒/搜索投放系列
-  // クーポン：优惠码活动
-  if(/coupon|cpnid/i.test(n)) return 'クーポン';
+  // 优惠券：优惠码活动
+  if(/coupon|cpnid/i.test(n)) return '优惠券';
   // LINE（rich menu 等）
   if(/richmenu|^line/i.test(n)) return 'LINE';
-  // プラットフォーム（Makuake 自带 / 项目站内通知）
-  if(/^makuake|^comingsoon|^pj-remind|^message-arrived|^newmember|^awol-vision|^aetherion_makuake|^kanshasai/i.test(n)) return 'プラットフォーム';
-  return 'その他';
+  // 平台（Makuake 自带 / 项目站内通知）
+  if(/^makuake|^comingsoon|^pj-remind|^message-arrived|^newmember|^awol-vision|^aetherion_makuake|^kanshasai/i.test(n)) return '平台';
+  return '其他';
 }
 const CAT_MIGRATE = {};
 function catOf(name){ const ov=STATE.override[name]; if(ov && CAT_ORDER.indexOf(ov)>=0) return ov; return classify(name); }
@@ -1570,7 +1570,7 @@ $('btnParse').addEventListener('click',()=>{
   const names=Object.keys(rows);
   if(!names.length){
     const firstLine=(txt.split(/\r?\n/).find(l=>l.trim()&&!l.trim().startsWith('#'))||'(空)').replace(/\s+/g,' ').slice(0,60);
-    showToast('未解析到 campaign 数据。收到首行：「'+firstLine+'」——需含表头「セッションのキャンペーン」，建议直接拖入 GA4 下载的 CSV 文件','error',6000);
+    showToast('未解析到 campaign 数据。收到首行：「'+firstLine+'」——需含 GA4 流量获取报告表头（如「セッションの参照元 / メディア」或「セッションのキャンペーン」），建议直接拖入 GA4 下载的 CSV 文件','error',6000);
     return;
   }
   // Makuake GA4 收益均为 JPY，默认币种 JPY（若粘贴文本含 $ 符号则按符号识别）
