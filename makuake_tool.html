@@ -449,36 +449,44 @@ function escapeAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replac
 function showToast(msg,type,duration){ type=type||'info'; duration=duration||2600; const t=$('toast'); t.textContent=msg; t.className='toast show '+type; clearTimeout(t._t); t._t=setTimeout(()=>{ t.className='toast '+type; },duration); }
 
 /* ---------- 分类预设（Makuake / GA4 流量获取报告，日本渠道口径） ---------- */
-const CAT_ORDER = ['付费广告','LINE','优惠券','平台','直接','自然搜索','引荐','其他'];
+const CAT_ORDER = ['付费广告','自然搜索','LINE','平台资源','优惠券','独立站','KOL','社媒运营','EDM','非众筹 PR','其他'];
 const CAT_COLORS = {
-  '付费广告':'#E8743B','LINE':'#06C755','优惠券':'#F5B50A','平台':'#8E44AD',
-  '直接':'#5B6770','自然搜索':'#2E86C1','引荐':'#17BECF','其他':'#95A5A6'
+  '付费广告':'#E8743B','自然搜索':'#2E86C1','LINE':'#06C755','平台资源':'#8E44AD',
+  '优惠券':'#F5B50A','独立站':'#16A085','KOL':'#E84393','社媒运营':'#00B894',
+  'EDM':'#E67E22','非众筹 PR':'#C0392B','其他':'#95A5A6'
 };
-/* GA4 默认渠道组（带括号）与日本 campaign 命名 → 渠道归类 */
+/* GA4 来源/媒介 + 日本 campaign 命名 → 渠道归类（Makuake 11 类口径） */
 function classify(name){
   const raw=String(name||'').trim(); const n=raw.toLowerCase();
-  // —— 来源/媒介型（GA4「セッションの参照元 / メディア」）——
-  if(/\(not set\)/i.test(raw)) return '其他';
-  if(/\(none\)/i.test(raw) || /\(direct\)/i.test(raw)) return '直接';
+  // 付费广告：Google/Meta Ads、Display、代理投放系列
+  if(/\/\s*(cpc|ppc|paid|ads|sem|adword|display|video)\b/i.test(n)
+     || /^gad[_-]|^gdn[_-]|^criteo/i.test(n)
+     || /^goc_launch/i.test(n)
+     || /[-_]ads([-_]|$)/i.test(n) || /^ads[-_]/i.test(n) || /_ad_/i.test(n)
+     || /_rt_|_ig_|_fb_|_youtube_/i.test(n)) return '付费广告';
+  // EDM：邮件/推送营销（Braze=br_iam、Mailchimp、awol-email 等）
+  if(/\/\s*(email|mail|eblast)\b/i.test(n)
+     || /mailchimp|braze|br_iam|sendgrid|klaviyo|edm|newsletter|awol-?email|email\b/i.test(n)) return 'EDM';
+  // KOL：达人合作（命名带标记时自动识别，否则靠手动归类）
+  if(/kol|influencer|creator|ambassador|affiliate|aff_/i.test(n)) return 'KOL';
+  // LINE（含 line_social 媒介、sp_1_line 等，置于社媒之前以优先捕获）
+  if(/\bline\b/i.test(n) || /mk_line/i.test(n) || /line_social/i.test(n)) return 'LINE';
+  // 社媒运营：免费社媒（facebook/instagram/x/youtube/tiktok/sns + 媒介为 social）
+  if(/\b(facebook|instagram|twitter|x\.com|t\.co|tiktok|youtube|linkedin|pinterest|threads|sns)\b/i.test(n)
+     || /\/\s*social\b/i.test(n)) return '社媒运营';
+  // 非众筹 PR：引荐（来源或媒介为 referral）+ 媒体/评测/PR 发布
+  if(/\breferral\b/i.test(n) || /\(referral\)/i.test(raw)
+     || /(3dprint|all3dp|3dni|makezine|hackaday|tomshardware|techcrunch|theverge|engadget|prnewswire|businesswire|pressrelease|phileweb|媒体|评测|\bPR\b)/i.test(n)) return '非众筹 PR';
+  // 自然搜索
   if(/\/\s*organic\b/i.test(n) || /\(organic\)/i.test(raw)) return '自然搜索';
-  if(/\/\s*referral\b/i.test(n) || /\(referral\)/i.test(raw)) return '引荐';
-  if(/\bline\b/i.test(n) || /mk_line/i.test(n)) return 'LINE';
-  if(/\/\s*(cpc|ppc|paid|ads|sem|adword|display|video)\b/i.test(n) || /_ad[s]?_/i.test(n)) return '付费广告';
-  // —— キャンペーン型（原有规则，兼容旧粘贴）——
-  if(raw==='(direct)') return '直接';
-  if(raw==='(organic)') return '自然搜索';
-  if(raw==='(referral)') return '引荐';
-  // 付费广告：Google Ads / Display&PMax / Criteo / 代理投放系列 GOC_launch_*
-  if(/^gad[_-]|^gdn[_-]|^criteo/i.test(n)) return '付费广告';
-  if(/^goc_launch/i.test(n)) return '付费广告';
-  if(/[-_]ads([-_]|$)/i.test(n) || /^ads[-_]/i.test(n) || /_ad_/i.test(n)) return '付费广告';
-  if(/_rt_|_ig_|_fb_|_youtube_/i.test(n)) return '付费广告'; // 代理社媒/搜索投放系列
-  // 优惠券：优惠码活动
+  // 平台资源：Makuake 站内（通知/coming soon/站内信/系统推送/提醒）
+  if(/makuake|comingsoon|pj-remind|message-arrived|newmember|awol-vision|aetherion_makuake|kanshasai|system|push|reminder|notification/i.test(n)) return '平台资源';
+  // 优惠券
   if(/coupon|cpnid/i.test(n)) return '优惠券';
-  // LINE（rich menu 等）
-  if(/richmenu|^line/i.test(n)) return 'LINE';
-  // 平台（Makuake 自带 / 项目站内通知）
-  if(/^makuake|^comingsoon|^pj-remind|^message-arrived|^newmember|^awol-vision|^aetherion_makuake|^kanshasai/i.test(n)) return '平台';
+  // 独立站：黑格自有域名引流
+  if(/heygears|\.heygears/i.test(n)) return '独立站';
+  // 直接 / not set → 清单未单列，暂归其他（交付时说明：直接访问体量通常很大）
+  if(/\(none\)|\(direct\)|\(not set\)/i.test(raw)) return '其他';
   return '其他';
 }
 const CAT_MIGRATE = {};
