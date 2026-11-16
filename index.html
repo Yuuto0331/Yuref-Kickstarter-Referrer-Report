@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Yuref · 众筹出单渠道工具箱</title>
-  <meta name="description" content="Kickstarter / IGG / Makuake 三平台出单渠道分析工具统一入口">
+  <meta name="description" content="Kickstarter / Indiegogo / Makuake 三平台出单渠道分析工具统一入口">
   <meta name="theme-color" content="#ffffff">
   <style>
     /* ===== shadcn/ui 语义 token（neutral，亮/暗双模式） ===== */
@@ -77,12 +77,18 @@
 
     *{box-sizing:border-box;margin:0;padding:0}
     body::before{
-      content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.10;
+      content:"";position:fixed;inset:-15%;pointer-events:none;z-index:0;opacity:.16;
       background:
-        radial-gradient(560px 380px at 10% -8%, var(--ks) 0%, transparent 60%),
-        radial-gradient(560px 380px at 90% -8%, var(--igg) 0%, transparent 60%),
-        radial-gradient(720px 440px at 50% 116%, var(--mk) 0%, transparent 62%);
+        radial-gradient(900px 580px at 12% -6%, var(--ks) 0%, transparent 62%),
+        radial-gradient(900px 580px at 88% -6%, var(--igg) 0%, transparent 62%),
+        radial-gradient(1000px 640px at 50% 112%, var(--mk) 0%, transparent 64%);
+      animation:bgDrift 22s ease-in-out infinite alternate;
     }
+    @keyframes bgDrift{
+      0%{transform:translate3d(-1.2%,-1%,0) scale(1)}
+      100%{transform:translate3d(1.2%,1.2%,0) scale(1.045)}
+    }
+    @media (prefers-reduced-motion: reduce){ body::before{animation:none} }
     body{
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;
       background:var(--background);color:var(--foreground);min-height:100vh;
@@ -92,12 +98,6 @@
 
     /* ===== Hero ===== */
     .hero{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:34px}
-    .mark{
-      width:44px;height:44px;border-radius:var(--radius-md);
-      background:var(--primary);color:var(--primary-foreground);
-      display:flex;align-items:center;justify-content:center;
-      font-weight:700;font-size:19px;letter-spacing:.5px;margin-bottom:16px;
-    }
     .badge{
       display:inline-flex;align-items:center;gap:5px;
       font-size:11.5px;font-weight:600;letter-spacing:.4px;
@@ -109,7 +109,8 @@
     .bdot.ks{background:var(--ks)}
     .bdot.igg{background:var(--igg)}
     .bdot.mk{background:var(--mk)}
-    h1{font-size:26px;font-weight:700;letter-spacing:-0.3px}
+    h1{display:inline-flex;align-items:center;gap:10px;font-size:26px;font-weight:700;letter-spacing:-0.3px}
+    .logomark{border-radius:9px;box-shadow:0 1px 2px oklch(0.145 0 0 / 14%);flex:none}
     h1 .thin{color:var(--muted-foreground);font-weight:600}
     .sub{margin-top:9px;color:var(--muted-foreground);font-size:13.5px}
 
@@ -136,6 +137,8 @@
     .plogo.mk{background:var(--mk);color:#3a2c00}
     .plogo.imgmk{background:#fff;border:1px solid var(--border)}
     .plogo.imgmk img{width:27px;height:27px;display:block;border-radius:6px}
+    .plogo.imgigg{background:#fff;border:1px solid var(--border)}
+    .plogo.imgigg img{width:27px;height:27px;display:block;border-radius:6px}
     .dot{display:none}
     .pname{font-weight:600;font-size:15px;letter-spacing:-0.1px}
     .tag{
@@ -170,10 +173,9 @@
 <body>
 <main class="wrap">
   <header class="hero">
-    <div class="mark">Y</div>
     <div class="badge"><span class="bdot ks"></span><span class="bdot igg"></span><span class="bdot mk"></span>三平台工具箱</div>
-    <h1>Yuref <span class="thin">· 出单渠道分析</span></h1>
-    <p class="sub">Kickstarter · IGG · Makuake　数据仅存于本机浏览器，不上传服务器</p>
+    <h1><svg class="logomark" width="34" height="34" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#05ce78"/><stop offset="0.5" stop-color="#eb1478"/><stop offset="1" stop-color="#f7c600"/></linearGradient></defs><rect width="48" height="48" rx="11" fill="url(#lg3)"/><text x="24" y="25" text-anchor="middle" dominant-baseline="central" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif" font-size="27" font-weight="800" fill="#fff">Y</text></svg>Yuref <span class="thin">· 出单渠道分析</span></h1>
+    <p class="sub">Kickstarter · Indiegogo · Makuake　数据仅存于本机浏览器，不上传服务器</p>
   </header>
 
   <section class="grid">
@@ -188,7 +190,7 @@
     </a>
 
     <a class="card" href="igg_tool.html" id="cardIGG">
-      <div class="card-head"><span class="plogo igg">IGG</span><span class="pname">IGG</span><span class="tag">IGG</span></div>
+      <div class="card-head"><span class="plogo imgigg"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAMAAAD04JH5AAAAGFBMVEVHcEzpFHjpE3jpFHjpFHjpFHjpFHjpFHijRtoiAAAAB3RSTlMAWxW1MdmJULZ+QwAAArVJREFUeJztmeuSwyAIhVdF+/5vvCamLaBSSdKd2Znz/cxSPALiZX9+AAAAAAAAAAAAAAAA/4JYWTW8eWQqKT8Ocio09c8Mc06Bbhk9pEdHCgMNVLK2yyO768PvrouaHpWx3TUJE6/NtVAQutm/onUhEXEy/V5AH30ehK+M/+Bug2WoYuXAHD+x3JI5flVwbnxzWmJWRvwb5cz40XTLXRqV+uRMEswApGWlvf1qAMwK4DOyK7Bxog5JzSunnfZV5FQpzflt98a/FNW8CtG2GRGFuuRFVSuldQfYDVVncucgyspiE6hbk9EDy2t1koiMOweyBKxlJJTyiYrQuNuhDKxlKZSGtb+sCFgNgAiVbHnLPkaIGrTUi1CpUrtNQCssCpqoBahRhDbfuSByAbn9tu+4W2TEIlCh4tlxChCj5d7dRADNnVwR0DI76M1fFBAHAvo9ZxfAPxgCvJ2oF6A3B6cA79GwFzA4dv6xgG78Py7CwbnnmwJEH7AEkCHgSh/oBYSyw48anYAbG1HfiuOO2OZ3AXwUoxV79wKxk/HIRiVA9Ce5GUXuwy1gFlktQHZo4WN5Rx0xnZhOgSzO6YHEfyQTfvk1TBWhXIeZWYoAZPctXfy8jL8HrYg3PNk5/TcTddh9+hVF3wIud8lUAlE7vU9zs0Ts/G5It6GP1aPdTPS+4c/AqPPl8XVn5W545nq84PeI68LlsAXA+Xz3+db9TOza+0AstZu7FJj3Yy4gfrA7drOy1ZFHwMckvLx9eCPaI08hlVrKrhAMTmFjAcYr3as11JVZUnA+G5KdBTad2YPm+768Ccjk3hKsB0C5SY0t2aNuKDE4U9CEz6MQtKV+VSk84lSCNwPH3Grwam/bSEdDZHdDbVnelqTW/fJ7/0yIx/Lm/xicUQEAAAAAAAAAAAAAAPhX/AJE8kUEJnva0wAAAABJRU5ErkJggg==" alt="Indiegogo"></span><span class="pname">Indiegogo</span><span class="tag">IGG</span></div>
       <div class="proj" id="iggProj">—</div>
       <div class="metric"><span class="amount empty" id="iggAmt">暂无数据</span><span class="count" id="iggCnt"></span></div>
       <div class="date empty" id="iggDate">进入后导入数据即自动保存</div>
