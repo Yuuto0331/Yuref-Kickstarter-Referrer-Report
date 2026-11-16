@@ -5,95 +5,189 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Yuref · 众筹出单渠道工具箱</title>
   <meta name="description" content="Kickstarter / IGG / Makuake 三平台出单渠道分析工具统一入口">
-  <meta name="theme-color" content="#f5f6f8">
+  <meta name="theme-color" content="#ffffff">
   <style>
+    /* ===== shadcn/ui 语义 token（neutral，亮/暗双模式） ===== */
+    :root{
+      --radius:0.625rem;
+      --radius-sm:calc(var(--radius)*0.6);
+      --radius-md:calc(var(--radius)*0.8);
+      --radius-lg:var(--radius);
+      --radius-xl:calc(var(--radius)*1.4);
+      --radius-2xl:calc(var(--radius)*1.8);
+      --background:oklch(1 0 0);
+      --foreground:oklch(0.145 0 0);
+      --card:oklch(1 0 0);
+      --card-foreground:oklch(0.145 0 0);
+      --primary:oklch(0.205 0 0);
+      --primary-foreground:oklch(0.985 0 0);
+      --secondary:oklch(0.97 0 0);
+      --secondary-foreground:oklch(0.205 0 0);
+      --muted:oklch(0.97 0 0);
+      --muted-foreground:oklch(0.556 0 0);
+      --accent:oklch(0.97 0 0);
+      --accent-foreground:oklch(0.205 0 0);
+      --border:oklch(0.922 0 0);
+      --ring:oklch(0.708 0 0);
+      /* 平台品牌色（仅点睛：圆点/徽标，不做大色块） */
+      --ks:oklch(0.72 0.17 156);
+      --igg:oklch(0.62 0.22 0);
+      --mk:oklch(0.83 0.16 95);
+    }
+    .dark{
+      --background:oklch(0.145 0 0);
+      --foreground:oklch(0.985 0 0);
+      --card:oklch(0.205 0 0);
+      --card-foreground:oklch(0.985 0 0);
+      --primary:oklch(0.922 0 0);
+      --primary-foreground:oklch(0.205 0 0);
+      --secondary:oklch(0.269 0 0);
+      --secondary-foreground:oklch(0.985 0 0);
+      --muted:oklch(0.269 0 0);
+      --muted-foreground:oklch(0.708 0 0);
+      --accent:oklch(0.269 0 0);
+      --accent-foreground:oklch(0.985 0 0);
+      --border:oklch(1 0 0 / 10%);
+      --ring:oklch(0.556 0 0);
+      --ks:oklch(0.75 0.17 156);
+      --igg:oklch(0.68 0.2 0);
+      --mk:oklch(0.85 0.15 95);
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ /* 跟随系统时等价 .dark */
+        --background:oklch(0.145 0 0);
+        --foreground:oklch(0.985 0 0);
+        --card:oklch(0.205 0 0);
+        --card-foreground:oklch(0.985 0 0);
+        --primary:oklch(0.922 0 0);
+        --primary-foreground:oklch(0.205 0 0);
+        --secondary:oklch(0.269 0 0);
+        --secondary-foreground:oklch(0.985 0 0);
+        --muted:oklch(0.269 0 0);
+        --muted-foreground:oklch(0.708 0 0);
+        --accent:oklch(0.269 0 0);
+        --accent-foreground:oklch(0.985 0 0);
+        --border:oklch(1 0 0 / 10%);
+        --ring:oklch(0.556 0 0);
+        --ks:oklch(0.75 0.17 156);
+        --igg:oklch(0.68 0.2 0);
+        --mk:oklch(0.85 0.15 95);
+      }
+    }
+
     *{box-sizing:border-box;margin:0;padding:0}
     body{
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;
-      background:#f5f6f8;color:#1f2937;min-height:100vh;
+      background:var(--background);color:var(--foreground);min-height:100vh;
       display:flex;align-items:center;justify-content:center;padding:40px 20px;
     }
-    .wrap{width:100%;max-width:960px}
-    .hero{text-align:center;margin-bottom:36px}
-    .logo{
-      width:52px;height:52px;border-radius:14px;margin:0 auto 14px;
-      background:linear-gradient(135deg,#05ce78 0%,#05ce78 33%,#eb1478 33%,#eb1478 66%,#f7c600 66%);
-      box-shadow:0 4px 14px rgba(31,41,55,.12);
+    .wrap{width:100%;max-width:880px}
+
+    /* ===== Hero ===== */
+    .hero{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:34px}
+    .mark{
+      width:44px;height:44px;border-radius:var(--radius-md);
+      background:var(--primary);color:var(--primary-foreground);
+      display:flex;align-items:center;justify-content:center;
+      font-weight:700;font-size:19px;letter-spacing:.5px;margin-bottom:16px;
     }
-    .hero h1{font-size:24px;font-weight:800;letter-spacing:.5px}
-    .hero .sub{margin-top:8px;color:#8a94a6;font-size:14px}
-    .grid{
-      display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;
+    .badge{
+      display:inline-flex;align-items:center;gap:5px;
+      font-size:11.5px;font-weight:600;letter-spacing:.4px;
+      color:var(--muted-foreground);
+      border:1px solid var(--border);border-radius:9999px;
+      padding:3px 12px;margin-bottom:14px;
     }
+    .badge .bdot{width:6px;height:6px;border-radius:50%;background:var(--muted-foreground);opacity:.6}
+    h1{font-size:26px;font-weight:700;letter-spacing:-0.3px}
+    h1 .thin{color:var(--muted-foreground);font-weight:600}
+    .sub{margin-top:9px;color:var(--muted-foreground);font-size:13.5px}
+
+    /* ===== 卡片（shadcn Card：rounded-xl border bg-card） ===== */
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
     .card{
-      display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid #e6e9ee;
-      border-radius:16px;padding:22px 22px 18px;position:relative;overflow:hidden;
-      transition:transform .15s ease,box-shadow .15s ease;
+      display:flex;flex-direction:column;text-decoration:none;color:var(--card-foreground);
+      background:var(--card);border:1px solid var(--border);
+      border-radius:var(--radius-xl);padding:20px;
+      transition:border-color .15s ease,box-shadow .15s ease;
     }
-    .card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px}
-    .card:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(31,41,55,.10)}
-    .card.ks::before{background:#05ce78}
-    .card.igg::before{background:#eb1478}
-    .card.mk::before{background:#f7c600}
-    .plat{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-    .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-    .card.ks .dot{background:#05ce78}
-    .card.igg .dot{background:#eb1478}
-    .card.mk .dot{background:#f7c600;border:1px solid #e0b400}
-    .pname{font-weight:800;font-size:16px}
-    .plang{margin-left:auto;font-size:11px;color:#b0b8c4;letter-spacing:.3px}
-    .proj{color:#8a94a6;font-size:12.5px;margin-bottom:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .metric{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-    .amount{font-size:26px;font-weight:800;letter-spacing:.3px}
-    .amount.empty{color:#c3cad4;font-size:20px;font-weight:700}
-    .count{color:#5b6770;font-size:13px;font-weight:600}
-    .mlabel{color:#b0b8c4;font-size:11px;margin-right:2px}
-    .date{margin-top:10px;color:#b0b8c4;font-size:12px}
-    .date.empty{color:#c3cad4}
+    .card:hover{
+      border-color:var(--ring);
+      box-shadow:0 4px 16px oklch(0.145 0 0 / 8%);
+    }
+    .card-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+    .dot{width:9px;height:9px;border-radius:50%;flex:none}
+    .dot.ks{background:var(--ks)}
+    .dot.igg{background:var(--igg)}
+    .dot.mk{background:var(--mk)}
+    .pname{font-weight:600;font-size:15px;letter-spacing:-0.1px}
+    .tag{
+      margin-left:auto;font-size:10.5px;font-weight:600;letter-spacing:.5px;
+      color:var(--muted-foreground);border:1px solid var(--border);
+      border-radius:var(--radius-sm);padding:2px 7px;
+    }
+    .proj{
+      color:var(--muted-foreground);font-size:12.5px;margin-bottom:16px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
+    .metric{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+    .amount{font-size:25px;font-weight:700;letter-spacing:-0.4px;line-height:1.1}
+    .amount.empty{color:var(--muted-foreground);font-size:16px;font-weight:500}
+    .count{color:var(--muted-foreground);font-size:13px;font-weight:500}
+    .mlabel{margin-right:4px;font-size:11px;opacity:.85}
+    .date{margin-top:8px;color:var(--muted-foreground);font-size:12px}
+    .date.empty{opacity:.75}
+    .card-foot{margin-top:auto;padding-top:16px}
     .go{
-      margin-top:14px;display:inline-flex;align-items:center;gap:6px;
-      font-size:13px;font-weight:700;padding:7px 16px;border-radius:999px;color:#fff;
+      display:inline-flex;align-items:center;gap:7px;
+      font-size:13px;font-weight:500;color:var(--accent-foreground);
+      border:1px solid var(--border);border-radius:var(--radius-md);
+      padding:7px 14px;transition:background .15s ease;
     }
-    .card.ks .go{background:#05ce78}
-    .card.igg .go{background:#eb1478}
-    .card.mk .go{background:#f7c600;color:#3a2c00}
-    .foot{text-align:center;color:#b0b8c4;font-size:12px;margin-top:30px}
+    .card:hover .go{background:var(--accent)}
+    .go svg{flex:none}
+
+    .foot{text-align:center;color:var(--muted-foreground);font-size:12px;margin-top:32px}
   </style>
 </head>
 <body>
 <main class="wrap">
   <header class="hero">
-    <div class="logo"></div>
-    <h1>Yuref 工具箱</h1>
-    <p class="sub">Kickstarter · IGG · Makuake 出单渠道分析 · 数据仅存于本机浏览器</p>
+    <div class="mark">Y</div>
+    <div class="badge"><span class="bdot"></span>三平台工具箱</div>
+    <h1>Yuref <span class="thin">· 出单渠道分析</span></h1>
+    <p class="sub">Kickstarter · IGG · Makuake　数据仅存于本机浏览器，不上传服务器</p>
   </header>
 
   <section class="grid">
-    <a class="card ks" href="report_tool.html" id="cardKS">
-      <div class="plat"><span class="dot"></span><span class="pname">Kickstarter</span><span class="plang">KS</span></div>
+    <a class="card" href="report_tool.html" id="cardKS">
+      <div class="card-head"><span class="dot ks"></span><span class="pname">Kickstarter</span><span class="tag">KS</span></div>
       <div class="proj" id="ksProj">—</div>
-      <div class="metric"><span class="mlabel">累计金额</span><span class="amount empty" id="ksAmt">暂无数据</span></div>
-      <div class="count" id="ksCnt"></div>
+      <div class="metric"><span class="amount empty" id="ksAmt">暂无数据</span><span class="count" id="ksCnt"></span></div>
       <div class="date empty" id="ksDate">进入后导入数据即自动保存</div>
-      <div class="go">进入工具 →</div>
+      <div class="card-foot">
+        <span class="go">进入工具 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+      </div>
     </a>
 
-    <a class="card igg" href="igg_tool.html" id="cardIGG">
-      <div class="plat"><span class="dot"></span><span class="pname">IGG</span><span class="plang">IGG</span></div>
+    <a class="card" href="igg_tool.html" id="cardIGG">
+      <div class="card-head"><span class="dot igg"></span><span class="pname">IGG</span><span class="tag">IGG</span></div>
       <div class="proj" id="iggProj">—</div>
-      <div class="metric"><span class="mlabel">累计金额</span><span class="amount empty" id="iggAmt">暂无数据</span></div>
-      <div class="count" id="iggCnt"></div>
+      <div class="metric"><span class="amount empty" id="iggAmt">暂无数据</span><span class="count" id="iggCnt"></span></div>
       <div class="date empty" id="iggDate">进入后导入数据即自动保存</div>
-      <div class="go">进入工具 →</div>
+      <div class="card-foot">
+        <span class="go">进入工具 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+      </div>
     </a>
 
-    <a class="card mk" href="makuake_tool.html" id="cardMK">
-      <div class="plat"><span class="dot"></span><span class="pname">Makuake</span><span class="plang">MK</span></div>
+    <a class="card" href="makuake_tool.html" id="cardMK">
+      <div class="card-head"><span class="dot mk"></span><span class="pname">Makuake</span><span class="tag">MK</span></div>
       <div class="proj" id="mkProj">—</div>
-      <div class="metric"><span class="mlabel">累计收益</span><span class="amount empty" id="mkAmt">暂无数据</span></div>
-      <div class="count" id="mkCnt"></div>
+      <div class="metric"><span class="amount empty" id="mkAmt">暂无数据</span><span class="count" id="mkCnt"></span></div>
       <div class="date empty" id="mkDate">进入后导入数据即自动保存</div>
-      <div class="go">进入工具 →</div>
+      <div class="card-foot">
+        <span class="go">进入工具 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></span>
+      </div>
     </a>
   </section>
 
