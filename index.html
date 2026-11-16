@@ -76,18 +76,24 @@
     }
 
     *{box-sizing:border-box;margin:0;padding:0}
-    body::before{
-      content:"";position:fixed;inset:-18%;pointer-events:none;z-index:0;opacity:.26;
-      background:
-        radial-gradient(920px 640px at calc(14% + var(--mx,0)*11%) calc(-6% + var(--my,0)*8%), var(--ks) 0%, transparent 62%),
-        radial-gradient(920px 640px at calc(86% - var(--mx,0)*11%) calc(-6% + var(--my,0)*8%), var(--igg) 0%, transparent 62%),
-        radial-gradient(1040px 720px at calc(50% + var(--mx,0)*14%) calc(112% - var(--my,0)*9%), var(--mk) 0%, transparent 64%);
-      animation:bgDrift 14s ease-in-out infinite alternate;
+    /* ===== 背景动效：三个大光斑独立漂浮 + 鼠标视差 ===== */
+    .bgfx{
+      position:fixed;inset:-14%;pointer-events:none;z-index:0;
+      transform:translate(calc(var(--mx,0)*2.4%),calc(var(--my,0)*2.4%));
     }
-    @keyframes bgDrift{
-      0%{transform:translate3d(-2.4%,-1.8%,0) scale(1.02) rotate(0.6deg)}
-      100%{transform:translate3d(2.4%,2%,0) scale(1.07) rotate(-0.6deg)}
-    }
+    .blob{position:absolute;border-radius:50%;filter:blur(64px);will-change:transform}
+    .blob.b1{width:46vmax;height:46vmax;left:-6%;top:-16%;opacity:.5;
+      background:radial-gradient(circle at 42% 42%,var(--ks) 0%,transparent 64%);
+      animation:fl1 11s ease-in-out infinite alternate}
+    .blob.b2{width:44vmax;height:44vmax;right:-8%;top:-14%;opacity:.5;
+      background:radial-gradient(circle at 58% 42%,var(--igg) 0%,transparent 64%);
+      animation:fl2 15s ease-in-out infinite alternate}
+    .blob.b3{width:54vmax;height:54vmax;left:16%;bottom:-30%;opacity:.52;
+      background:radial-gradient(circle at 50% 58%,var(--mk) 0%,transparent 64%);
+      animation:fl3 18s ease-in-out infinite alternate}
+    @keyframes fl1{from{transform:translate(0,0) scale(1)}to{transform:translate(9vmax,6vmax) scale(1.2)}}
+    @keyframes fl2{from{transform:translate(0,0) scale(1.12)}to{transform:translate(-8vmax,7vmax) scale(.9)}}
+    @keyframes fl3{from{transform:translate(0,0) scale(1)}to{transform:translate(7vmax,-9vmax) scale(1.16)}}
     body{
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;
       background:var(--background);color:var(--foreground);min-height:100vh;
@@ -104,12 +110,24 @@
       border:1px solid var(--border);border-radius:9999px;
       padding:3px 12px;margin-bottom:14px;
     }
-    .badge .bdot{width:6px;height:6px;border-radius:50%;display:inline-block}
+    .badge .bdot{width:6px;height:6px;border-radius:50%;display:inline-block;animation:bdPulse 2s ease-in-out infinite}
     .bdot.ks{background:var(--ks)}
-    .bdot.igg{background:var(--igg)}
-    .bdot.mk{background:var(--mk)}
+    .bdot.igg{background:var(--igg);animation-delay:.35s}
+    .bdot.mk{background:var(--mk);animation-delay:.7s}
+    @keyframes bdPulse{0%,100%{opacity:1;scale:1}50%{opacity:.3;scale:.72}}
     h1{display:inline-flex;align-items:center;gap:12px;font-size:27px;font-weight:700;letter-spacing:-0.3px}
-    .logomark{border-radius:10px;box-shadow:0 1px 3px oklch(0.145 0 0 / 16%);flex:none}
+    /* 三色均衡器 logo：柱子持续跳动 */
+    .logomark{
+      width:44px;height:44px;border-radius:10px;flex:none;
+      background:linear-gradient(135deg,#86efac,#f9a8d4,#fde68a);
+      box-shadow:0 1px 3px oklch(0.145 0 0 / 16%);
+      display:flex;align-items:flex-end;justify-content:center;gap:4px;padding-bottom:11px;
+    }
+    .logomark .bar{width:5px;border-radius:2.5px;background:#fff;transform-origin:bottom;animation:eq 1.7s ease-in-out infinite}
+    .logomark .bar1{height:13px}
+    .logomark .bar2{height:21px;animation-delay:.4s}
+    .logomark .bar3{height:8px;animation-delay:.8s}
+    @keyframes eq{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.5)}}
     h1 .thin{color:var(--muted-foreground);font-weight:600}
     .sub{margin-top:9px;color:var(--muted-foreground);font-size:13.5px}
 
@@ -120,13 +138,23 @@
       display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;text-decoration:none;color:var(--card-foreground);
       background:var(--card);border:1px solid var(--border);
       border-radius:var(--radius-xl);padding:26px 34px;
-      transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease;
+      opacity:0;translate:0 18px;
+      animation:cardEnter .6s cubic-bezier(.2,.7,.3,1) forwards;
+      transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
     }
+    .card:nth-child(1){animation-delay:.08s}
+    .card:nth-child(2){animation-delay:.18s}
+    .card:nth-child(3){animation-delay:.28s}
+    @keyframes cardEnter{to{opacity:1;translate:0 0}}
     .card:hover{
       border-color:var(--ring);
-      box-shadow:0 6px 20px oklch(0.145 0 0 / 10%);
-      transform:translateY(-2px);
+      box-shadow:0 8px 24px oklch(0.145 0 0 / 12%);
+      transform:translateY(-4px);
     }
+    /* hover 时用平台品牌色点亮边框与光晕 */
+    #cardKS:hover{border-color:var(--ks);box-shadow:0 10px 32px oklch(0.72 0.17 156 / 28%)}
+    #cardIGG:hover{border-color:var(--igg);box-shadow:0 10px 32px oklch(0.62 0.22 0 / 26%)}
+    #cardMK:hover{border-color:var(--mk);box-shadow:0 10px 32px oklch(0.83 0.16 95 / 34%)}
     .card-head{display:flex;flex-direction:column;align-items:center;gap:12px}
     .plogo{
       width:46px;height:46px;border-radius:12px;flex:none;
@@ -150,18 +178,27 @@
     .arrow{
       position:absolute;right:14px;top:50%;transform:translateY(-50%);
       color:var(--muted-foreground);opacity:.45;display:flex;
-      transition:opacity .15s ease,transform .15s ease,color .15s ease;
+      animation:arrowNudge 2.4s ease-in-out infinite;
+      transition:opacity .15s ease,color .15s ease;
     }
-    .card:hover .arrow{opacity:1;color:var(--foreground);transform:translate(3px,-50%)}
+    @keyframes arrowNudge{0%,100%{translate:0 0}50%{translate:4px 0}}
+    .card:hover .arrow{opacity:1;color:var(--foreground);animation-play-state:paused}
 
     .foot{text-align:center;color:var(--muted-foreground);font-size:12px;margin-top:32px}
+
+    /* 系统开启「减少动态效果」时全部动画停用，内容直接可见 */
+    @media (prefers-reduced-motion: reduce){
+      .blob,.logomark .bar,.bdot,.arrow{animation:none!important}
+      .card{opacity:1;translate:0 0;animation:none!important}
+    }
   </style>
 </head>
 <body>
+<div class="bgfx" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i></div>
 <main class="wrap">
   <header class="hero">
     <div class="badge"><span class="bdot ks"></span><span class="bdot igg"></span><span class="bdot mk"></span>三平台工具箱</div>
-    <h1><svg class="logomark" width="44" height="44" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lg3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#86efac"/><stop offset="0.5" stop-color="#f9a8d4"/><stop offset="1" stop-color="#fde68a"/></linearGradient></defs><rect width="48" height="48" rx="12" fill="url(#lg3)"/><rect x="12.5" y="20" width="5" height="13" rx="2.5" fill="#fff"/><rect x="21.5" y="12" width="5" height="21" rx="2.5" fill="#fff"/><rect x="30.5" y="25" width="5" height="8" rx="2.5" fill="#fff"/></svg>Yuref <span class="thin">· 出单渠道分析</span></h1>
+    <h1><span class="logomark" aria-hidden="true"><i class="bar bar1"></i><i class="bar bar2"></i><i class="bar bar3"></i></span>Yuref <span class="thin">· 出单渠道分析</span></h1>
     <p class="sub">Kickstarter · Indiegogo · Makuake　三平台出单渠道分析工具</p>
   </header>
 
@@ -205,6 +242,17 @@
     document.documentElement.style.setProperty('--my',cy.toFixed(4));
     requestAnimationFrame(loop);
   })();
+  /* 入场动画安全网：1.4s 后若卡片仍未显形（动画异常/被拦截），强制显示 */
+  setTimeout(function(){
+    var cards=document.querySelectorAll('.card');
+    for(var i=0;i<cards.length;i++){
+      if(parseFloat(getComputedStyle(cards[i]).opacity)<0.99){
+        cards[i].style.animation='none';
+        cards[i].style.opacity='1';
+        cards[i].style.translate='0 0';
+      }
+    }
+  },1400);
 })();
 </script>
 </body>
