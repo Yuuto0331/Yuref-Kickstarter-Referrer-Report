@@ -76,12 +76,19 @@
     }
 
     *{box-sizing:border-box;margin:0;padding:0}
+    body::before{
+      content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.10;
+      background:
+        radial-gradient(560px 380px at 10% -8%, var(--ks) 0%, transparent 60%),
+        radial-gradient(560px 380px at 90% -8%, var(--igg) 0%, transparent 60%),
+        radial-gradient(720px 440px at 50% 116%, var(--mk) 0%, transparent 62%);
+    }
     body{
       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;
       background:var(--background);color:var(--foreground);min-height:100vh;
       display:flex;align-items:center;justify-content:center;padding:40px 20px;
     }
-    .wrap{width:100%;max-width:880px}
+    .wrap{width:100%;max-width:880px;position:relative;z-index:1}
 
     /* ===== Hero ===== */
     .hero{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:34px}
@@ -98,7 +105,10 @@
       border:1px solid var(--border);border-radius:9999px;
       padding:3px 12px;margin-bottom:14px;
     }
-    .badge .bdot{width:6px;height:6px;border-radius:50%;background:var(--muted-foreground);opacity:.6}
+    .badge .bdot{width:6px;height:6px;border-radius:50%;display:inline-block}
+    .bdot.ks{background:var(--ks)}
+    .bdot.igg{background:var(--igg)}
+    .bdot.mk{background:var(--mk)}
     h1{font-size:26px;font-weight:700;letter-spacing:-0.3px}
     h1 .thin{color:var(--muted-foreground);font-weight:600}
     .sub{margin-top:9px;color:var(--muted-foreground);font-size:13.5px}
@@ -115,11 +125,18 @@
       border-color:var(--ring);
       box-shadow:0 4px 16px oklch(0.145 0 0 / 8%);
     }
-    .card-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-    .dot{width:9px;height:9px;border-radius:50%;flex:none}
-    .dot.ks{background:var(--ks)}
-    .dot.igg{background:var(--igg)}
-    .dot.mk{background:var(--mk)}
+    .card-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .plogo{
+      width:36px;height:36px;border-radius:var(--radius-md);flex:none;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:800;font-size:16px;color:#fff;
+    }
+    .plogo.ks{background:var(--ks)}
+    .plogo.igg{background:var(--igg);font-size:11px;letter-spacing:.3px}
+    .plogo.mk{background:var(--mk);color:#3a2c00}
+    .plogo.imgmk{background:#fff;border:1px solid var(--border)}
+    .plogo.imgmk img{width:27px;height:27px;display:block;border-radius:6px}
+    .dot{display:none}
     .pname{font-weight:600;font-size:15px;letter-spacing:-0.1px}
     .tag{
       margin-left:auto;font-size:10.5px;font-weight:600;letter-spacing:.5px;
@@ -154,14 +171,14 @@
 <main class="wrap">
   <header class="hero">
     <div class="mark">Y</div>
-    <div class="badge"><span class="bdot"></span>三平台工具箱</div>
+    <div class="badge"><span class="bdot ks"></span><span class="bdot igg"></span><span class="bdot mk"></span>三平台工具箱</div>
     <h1>Yuref <span class="thin">· 出单渠道分析</span></h1>
     <p class="sub">Kickstarter · IGG · Makuake　数据仅存于本机浏览器，不上传服务器</p>
   </header>
 
   <section class="grid">
     <a class="card" href="report_tool.html" id="cardKS">
-      <div class="card-head"><span class="dot ks"></span><span class="pname">Kickstarter</span><span class="tag">KS</span></div>
+      <div class="card-head"><span class="plogo ks"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg" aria-label="Kickstarter"><path d="M7.168 0c-3.2 0-5.797 2.579-5.797 5.758v12.484C1.371 21.42 3.968 24 7.168 24c1.981 0 3.716-.978 4.768-2.479l.794.79c2.26 2.245 5.943 2.245 8.203 0a5.724 5.724 0 001.696-4.075 5.724 5.724 0 00-1.696-4.074l-2.182-2.168 2.182-2.156a5.724 5.724 0 001.696-4.074 5.724 5.724 0 00-1.696-4.074c-2.26-2.246-5.942-2.246-8.203 0l-.794.789A5.797 5.797 0 007.168 0Z"/></svg></span><span class="pname">Kickstarter</span><span class="tag">KS</span></div>
       <div class="proj" id="ksProj">—</div>
       <div class="metric"><span class="amount empty" id="ksAmt">暂无数据</span><span class="count" id="ksCnt"></span></div>
       <div class="date empty" id="ksDate">进入后导入数据即自动保存</div>
@@ -171,7 +188,7 @@
     </a>
 
     <a class="card" href="igg_tool.html" id="cardIGG">
-      <div class="card-head"><span class="dot igg"></span><span class="pname">IGG</span><span class="tag">IGG</span></div>
+      <div class="card-head"><span class="plogo igg">IGG</span><span class="pname">IGG</span><span class="tag">IGG</span></div>
       <div class="proj" id="iggProj">—</div>
       <div class="metric"><span class="amount empty" id="iggAmt">暂无数据</span><span class="count" id="iggCnt"></span></div>
       <div class="date empty" id="iggDate">进入后导入数据即自动保存</div>
@@ -181,7 +198,7 @@
     </a>
 
     <a class="card" href="makuake_tool.html" id="cardMK">
-      <div class="card-head"><span class="dot mk"></span><span class="pname">Makuake</span><span class="tag">MK</span></div>
+      <div class="card-head"><span class="plogo imgmk"><img src="data:image/png;base64,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" alt="Makuake"></span><span class="pname">Makuake</span><span class="tag">MK</span></div>
       <div class="proj" id="mkProj">—</div>
       <div class="metric"><span class="amount empty" id="mkAmt">暂无数据</span><span class="count" id="mkCnt"></span></div>
       <div class="date empty" id="mkDate">进入后导入数据即自动保存</div>
