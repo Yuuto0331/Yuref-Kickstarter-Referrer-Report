@@ -294,12 +294,12 @@
       vx: dirx * sp + (Math.random() - .5) * .9,
       vy: diry * sp + (Math.random() - .5) * .9,
       life: 1,
-      decay: .026 + Math.random() * .03 + k * .035,
+      decay: .013 + Math.random() * .016 + k * .02,
       r: (.9 + Math.random() * 1.6) * (1 + k * .8),
       c: COLORS[(Math.random() * 3) | 0],
       drag: .92 + k * .03
     });
-    if(parts.length > 90) parts.shift();
+    if(parts.length > 130) parts.shift();
   }
   function spawnRipple(x, y){
     ripples.push({x:x, y:y, r:4, max:26+Math.random()*14, life:1, c:COLORS[(Math.random()*3)|0]});
@@ -337,10 +337,10 @@
       p.vx *= p.drag; p.vy *= p.drag;
       p.life -= p.decay;
       if(p.life <= 0){ parts.splice(i, 1); continue; }
-      ctx.globalAlpha = p.life * .28; ctx.fillStyle = p.c;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 2.2, 0, 6.2832); ctx.fill();
-      ctx.globalAlpha = p.life * .9; ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * .55, 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = p.life * .45; ctx.fillStyle = p.c;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 3.2, 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = p.life * .95; ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * .6, 0, 6.2832); ctx.fill();
     }
     for(i = ripples.length-1; i >= 0; i--){
       var rp = ripples[i]; rp.r += (rp.max - rp.r) * .14; rp.life -= .03;
