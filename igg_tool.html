@@ -15,6 +15,9 @@ header h1{font-size:22px;margin:0 0 4px}header p{color:var(--muted);margin:0;fon
 .head-badges .btn.ghost{margin-left:0;margin-top:0}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;background:#eaf5ea;color:var(--green);font-size:12px;font-weight:600;border:1px solid #cdeccd}
 .app-footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;text-align:center}
+.ver-badge{cursor:pointer;user-select:none;font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;letter-spacing:.5px;opacity:.6}
+.ver-badge:hover{opacity:1}
+.foot-sep{opacity:.4;margin:0 2px}
 .proj-group{display:flex;align-items:center;gap:10px}
 .proj-switcher{position:relative}
 .proj-trigger{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;transition:.15s;font-family:inherit}
@@ -257,7 +260,7 @@ td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
       </div>
     </div>
     <div class="head-badges" data-page-node-id="82ssUA7wK0lptgO5hnNqcX">
-      <span data-page-node-id="8Q6rBDSWHgPR10h1sI1HsK">纯前端 · 单文件</span>
+      <span data-page-node-id="8Q6rBDSWHgPR10h1sI1HsK">纯前端 · 数据不出本机</span>
       <div class="proj-switcher" data-page-node-id="ucigraWyrMZoe26FfERESV">
         <div class="proj-trigger" id="projTrigger" data-page-node-id="guhoTG7EXr7HpyT4fb8gyo">
           <span class="proj-avatar" id="projAvatar" style="background:var(--accent)" data-page-node-id="sCURu2cwE77Jcu5eAX8zbU">D</span>
@@ -325,7 +328,7 @@ td.cell-new{outline:1px dashed rgba(235,20,120,.35);outline-offset:-2px}
 
   <div id="reportBody" data-page-node-id="f7zIYuBcfBWw0eHiwrpX3f"></div>
 </div>
-<footer class="app-footer" data-page-node-id="qeHGjOdgWB2STXqzA4fa1B">Yuref · Indiegogo Referral Report — 纯前端单文件工具，数据仅存于本机浏览器。</footer>
+<footer class="app-footer" data-page-node-id="qeHGjOdgWB2STXqzA4fa1B">Yuref · Indiegogo Referral Report — 纯前端单文件工具，数据仅存于本机浏览器。<br>Developer: Theo Yan <span class="foot-sep">·</span> <span id="verBadge" class="ver-badge" title="点击强制拉取最新版">v1.1</span></footer>
 
 <div class="modal-mask" id="modalMask" data-page-node-id="MiNMmbiJIX66R8iTDjC9Dr">
   <div class="modal" data-page-node-id="SB0OI4DFWUA35q6OkTSr3z">
@@ -2217,4 +2220,22 @@ addSnapshot('DEMO预览', base, DEMO_DATE1);
   _loadLastProject();
 })();
 </script>
+
+<script>
+/* 版本徽章：显示 v1.1，点击强制刷新（三工具统一） */
+(function(){
+  var v = 'v1.1';
+  function reload(){
+    try{ var u = new URL(location.href); u.searchParams.set('v', Date.now()); location.replace(u.toString()); }
+    catch(e){ location.reload(true); }
+  }
+  function paint(){
+    var b = document.getElementById('verBadge');
+    if(b){ b.textContent = v; b.onclick = reload; }
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paint);
+  else paint();
+})();
+</script>
+
 </body></html>
