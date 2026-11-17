@@ -102,34 +102,34 @@
     .wrap{width:100%;max-width:880px;position:relative;z-index:1}
 
     /* ===== Hero ===== */
-    .hero{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:34px}
+    .hero{display:flex;flex-direction:column;align-items:center;text-align:center;margin-bottom:46px}
     .badge{
-      display:inline-flex;align-items:center;gap:5px;
-      font-size:11.5px;font-weight:600;letter-spacing:.4px;
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:12.5px;font-weight:600;letter-spacing:.4px;
       color:var(--muted-foreground);
       border:1px solid var(--border);border-radius:9999px;
-      padding:3px 12px;margin-bottom:14px;
+      padding:5px 15px;margin-bottom:18px;
     }
     .badge .bdot{width:6px;height:6px;border-radius:50%;display:inline-block;animation:bdPulse 2s ease-in-out infinite}
     .bdot.ks{background:var(--ks)}
     .bdot.igg{background:var(--igg);animation-delay:.35s}
     .bdot.mk{background:var(--mk);animation-delay:.7s}
     @keyframes bdPulse{0%,100%{opacity:1;scale:1}50%{opacity:.3;scale:.72}}
-    h1{display:inline-flex;align-items:center;gap:12px;font-size:27px;font-weight:700;letter-spacing:-0.3px}
+    h1{display:inline-flex;align-items:center;gap:14px;font-size:34px;font-weight:700;letter-spacing:-0.4px}
     /* 三色均衡器 logo：柱子持续跳动 */
     .logomark{
-      width:44px;height:44px;border-radius:10px;flex:none;
+      width:54px;height:54px;border-radius:13px;flex:none;
       background:linear-gradient(135deg,#86efac,#f9a8d4,#fde68a);
       box-shadow:0 1px 3px oklch(0.145 0 0 / 16%);
-      display:flex;align-items:flex-end;justify-content:center;gap:4px;padding-bottom:11px;
+      display:flex;align-items:flex-end;justify-content:center;gap:5px;padding-bottom:14px;
     }
-    .logomark .bar{width:5px;border-radius:2.5px;background:#fff;transform-origin:bottom;animation:eq 1.7s ease-in-out infinite}
-    .logomark .bar1{height:13px}
-    .logomark .bar2{height:21px;animation-delay:.4s}
-    .logomark .bar3{height:8px;animation-delay:.8s}
+    .logomark .bar{width:6px;border-radius:3px;background:#fff;transform-origin:bottom;animation:eq 1.7s ease-in-out infinite}
+    .logomark .bar1{height:16px}
+    .logomark .bar2{height:26px;animation-delay:.4s}
+    .logomark .bar3{height:10px;animation-delay:.8s}
     @keyframes eq{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.5)}}
     h1 .thin{color:var(--muted-foreground);font-weight:600}
-    .sub{margin-top:9px;color:var(--muted-foreground);font-size:13.5px}
+    .sub{margin-top:12px;color:var(--muted-foreground);font-size:15px}
 
     /* ===== 卡片（shadcn Card：rounded-xl border bg-card） ===== */
     .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
@@ -137,7 +137,7 @@
       position:relative;
       display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;text-decoration:none;color:var(--card-foreground);
       background:var(--card);border:1px solid var(--border);
-      border-radius:var(--radius-xl);padding:26px 34px;
+      border-radius:var(--radius-xl);padding:32px 36px;
       opacity:0;translate:0 18px;
       animation:cardEnter .6s cubic-bezier(.2,.7,.3,1) forwards;
       transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
@@ -157,17 +157,17 @@
     #cardMK:hover{border-color:var(--mk);box-shadow:0 10px 32px oklch(0.83 0.16 95 / 34%)}
     .card-head{display:flex;flex-direction:column;align-items:center;gap:12px}
     .plogo{
-      width:46px;height:46px;border-radius:12px;flex:none;
+      width:50px;height:50px;border-radius:13px;flex:none;
       display:flex;align-items:center;justify-content:center;
-      font-weight:800;font-size:18px;color:#fff;
+      font-weight:800;font-size:19px;color:#fff;
     }
     .plogo.ks{background:var(--ks)}
     .plogo.igg{background:var(--igg);font-size:11px;letter-spacing:.3px}
     .plogo.mk{background:var(--mk);color:#3a2c00}
     .plogo.imgmk{background:#fff;border:1px solid var(--border)}
-    .plogo.imgmk img{width:34px;height:34px;display:block;border-radius:8px}
+    .plogo.imgmk img{width:38px;height:38px;display:block;border-radius:9px}
     .plogo.imgigg{background:#fff;border:1px solid var(--border)}
-    .plogo.imgigg img{width:34px;height:34px;display:block;border-radius:8px}
+    .plogo.imgigg img{width:38px;height:38px;display:block;border-radius:9px}
     .dot{display:none}
     .pname{font-weight:600;font-size:15.5px;letter-spacing:-0.1px}
     .tag{
@@ -184,7 +184,7 @@
     @keyframes arrowNudge{0%,100%{translate:0 0}50%{translate:4px 0}}
     .card:hover .arrow{opacity:1;color:var(--foreground);animation-play-state:paused}
 
-    .foot{text-align:center;color:var(--muted-foreground);font-size:12px;margin-top:32px}
+    .foot{text-align:center;color:var(--muted-foreground);font-size:12.5px;margin-top:44px}
 
     /* 系统开启「减少动态效果」时全部动画停用，内容直接可见 */
     @media (prefers-reduced-motion: reduce){
