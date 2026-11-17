@@ -414,22 +414,25 @@ tr.cmp-cat:hover td:first-child{box-shadow:inset 3px 0 0 0 var(--cat);padding-le
 .rp-day.disabled:hover{background:transparent;color:#c9cdd4}
 </style><style>
 /* 平台切换导航（三工具共用样式） */
-.plat-switch{display:flex;gap:8px;align-items:center;justify-content:center;padding:12px 16px 0;flex-wrap:wrap}
-.ps-home{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:999px;background:#eef1f5;color:#5b6770;text-decoration:none;font-size:15px;border:1px solid #e2e6eb;transition:background .15s,color .15s}
-.ps-home:hover{background:#e2e6eb;color:#1f2937}
-.ps-link{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;font-size:13px;font-weight:600;color:#5b6770;background:#eef1f5;text-decoration:none;border:1px solid #e2e6eb;transition:background .15s,color .15s}
-.ps-link:hover{background:#e2e6eb;color:#1f2937}
-.ps-cur{background:#1f2937;color:#fff;border-color:#1f2937}
-.ps-cur:hover{background:#1f2937;color:#fff}
+.plat-switch{display:flex;gap:10px;align-items:center;justify-content:center;padding:14px 16px 0;flex-wrap:wrap}
+.ps-home{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:transparent;color:#5b6770;text-decoration:none;border:1px solid #dfe3e9;transition:background .15s,color .15s,border-color .15s}
+.ps-home:hover{background:#eef1f5;color:#1f2937;border-color:#d4d9e0}
+.ps-seg{display:inline-flex;align-items:center;background:#eef1f5;border:1px solid #e2e6eb;border-radius:12px;padding:3px;gap:2px}
+.ps-link{display:inline-flex;align-items:center;gap:7px;padding:5px 16px;border-radius:9px;font-size:13px;font-weight:600;color:#5b6770;text-decoration:none;transition:background .15s,color .15s,box-shadow .15s}
+.ps-link:hover{color:#1f2937}
+.ps-cur{background:#fff;color:#1f2937;box-shadow:0 1px 3px rgba(16,24,32,.14),0 0 0 1px rgba(16,24,32,.05)}
+.ps-cur:hover{color:#1f2937}
 .ps-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 </style>
 </head>
 <body data-page-node-id="gNA3CbBcCG7Nqf8WHhbTRR"><div id="toastWrap" class="toast-wrap" data-page-node-id="DEyE776Fk5vCEnLikXnv5W"></div><div id="chartTip" data-page-node-id="Dc2bRL5qbqdwmeNq3f1Pzh"></div><div id="rangePicker" class="range-picker-pop hide" data-page-node-id="7sP8kysQvUAb2T5Ah9gHSF"><div class="rp-header" data-page-node-id="IzCIXU2MaY64d0N9HZNOsM"><button class="rp-nav" data-dir="-1" data-page-node-id="lYxShCvP9FzhRwUx1QyJ1X">‹</button><span class="rp-title" data-page-node-id="wUa4nsyUuTI8IZERP3WtD4"></span><button class="rp-nav" data-dir="1" data-page-node-id="DzGeBvzKdW2jAmE3b9ubtZ">›</button></div><div class="rp-weekdays" data-page-node-id="EZZOzePtzUCZJbyDvo0OQO"><span data-page-node-id="W13VlE54Q2Jytotbqr598e">日</span><span data-page-node-id="ckZiCojlJRRhnEyRVlAJfY">一</span><span data-page-node-id="GL8Fd78tdEHM0uBzXe0W5J">二</span><span data-page-node-id="MDlimnVUVgoiJj1HFq6fal">三</span><span data-page-node-id="PvpCapJla73oPZUWgxXgx8">四</span><span data-page-node-id="A3ZTDElop4yICWeRRy58rd">五</span><span data-page-node-id="vvJ28gCGB1zXdjMhuOn4tK">六</span></div><div class="rp-days" data-page-node-id="snkD0H23jdTpMdycnqHrsR"></div></div><div class="wrap" data-page-node-id="Zf0JnNj3Ke6HAf0AJoerKx">
 <nav class="plat-switch" aria-label="平台切换">
-  <a class="ps-home" href="index.html" title="返回工具箱入口">⌂</a>
-  <a class="ps-link ps-ks ps-cur" href="report_tool.html"><i class="ps-dot" style="background:#05ce78"></i>Kickstarter</a>
-  <a class="ps-link ps-igg" href="igg_tool.html"><i class="ps-dot" style="background:#eb1478"></i>Indiegogo</a>
-  <a class="ps-link ps-mk" href="makuake_tool.html"><i class="ps-dot" style="background:#f7c600"></i>Makuake</a>
+  <a class="ps-home" href="index.html" title="返回工具箱入口" aria-label="返回工具箱入口"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12"/></svg></a>
+  <span class="ps-seg">
+    <a class="ps-link ps-ks ps-cur" href="report_tool.html"><i class="ps-dot" style="background:#05ce78"></i>Kickstarter</a>
+    <a class="ps-link ps-igg" href="igg_tool.html"><i class="ps-dot" style="background:#eb1478"></i>Indiegogo</a>
+    <a class="ps-link ps-mk" href="makuake_tool.html"><i class="ps-dot" style="background:#f7c600"></i>Makuake</a>
+  </span>
 </nav>
 <header class="app-header" data-page-node-id="k9So2OjZxzi6HGYumG6XXb">
   <div class="brand" data-page-node-id="qqxEF585OIDRhvxgLh3ocH">
