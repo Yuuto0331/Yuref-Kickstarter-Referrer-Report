@@ -232,22 +232,18 @@ td.cell-new{outline:1px dashed rgba(247,198,0,.40);outline-offset:-2px}
 @media(max-width:560px){.guide{padding:22px 18px}}
 </style>
 <style>
-/* 平台切换通栏（全局第一层级） */
-.plat-bar{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50}
-.plat-bar-inner{max-width:1100px;margin:0 auto;padding:10px 28px;display:flex;align-items:center;position:relative}
-.plat-switch{display:flex;align-items:center;gap:10px;width:100%}
-.ps-home{position:absolute;left:28px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:transparent;color:var(--muted);text-decoration:none;transition:background .15s,color .15s;flex:none}
-.ps-home:hover{background:#f3f4f6;color:var(--ink)}
-.ps-seg{margin:0 auto;display:inline-flex;align-items:center;background:#f3f4f6;border:1px solid var(--line);border-radius:11px;padding:3px;gap:2px}
-.ps-link{display:inline-flex;align-items:center;gap:7px;padding:5px 18px;border-radius:8px;font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;transition:background .15s,color .15s,box-shadow .15s}
-.ps-link:hover{color:var(--ink)}
-.ps-cur{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12),0 0 0 1px rgba(16,24,32,.05)}
-.ps-cur:hover{color:var(--ink)}
+/* 平台切换导航（初版样式恢复） */
+.plat-switch{display:flex;gap:8px;align-items:center;justify-content:center;padding:12px 16px 0;flex-wrap:wrap}
+.ps-home{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:999px;background:#eef1f5;color:#5b6770;text-decoration:none;font-size:15px;border:1px solid #e2e6eb;transition:background .15s,color .15s}
+.ps-home:hover{background:#e2e6eb;color:#1f2937}
+.ps-link{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;font-size:13px;font-weight:600;color:#5b6770;background:#eef1f5;text-decoration:none;border:1px solid #e2e6eb;transition:background .15s,color .15s}
+.ps-link:hover{background:#e2e6eb;color:#1f2937}
+.ps-cur{background:#1f2937;color:#fff;border-color:#1f2937}
+.ps-cur:hover{background:#1f2937;color:#fff}
 .ps-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
 @media (max-width:760px){
-  .plat-bar-inner{padding:8px 16px}
-  .ps-home{position:static;transform:none}
-  .ps-seg{margin:0;flex:1;min-width:0}
+  .plat-switch{padding:10px 16px 0}
+  .ps-home{width:32px;height:32px;flex:none}
   .ps-link{flex:1 1 0;min-width:0;justify-content:center;padding:6px 6px;font-size:12.5px;gap:5px}
   .ps-dot{width:6px;height:6px}
   .app-header .brand{min-width:0}
@@ -256,17 +252,13 @@ td.cell-new{outline:1px dashed rgba(247,198,0,.40);outline-offset:-2px}
 </style>
 </head>
 <body data-page-node-id="3akpfK4Y56juGbMiQsWFpX">
-<div class="plat-bar"><div class="plat-bar-inner">
-<nav class="plat-switch" aria-label="平台切换">
-  <a class="ps-home" href="index.html" title="返回工具箱入口" aria-label="返回工具箱入口"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12"/></svg></a>
-  <span class="ps-seg">
-    <a class="ps-link ps-ks" href="report_tool.html"><i class="ps-dot" style="background:#05ce78"></i>Kickstarter</a>
-    <a class="ps-link ps-igg" href="igg_tool.html"><i class="ps-dot" style="background:#eb1478"></i>Indiegogo</a>
-    <a class="ps-link ps-mk ps-cur" href="makuake_tool.html"><i class="ps-dot" style="background:#f7c600"></i>Makuake</a>
-  </span>
-</nav>
-</div></div>
 <div class="wrap" data-page-node-id="OwcD2HFOribn8UUGCU75vm">
+<nav class="plat-switch" aria-label="平台切换">
+  <a class="ps-home" href="index.html" title="返回工具箱入口" aria-label="返回工具箱入口">⌂</a>
+  <a class="ps-link ps-ks" href="report_tool.html"><i class="ps-dot" style="background:#05ce78"></i>Kickstarter</a>
+  <a class="ps-link ps-igg" href="igg_tool.html"><i class="ps-dot" style="background:#eb1478"></i>Indiegogo</a>
+  <a class="ps-link ps-mk ps-cur" href="makuake_tool.html"><i class="ps-dot" style="background:#f7c600"></i>Makuake</a>
+</nav>
   <header class="app-header" data-page-node-id="ernoX51HEXsMaY6YN7hLX6">
     <div class="brand" data-page-node-id="tZfoTpQ6pnyr0fkqptMRf4">
       <svg class="logo" viewBox="0 0 32 32" data-page-node-id="KXxNRkzfS0LvnEqFamColS"><circle cx="16" cy="16" r="15" fill="#f7c600" data-page-node-id="uthjPtGzzt9W7iGCnksSYy"/><path d="M9 21 L9 15 M16 21 L16 11 M23 21 L23 17" stroke="#fff" stroke-width="3" stroke-linecap="round" data-page-node-id="URDOhCRxEek6xLopaIpRIG"/></svg>
