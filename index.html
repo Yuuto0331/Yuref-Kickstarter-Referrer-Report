@@ -332,8 +332,6 @@
       p.x += p.vx; p.y += p.vy;
       p.life -= p.decay;
       if(p.life <= 0){ parts.splice(i, 1); continue; }
-      ctx.globalAlpha = p.life * .22; ctx.fillStyle = p.c;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 2, 0, 6.2832); ctx.fill();
       ctx.globalAlpha = p.life * .8; ctx.fillStyle = p.c;
       ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
     }
