@@ -197,9 +197,13 @@
       .card{opacity:1;translate:0 0;animation:none!important}
     }
   </style>
+
+/* 光标拖尾 + 点击涟漪画布 */
+#cursorFX{position:fixed;inset:0;pointer-events:none;z-index:2}
 </head>
 <body>
 <div class="bgfx" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i></div>
+<canvas id="cursorFX" aria-hidden="true"></canvas>
 <main class="wrap">
   <header class="hero">
     <div class="badge"><span class="bdot ks"></span><span class="bdot igg"></span><span class="bdot mk"></span>三平台工具箱</div>
@@ -260,5 +264,66 @@
   },1400);
 })();
 </script>
+
+<script>
+/* 光标拖尾 + 点击涟漪（三色品牌光点） */
+(function(){
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var cv = document.getElementById('cursorFX');
+  if(!cv) return;
+  var ctx = cv.getContext('2d');
+  var DPR, W, H;
+  function resize(){
+    DPR = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W * DPR; cv.height = H * DPR;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  resize(); addEventListener('resize', resize);
+  var COLORS = ['#05ce78', '#eb1478', '#f7c600'];
+  var parts = [], ripples = [];
+  function spawnTrail(x, y){
+    parts.push({x:x, y:y, vx:(Math.random()-.5)*.7, vy:(Math.random()-.5)*.7, life:1,
+      decay:.022+Math.random()*.03, r:1.5+Math.random()*2.6, c:COLORS[(Math.random()*3)|0]});
+    if(parts.length > 70) parts.shift();
+  }
+  function spawnRipple(x, y){
+    ripples.push({x:x, y:y, r:4, max:26+Math.random()*14, life:1, c:COLORS[(Math.random()*3)|0]});
+  }
+  var lastX = null, lastY = null;
+  addEventListener('mousemove', function(e){
+    var x = e.clientX, y = e.clientY;
+    if(lastX === null){ lastX = x; lastY = y; return; }
+    var dx = x - lastX, dy = y - lastY, d = Math.hypot(dx, dy);
+    if(d > 0){
+      var steps = Math.min(6, Math.floor(d / 12));
+      for(var i = 1; i <= steps; i++) spawnTrail(lastX + dx*i/steps, lastY + dy*i/steps);
+    }
+    lastX = x; lastY = y;
+  }, {passive:true});
+  addEventListener('mousedown', function(e){ spawnRipple(e.clientX, e.clientY); }, {passive:true});
+  addEventListener('touchmove', function(e){ if(e.touches[0]) spawnTrail(e.touches[0].clientX, e.touches[0].clientY); }, {passive:true});
+  addEventListener('touchstart', function(e){ if(e.touches[0]) spawnRipple(e.touches[0].clientX, e.touches[0].clientY); }, {passive:true});
+  (function loop(){
+    ctx.clearRect(0, 0, W, H);
+    var i, p;
+    for(i = parts.length-1; i >= 0; i--){
+      p = parts[i]; p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+      if(p.life <= 0){ parts.splice(i, 1); continue; }
+      ctx.globalAlpha = p.life * .55; ctx.fillStyle = p.c;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
+    }
+    for(i = ripples.length-1; i >= 0; i--){
+      var rp = ripples[i]; rp.r += (rp.max - rp.r) * .14; rp.life -= .03;
+      if(rp.life <= 0){ ripples.splice(i, 1); continue; }
+      ctx.globalAlpha = rp.life * .6; ctx.strokeStyle = rp.c; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(rp.x, rp.y, rp.r, 0, 6.2832); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(loop);
+  })();
+})();
+</script>
+
 </body>
 </html>
