@@ -128,7 +128,7 @@
     .logomark .bar2{height:26px;animation-delay:.4s}
     .logomark .bar3{height:10px;animation-delay:.8s}
     @keyframes eq{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.5)}}
-    h1 .thin{color:var(--muted-foreground);font-weight:600}
+    h1 .thin{color:var(--foreground);font-weight:600}
     .sub{margin-top:12px;color:var(--muted-foreground);font-size:15px}
 
     /* ===== 卡片（shadcn Card：rounded-xl border bg-card） ===== */
@@ -151,6 +151,10 @@
       box-shadow:0 8px 24px oklch(0.145 0 0 / 12%);
       transform:translateY(-4px);
     }
+    /* 每张卡铺一层淡淡的平台专属色，边框也微微带色（暗色模式自动适配） */
+    #cardKS{background:linear-gradient(180deg,color-mix(in oklab,var(--ks) 12%,var(--card)),var(--card) 78%);border-color:color-mix(in oklab,var(--ks) 22%,var(--border))}
+    #cardIGG{background:linear-gradient(180deg,color-mix(in oklab,var(--igg) 10%,var(--card)),var(--card) 78%);border-color:color-mix(in oklab,var(--igg) 20%,var(--border))}
+    #cardMK{background:linear-gradient(180deg,color-mix(in oklab,var(--mk) 13%,var(--card)),var(--card) 78%);border-color:color-mix(in oklab,var(--mk) 26%,var(--border))}
     /* hover 时用平台品牌色点亮边框与光晕 */
     #cardKS:hover{border-color:var(--ks);box-shadow:0 10px 32px oklch(0.72 0.17 156 / 28%)}
     #cardIGG:hover{border-color:var(--igg);box-shadow:0 10px 32px oklch(0.62 0.22 0 / 26%)}
