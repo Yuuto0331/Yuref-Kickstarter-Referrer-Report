@@ -198,8 +198,10 @@
     }
   </style>
 
+<style>
 /* 光标拖尾 + 点击涟漪画布 */
 #cursorFX{position:fixed;inset:0;pointer-events:none;z-index:2}
+</style>
 </head>
 <body>
 <div class="bgfx" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i></div>
@@ -284,7 +286,7 @@
   var parts = [], ripples = [];
   function spawnTrail(x, y){
     parts.push({x:x, y:y, vx:(Math.random()-.5)*.7, vy:(Math.random()-.5)*.7, life:1,
-      decay:.022+Math.random()*.03, r:1.5+Math.random()*2.6, c:COLORS[(Math.random()*3)|0]});
+      decay:.03+Math.random()*.035, r:.8+Math.random()*1.6, c:COLORS[(Math.random()*3)|0]});
     if(parts.length > 70) parts.shift();
   }
   function spawnRipple(x, y){
@@ -296,7 +298,7 @@
     if(lastX === null){ lastX = x; lastY = y; return; }
     var dx = x - lastX, dy = y - lastY, d = Math.hypot(dx, dy);
     if(d > 0){
-      var steps = Math.min(6, Math.floor(d / 12));
+      var steps = Math.min(5, Math.floor(d / 9));
       for(var i = 1; i <= steps; i++) spawnTrail(lastX + dx*i/steps, lastY + dy*i/steps);
     }
     lastX = x; lastY = y;
@@ -310,7 +312,7 @@
     for(i = parts.length-1; i >= 0; i--){
       p = parts[i]; p.x += p.vx; p.y += p.vy; p.life -= p.decay;
       if(p.life <= 0){ parts.splice(i, 1); continue; }
-      ctx.globalAlpha = p.life * .55; ctx.fillStyle = p.c;
+      ctx.globalAlpha = p.life * .45; ctx.fillStyle = p.c;
       ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.fill();
     }
     for(i = ripples.length-1; i >= 0; i--){
